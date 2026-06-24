@@ -24,11 +24,11 @@ import { useSettings } from '../../context/SettingsContext.jsx';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/users', label: 'Users / Customers', icon: Users },
-  { to: '/catalog', label: 'Products / Services', icon: Boxes },
-  { to: '/orders', label: 'Orders / Leads', icon: Receipt },
-  { to: '/payments', label: 'Payments', icon: WalletCards },
-  { to: '/invoices', label: 'Invoices', icon: FileText },
+  { to: '/users', label: 'Users', icon: Users },
+  { to: '/catalog', label: 'Projects Management', icon: Boxes },
+  { to: '/orders', label: 'Leads Management', icon: Receipt },
+  { to: '/payments', label: 'Task Management', icon: WalletCards },
+  { to: '/invoices', label: 'Vault/Credentials', icon: FileText },
   { to: '/enquiries', label: 'Contact Enquiries', icon: MessageSquare },
   { to: '/banners', label: 'Banners / Sliders', icon: Image },
   { to: '/coupons', label: 'Coupons / Offers', icon: BadgePercent },

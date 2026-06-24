@@ -6,6 +6,8 @@ import Login from './pages/Login.jsx';
 import ResourcePage from './pages/ResourcePage.jsx';
 import ThemeSettings from './pages/ThemeSettings.jsx';
 import GeneralSettings from './pages/GeneralSettings.jsx';
+import RolePermissionsPage from './pages/RolePermissionsPage.jsx';
+import ProjectsManagementPage from './pages/ProjectsManagementPage.jsx';
 
 export default function App() {
   return (
@@ -22,7 +24,7 @@ export default function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="users" element={<ResourcePage title="Users / Customers" endpoint="/users" />} />
-        <Route path="catalog" element={<ResourcePage title="Products / Services" endpoint="/catalog" />} />
+        <Route path="catalog" element={<ProjectsManagementPage />} />
         <Route path="orders" element={<ResourcePage title="Orders / Leads" endpoint="/orders" />} />
         <Route path="payments" element={<ResourcePage title="Payments" endpoint="/payments" />} />
         <Route path="invoices" element={<ResourcePage title="Invoices" endpoint="/invoices" />} />
@@ -33,9 +35,11 @@ export default function App() {
         <Route path="content" element={<GeneralSettings section="content" title="Website Content Management" />} />
         <Route path="theme" element={<ThemeSettings />} />
         <Route path="settings" element={<GeneralSettings section="general" title="General Settings" />} />
-        <Route path="roles" element={<ResourcePage title="Role & Permission Management" endpoint="/users" />} />
+        <Route path="roles" element={<RolePermissionsPage />} />
       </Route>
     </Routes>
   );
 }
+
+
 

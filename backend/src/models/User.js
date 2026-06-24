@@ -7,8 +7,9 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     password: { type: String, required: true, minlength: 8, select: false },
     phone: String,
-    role: { type: String, enum: ['super_admin', 'admin', 'manager', 'staff', 'customer'], default: 'customer' },
+    role: { type: String, default: 'customer', lowercase: true, trim: true },
     permissions: [{ type: String }],
+    permissionVersion: { type: Number, default: 0 },
     isActive: { type: Boolean, default: true }
   },
   { timestamps: true }
@@ -25,4 +26,6 @@ userSchema.methods.comparePassword = function comparePassword(password) {
 };
 
 export const User = mongoose.model('User', userSchema);
+
+
 

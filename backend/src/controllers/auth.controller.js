@@ -4,7 +4,7 @@ import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
 
 function signToken(user) {
-  return jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
+  return jwt.sign({ id: user._id, role: user.role, permissionVersion: user.permissionVersion || 0 }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || '7d'
   });
 }
@@ -31,4 +31,5 @@ export const login = asyncHandler(async (req, res) => {
 export const me = asyncHandler(async (req, res) => {
   res.json(req.user);
 });
+
 

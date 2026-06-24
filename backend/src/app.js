@@ -14,6 +14,7 @@ import couponRoutes from './routes/coupon.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import reportRoutes from './routes/report.routes.js';
+import roleRoutes from './routes/role.routes.js';
 import { notFound, errorHandler } from './middleware/error.middleware.js';
 
 export const app = express();
@@ -22,6 +23,7 @@ app.use(helmet());
 app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || '*', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
+app.use('/storage', express.static('storage'));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -38,7 +40,11 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/theme', settingsRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/v1/roles', roleRoutes);
+app.use('/api/roles', roleRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
+
+
 
