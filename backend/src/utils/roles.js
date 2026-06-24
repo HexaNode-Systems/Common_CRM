@@ -4,10 +4,13 @@ export const roleModules = [
   { module: 'dashboard', label: 'Dashboard' },
   { module: 'users', label: 'Users / Customers' },
   { module: 'catalog', label: 'Products / Services' },
+  { module: 'leads', label: 'Leads Management' },
+  { module: 'vault', label: 'Vault / Credentials' },
+  { module: 'storage', label: 'Storage Management' },
+  { module: 'tasks', label: 'Task Management' },
   { module: 'orders', label: 'Orders / Leads' },
   { module: 'payments', label: 'Payments' },
   { module: 'invoices', label: 'Invoices' },
-  { module: 'vault', label: 'Vault / Credentials' }
 ];
 
 export const defaultRoleNames = [
@@ -37,6 +40,7 @@ export function matrixToPermissionStrings(matrix = []) {
   return matrix.flatMap(({ module, access }) => {
     if (module === 'dashboard') return access === 'none' ? [] : ['reports:read'];
     if (module === 'vault') return [];
+    if (module === 'storage') return [];
     return (verbsByAccess[access] || []).map((verb) => `${module}:${verb}`);
   }).filter((permission) => allPermissions.includes(permission));
 }

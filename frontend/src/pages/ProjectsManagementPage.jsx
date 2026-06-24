@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CalendarDays, FileText, Plus, RefreshCw, Search, UploadCloud, X } from 'lucide-react';
+import { CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Search, UploadCloud, X, AlertCircle, Clock, DollarSign, Users } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
@@ -44,11 +44,21 @@ function formatMoney(amount, currency = 'INR') {
   }).format(Number(amount || 0));
 }
 
-function statusClass(status) {
-  if (status === 'Running') return 'bg-emerald-50 text-emerald-700';
-  if (status === 'Finished') return 'bg-slate-100 text-slate-600';
-  if (status === 'Blocked') return 'bg-red-50 text-red-700';
-  return 'bg-blue-50 text-blue-700';
+function getStatusBadge(status) {
+  const styles = {
+    Running: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
+    Finished: 'bg-slate-100 text-slate-600 border border-slate-200',
+    Blocked: 'bg-red-50 text-red-700 border border-red-200',
+    Pipeline: 'bg-blue-50 text-blue-700 border border-blue-200'
+  };
+  return styles[status] || styles.Pipeline;
+}
+
+function getStatusIcon(status) {
+  if (status === 'Running') return <Clock size={14} className="inline mr-1" />;
+  if (status === 'Finished') return <CheckCircle2 size={14} className="inline mr-1" />;
+  if (status === 'Blocked') return <AlertCircle size={14} className="inline mr-1" />;
+  return null;
 }
 
 function initials(name = '') {
@@ -56,22 +66,24 @@ function initials(name = '') {
 }
 
 function TeamStack({ team = [] }) {
-  if (!team.length) return <span className="text-xs text-slate-500">Unassigned</span>;
-  const visible = team.slice(0, 4);
+  if (!team.length) return <span className="text-xs text-slate-500 italic">Unassigned</span>;
+  const visible = team.slice(0, 3);
+  const remaining = team.length - visible.length;
+  
   return (
-    <div className="flex items-center">
+    <div className="flex items-center gap-1">
       {visible.map((member, index) => (
         <div
           key={member.user || member.email || index}
-          title={`${member.name} - ${member.role || 'Team Member'}`}
-          className="-ml-2 first:ml-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-primary text-[11px] font-bold text-white shadow-sm"
+          title={`${member.name}${member.role ? ` - ${member.role}` : ''}`}
+          className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-primary text-[10px] font-bold text-white shadow-sm"
         >
           {initials(member.name)}
         </div>
       ))}
-      {team.length > visible.length ? (
-        <div className="-ml-2 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white bg-slate-200 text-[11px] font-bold text-slate-700">
-          +{team.length - visible.length}
+      {remaining > 0 ? (
+        <div className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-300 text-[10px] font-bold text-slate-700 shadow-sm" title={`+${remaining} more`}>
+          +{remaining}
         </div>
       ) : null}
     </div>
@@ -84,6 +96,7 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [capacityWarnings, setCapacityWarnings] = useState([]);
+  const [dragActive, setDragActive] = useState(false);
 
   useEffect(() => {
     if (!project) {
@@ -162,6 +175,25 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
     setFiles((current) => current.filter((_, itemIndex) => itemIndex !== index));
   }
 
+  function handleDrag(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === 'dragenter' || e.type === 'dragover') {
+      setDragActive(true);
+    } else if (e.type === 'dragleave') {
+      setDragActive(false);
+    }
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      addFiles(e.dataTransfer.files);
+    }
+  }
+
   async function submit(event) {
     event.preventDefault();
     setError('');
@@ -197,24 +229,37 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/45">
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/50 backdrop-blur-sm">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Close project drawer" onClick={onClose} />
       <aside className="relative flex h-full w-full max-w-4xl flex-col bg-white shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-white px-6 py-5">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{mode === 'create' ? 'Add New Project' : `Edit Project - ${project.title}`}</h2>
-            <p className="mt-1 text-sm text-slate-500">Client delivery, team, financials, timeline, and documents.</p>
+            <h2 className="text-xl font-bold text-slate-900">{mode === 'create' ? '+ New Project' : `Edit: ${project.title}`}</h2>
+            <p className="mt-1 text-sm text-slate-600">Client details, timeline, team, budget & documents</p>
           </div>
-          <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-slate-200 text-slate-600 transition hover:bg-slate-50" aria-label="Close" title="Close">
+          <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-100" aria-label="Close" title="Close">
             <X size={18} />
           </button>
         </div>
 
-        <form onSubmit={submit} className="flex-1 overflow-y-auto p-5">
-          {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+        <form onSubmit={submit} className="flex-1 overflow-y-auto px-6 py-5">
+          {error ? (
+            <div className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+              <AlertCircle size={18} className="mt-0.5 flex-shrink-0 text-red-600" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          ) : null}
+
           {capacityWarnings.length ? (
-            <div className="mb-4 space-y-2 rounded-theme border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-              {capacityWarnings.map((warning) => <p key={warning.userId}>{warning.message}</p>)}
+            <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium text-amber-900">
+                <AlertCircle size={16} /> Resource Allocation Warning
+              </p>
+              <ul className="space-y-1">
+                {capacityWarnings.map((warning) => (
+                  <li key={warning.userId} className="text-sm text-amber-800">• {warning.message}</li>
+                ))}
+              </ul>
             </div>
           ) : null}
 
@@ -257,9 +302,17 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
 
           <section>
             <h3 className="mb-3 text-sm font-semibold uppercase text-slate-500">Unified Storage & Client Document Upload</h3>
-            <label className="flex cursor-pointer flex-col items-center justify-center rounded-theme border border-dashed border-slate-300 bg-slate-50 px-4 py-8 text-center transition hover:bg-white">
-              <UploadCloud className="mb-2 text-slate-400" size={28} />
-              <span className="text-sm font-medium text-slate-700">Drop files here or choose documents</span>
+            <label 
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+              className={`flex cursor-pointer flex-col items-center justify-center rounded-theme border-2 border-dashed px-4 py-8 text-center transition ${
+                dragActive ? 'border-blue-500 bg-blue-50' : 'border-slate-300 bg-slate-50 hover:bg-white'
+              }`}
+            >
+              <UploadCloud className={`mb-2 ${dragActive ? 'text-blue-600' : 'text-slate-400'}`} size={28} />
+              <span className="text-sm font-medium text-slate-700">Drop files here or click to choose documents</span>
               <span className="mt-1 text-xs text-slate-500">Agreement, PRD, invoice, and other project attachments</span>
               <input type="file" multiple className="hidden" onChange={(e) => addFiles(e.target.files)} />
             </label>
@@ -267,12 +320,15 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
               <div className="mt-3 divide-y divide-slate-100 rounded-theme border border-slate-200">
                 {files.map((item, index) => (
                   <div key={`${item.file.name}-${index}`} className="flex flex-col gap-2 px-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="truncate text-sm font-medium text-slate-800">{item.file.name}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-slate-800">{item.file.name}</p>
+                      <p className="text-xs text-slate-500">{(item.file.size / 1024).toFixed(1)} KB</p>
+                    </div>
                     <div className="flex items-center gap-2">
-                      <select className="input w-56" value={item.category} onChange={(e) => updateFileCategory(index, e.target.value)}>
+                      <select className="input w-56 text-xs sm:text-sm" value={item.category} onChange={(e) => updateFileCategory(index, e.target.value)}>
                         {DOC_CATEGORIES.map((category) => <option key={category.value} value={category.value}>{category.label}</option>)}
                       </select>
-                      <button type="button" onClick={() => removeFile(index)} className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-slate-200 text-slate-500 hover:bg-slate-50" aria-label="Remove file" title="Remove file"><X size={16} /></button>
+                      <button type="button" onClick={() => removeFile(index)} className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-slate-200 text-slate-500 transition hover:bg-red-50 hover:text-red-600" aria-label="Remove file" title="Remove file"><X size={16} /></button>
                     </div>
                   </div>
                 ))}
@@ -282,7 +338,7 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
 
           <div className="sticky bottom-0 mt-6 flex items-center justify-end gap-2 border-t border-slate-200 bg-white py-4">
             <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-            <Button disabled={saving} type="submit" className="px-4 py-2">{saving ? 'Saving...' : 'Save Project'}</Button>
+            <Button disabled={saving} type="submit" className="px-4 py-2">{saving ? 'Saving...' : mode === 'create' ? 'Create Project' : 'Update Project'}</Button>
           </div>
         </form>
       </aside>
@@ -339,20 +395,59 @@ export default function ProjectsManagementPage() {
   }, [drawerState]);
 
   function openDocuments(project) {
-    const firstDocument = project.documents?.[0];
-    if (firstDocument?.url) {
-      window.open(`${api.defaults.baseURL.replace('/api', '')}${firstDocument.url}`, '_blank', 'noopener,noreferrer');
+    if (!project.documents?.length) {
+      window.alert('No uploaded documents for this project.');
       return;
     }
-    window.alert('No uploaded documents found for this project.');
+
+    const baseUrl = api.defaults.baseURL.replace('/api', '');
+    const urls = project.documents.map((doc) => `${baseUrl}${doc.url}`);
+
+    if (urls.length === 1) {
+      window.open(urls[0], '_blank', 'noopener,noreferrer');
+    } else {
+      // Open a simple view with all document links
+      const docWindow = window.open('', '_blank');
+      docWindow.document.write(`
+        <html>
+          <head>
+            <title>${project.title} - Documents</title>
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #f9fafb; }
+              h1 { color: #1f2937; margin-bottom: 20px; }
+              .doc-list { list-style: none; padding: 0; }
+              .doc-item { background: white; border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 12px; padding: 15px; }
+              .doc-item a { color: #2563eb; text-decoration: none; font-weight: 500; }
+              .doc-item a:hover { text-decoration: underline; }
+              .doc-category { font-size: 12px; color: #6b7280; margin-top: 8px; }
+            </style>
+          </head>
+          <body>
+            <h1>📄 Project Documents</h1>
+            <p style="color: #6b7280; margin-bottom: 20px;">${project.title}</p>
+            <ul class="doc-list">
+              ${project.documents.map((doc) => `
+                <li class="doc-item">
+                  <a href="${baseUrl}${doc.url}" target="_blank">${doc.originalName || doc.filename}</a>
+                  <div class="doc-category">${DOC_CATEGORIES.find((c) => c.value === doc.category)?.label || doc.category}</div>
+                </li>
+              `).join('')}
+            </ul>
+          </body>
+        </html>
+      `);
+    }
   }
 
   return (
     <div>
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-xl font-bold sm:text-2xl">Projects Management</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Projects Management</h1>
+          <p className="mt-1 text-sm text-slate-600">Track project delivery, client documents, team assignments & deadlines</p>
+        </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => loadProjects()} className="inline-flex items-center gap-2 px-3 py-2"><RefreshCw size={16} />Refresh</Button>
+          <Button onClick={() => loadProjects()} className="inline-flex items-center gap-2 px-3 py-2" variant="outline"><RefreshCw size={16} />Refresh</Button>
           <Button onClick={() => setDrawerState({ mode: 'create', project: null })} className="inline-flex items-center gap-2 px-3 py-2"><Plus size={16} />Add New</Button>
         </div>
       </div>
@@ -361,19 +456,19 @@ export default function ProjectsManagementPage() {
         <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_1fr_220px_1.4fr]">
           <label className="relative block">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
-            <input className="input pl-10" type="date" value={filters.dateFrom} onChange={(e) => updateFilter('dateFrom', e.target.value)} />
+            <input className="input pl-10 text-sm" type="date" value={filters.dateFrom} onChange={(e) => updateFilter('dateFrom', e.target.value)} placeholder="From date" title="Filter from date" />
           </label>
           <label className="relative block">
             <CalendarDays className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
-            <input className="input pl-10" type="date" value={filters.dateTo} onChange={(e) => updateFilter('dateTo', e.target.value)} />
+            <input className="input pl-10 text-sm" type="date" value={filters.dateTo} onChange={(e) => updateFilter('dateTo', e.target.value)} placeholder="To date" title="Filter to date" />
           </label>
-          <select className="input" value={filters.status} onChange={(e) => updateFilter('status', e.target.value)}>
+          <select className="input text-sm" value={filters.status} onChange={(e) => updateFilter('status', e.target.value)} title="Filter by status">
             <option value="">All Statuses</option>
             {PROJECT_STATUSES.map((status) => <option key={status} value={status}>{status}</option>)}
           </select>
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={17} />
-            <input className="input pl-10" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} placeholder="Search project, client, or email" />
+            <input className="input pl-10 text-sm" value={filters.search} onChange={(e) => updateFilter('search', e.target.value)} placeholder="Search by name, client, or email..." title="Search projects" />
           </label>
         </div>
       </div>
@@ -393,7 +488,7 @@ export default function ProjectsManagementPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-3 py-4" colSpan="4">Loading...</td></tr>
+                <tr><td className="px-3 py-4" colSpan="4"><div className="flex items-center justify-center gap-2"><div className="h-2 w-2 animate-pulse rounded-full bg-slate-400"></div>Loading...</div></td></tr>
               ) : projects.length ? projects.map((project) => (
                 <tr key={project._id} className="transition hover:bg-slate-50">
                   <td className="px-3 py-4">
@@ -403,7 +498,7 @@ export default function ProjectsManagementPage() {
                   </td>
                   <td className="px-3 py-4">
                     <p className="text-sm font-medium text-slate-800">{formatDate(project.startDate)} -> {formatDate(project.deadline)}</p>
-                    <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(project.projectStatus)}`}>{project.projectStatus}</span>
+                    <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadge(project.projectStatus)}`}>{getStatusIcon(project.projectStatus)}{project.projectStatus}</span>
                   </td>
                   <td className="px-3 py-4">
                     <p className="mb-2 font-semibold text-slate-900">{formatMoney(project.budget || project.price, project.currency)}</p>
@@ -417,7 +512,7 @@ export default function ProjectsManagementPage() {
                   </td>
                 </tr>
               )) : (
-                <tr><td className="px-3 py-6 text-slate-500" colSpan="4">No records found.</td></tr>
+                <tr><td className="px-3 py-6 text-center text-slate-500" colSpan="4">No projects yet. Start by creating your first one!</td></tr>
               )}
             </tbody>
           </table>

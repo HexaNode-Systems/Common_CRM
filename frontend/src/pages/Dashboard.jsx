@@ -13,6 +13,7 @@ export default function Dashboard({ title = 'Dashboard' }) {
     ['Users', report?.users || 0],
     ['Products', report?.products || 0],
     ['Services', report?.services || 0],
+    ['Leads', report?.leads || 0],
     ['Orders', report?.orders || 0],
     ['Paid Payments', report?.paidPayments || 0],
     ['Enquiries', report?.enquiries || 0],

@@ -8,6 +8,7 @@ const EMPTY_MODULES = [
   { module: 'dashboard', label: 'Dashboard', access: 'view' },
   { module: 'users', label: 'Users / Customers', access: 'view' },
   { module: 'catalog', label: 'Products / Services', access: 'view' },
+  { module: 'leads', label: 'Leads Management', access: 'view' },
   { module: 'orders', label: 'Orders / Leads', access: 'view' },
   { module: 'payments', label: 'Payments', access: 'view' },
   { module: 'invoices', label: 'Invoices', access: 'view' },

@@ -23,8 +23,9 @@ export const register = asyncHandler(async (req, res) => {
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const user = await User.findOne({ email }).select('+password');
-  if (!user || !(await user.comparePassword(password))) throw new ApiError(401, 'Invalid email or password');
-  if (!user.isActive) throw new ApiError(403, 'Account disabled');
+  if (!user) throw new ApiError(401, 'Invalid email or password');
+  if (!user.isActive) throw new ApiError(401, 'Your account has been deactivated. Please contact your administrator.');
+  if (!(await user.comparePassword(password))) throw new ApiError(401, 'Invalid email or password');
   res.json({ user: sanitizeUser(user), token: signToken(user) });
 });
 
