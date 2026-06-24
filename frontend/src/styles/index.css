@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary: #2563eb;
+  --color-secondary: #0f172a;
+  --color-accent: #f59e0b;
+  --font-family: Inter, system-ui, sans-serif;
+  --radius-theme: 8px;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+}
+
+@layer components {
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    border-radius: var(--radius-theme);
+    background: var(--color-primary);
+    color: white;
+    font-weight: 600;
+    transition: 150ms ease;
+  }
+
+  .btn:hover {
+    filter: brightness(0.95);
+  }
+
+  :root[data-button-style='outline'] .btn {
+    background: transparent;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+  }
+
+  :root[data-button-style='soft'] .btn {
+    background: color-mix(in srgb, var(--color-primary) 12%, white);
+    color: var(--color-primary);
+  }
+
+  .card {
+    border-radius: var(--radius-theme);
+    background: white;
+    padding: 1.25rem;
+    box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  }
+
+  :root[data-card-style='bordered'] .card {
+    border: 1px solid rgb(226 232 240);
+    box-shadow: none;
+  }
+
+  :root[data-card-style='elevated'] .card {
+    box-shadow: 0 16px 40px rgb(15 23 42 / 0.08);
+  }
+
+  .input {
+    width: 100%;
+    border-radius: var(--radius-theme);
+    border: 1px solid rgb(203 213 225);
+    background: white;
+    padding: 0.625rem 0.75rem;
+    color: rgb(15 23 42);
+    outline: none;
+  }
+
+  .input:focus {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 15%, transparent);
+  }
+}
+
