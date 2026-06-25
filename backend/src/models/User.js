@@ -10,7 +10,11 @@ const userSchema = new mongoose.Schema(
     role: { type: String, default: 'customer', lowercase: true, trim: true },
     permissions: [{ type: String }],
     permissionVersion: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true }
+    isActive: { type: Boolean, default: true },
+    joiningDate: Date,
+    employmentClassification: { type: String, enum: ['regular_employee', 'intern'], default: 'regular_employee' },
+    baseSalary: { type: Number, default: 0 },
+    monthlyLeaveQuota: { type: Number, default: 2 }
   },
   { timestamps: true }
 );

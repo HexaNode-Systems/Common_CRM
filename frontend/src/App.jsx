@@ -12,6 +12,7 @@ import ProjectsManagementPage from './pages/ProjectsManagementPage.jsx';
 import TaskManagementPage from './pages/TaskManagementPage.jsx';
 import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
+import LeadsManagementPage from './pages/LeadsManagementPage.jsx';
 
 export default function App() {
   return (
@@ -30,6 +31,7 @@ export default function App() {
         <Route path="users" element={<UsersManagementPage />} />
         <Route path="catalog" element={<ProjectsManagementPage />} />
         <Route path="orders" element={<ResourcePage title="Orders / Leads" endpoint="/orders" />} />
+        <Route path="leads" element={<LeadsManagementPage />} />
         <Route path="tasks" element={<TaskManagementPage />} />
         <Route path="payments" element={<TaskManagementPage />} />
         <Route path="vault" element={<VaultManagementPage />} />

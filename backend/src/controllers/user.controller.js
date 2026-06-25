@@ -64,6 +64,11 @@ async function mutateUser(user, body) {
     user.isActive = nextActive;
   }
 
+  if (body.joiningDate !== undefined) user.joiningDate = body.joiningDate ? new Date(body.joiningDate) : null;
+  if (body.employmentClassification !== undefined) user.employmentClassification = body.employmentClassification;
+  if (body.baseSalary !== undefined) user.baseSalary = Number(body.baseSalary || 0);
+  if (body.monthlyLeaveQuota !== undefined) user.monthlyLeaveQuota = Number(body.monthlyLeaveQuota || 2);
+
   if (typeof body.password === 'string' && body.password.trim()) {
     user.password = body.password.trim();
     invalidatesTokens = true;
@@ -114,7 +119,11 @@ export const createUser = asyncHandler(async (req, res) => {
     email,
     password,
     role: role.slug,
-    isActive
+    isActive,
+    joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : undefined,
+    employmentClassification: req.body.employmentClassification || 'regular_employee',
+    baseSalary: Number(req.body.baseSalary || 0),
+    monthlyLeaveQuota: Number(req.body.monthlyLeaveQuota || 2)
   });
 
   const roleMap = await buildRoleMap();

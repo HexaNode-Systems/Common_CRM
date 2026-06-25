@@ -41,9 +41,27 @@ function formatLeadDate(value) {
   return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(value));
 }
 
+function formatRoleName(role) {
+  if (!role) return '';
+  return role.split('_')
+             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+             .join(' ');
+}
+
 function formatNoteLabel(actorName, actorRole, createdAt) {
-  const date = formatLeadDate(createdAt).replace(',', ' at');
-  return `[Added by ${actorName} (${actorRole}) on ${date}]`;
+  const d = new Date(createdAt);
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = pad(d.getDate());
+  const month = pad(d.getMonth() + 1);
+  const year = d.getFullYear();
+  let hours = d.getHours();
+  const minutes = pad(d.getMinutes());
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const timeStr = `${pad(hours)}:${minutes} ${ampm}`;
+  const displayRole = formatRoleName(actorRole);
+  return `[Added by ${actorName} (${displayRole}) on ${day}/${month}/${year} at ${timeStr}]`;
 }
 
 function buildAssigneeFilter(req) {
@@ -207,12 +225,16 @@ function mapExternalLeadPayload(body = {}, source = 'manual_entry') {
   };
 }
 
-async function resolveLeadUpsert(payload, { source = 'manual_entry', createdBy = null, overwrite = true } = {}) {
+async function resolveLeadUpsert(payload, { source = 'manual_entry', createdBy = null, overwrite = true, user = null } = {}) {
   const leadPayload = typeof payload.phoneNormalized === 'string' ? payload : mapExternalLeadPayload(payload, source);
   if (!leadPayload.phoneNormalized) throw new ApiError(400, 'Phone number is required.');
 
   const existing = await Lead.findOne({ phoneNormalized: leadPayload.phoneNormalized });
   if (existing) {
+    if (user && user.role !== 'super_admin') {
+      throw new ApiError(400, 'Lead with this phone number already exists.');
+    }
+
     if (!overwrite) return { action: 'skipped', lead: existing };
 
     existing.companyName = leadPayload.companyName || existing.companyName;
@@ -353,7 +375,7 @@ export const importLeadsCsv = asyncHandler(async (req, res) => {
       continue;
     }
 
-    const result = await resolveLeadUpsert(row, { source: 'csv_import', createdBy: req.user?._id, overwrite: true });
+    const result = await resolveLeadUpsert(row, { source: 'csv_import', createdBy: req.user?._id, overwrite: true, user: req.user });
     if (result.action === 'skipped') {
       skipped.push({ phone: row.phone, companyName: row.companyName, reason: 'database' });
       continue;
@@ -430,7 +452,7 @@ export const routeLeadAssignee = asyncHandler(async (req, res) => {
 });
 
 export const deleteLead = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'super_admin') throw new ApiError(403, 'Access denied.');
+  if (req.user.role !== 'super_admin') throw new ApiError(403, 'Access Denied');
   const lead = await Lead.findByIdAndDelete(req.params.id);
   if (!lead) throw new ApiError(404, 'Lead not found');
   res.json({ message: 'Lead deleted successfully.' });

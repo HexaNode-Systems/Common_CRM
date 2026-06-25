@@ -26,7 +26,7 @@ const links = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/users', label: 'Users', icon: Users },
   { to: '/catalog', label: 'Projects Management', icon: Boxes },
-  { to: '/orders', label: 'Leads Management', icon: Receipt },
+  { to: '/leads', label: 'Leads Management', icon: Receipt },
   { to: '/tasks', label: 'Task Management', icon: WalletCards },
   { to: '/vault', label: 'Vault / Credentials', icon: FileText },
   { to: '/storage', label: 'Storage Management', icon: MessageSquare },

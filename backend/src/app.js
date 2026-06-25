@@ -20,6 +20,8 @@ import taskRoutes from './routes/task.routes.js';
 import vaultRoutes from './routes/vault.routes.js';
 import storageRoutes from './routes/storage.routes.js';
 import { notFound, errorHandler } from './middleware/error.middleware.js';
+import payrollRoutes from './routes/payroll.routes.js';
+import attendanceRoutes from './routes/attendance.routes.js';
 
 export const app = express();
 
@@ -38,6 +40,8 @@ app.use('/api/catalog', catalogRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/v1/leads', leadRoutes);
 app.use('/api/leads', leadRoutes);
+app.use('/api/v1/payroll', payrollRoutes);
+app.use('/api/v1/attendance', attendanceRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/invoices', invoiceRoutes);
 app.use('/api/enquiries', enquiryRoutes);

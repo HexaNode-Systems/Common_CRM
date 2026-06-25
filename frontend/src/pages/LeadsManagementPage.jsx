@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowRightLeft, CalendarClock, CheckCircle2, FileUp, Globe, LoaderCircle, PencilLine, Phone, RefreshCw, Search, ShieldAlert, SquarePen, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { AlertCircle, ArrowRightLeft, CalendarClock, CheckCircle2, FileUp, Globe, LoaderCircle, PencilLine, Phone, Plus, RefreshCw, Search, ShieldAlert, SquarePen, Trash2, Upload, UserRound, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
@@ -7,10 +7,10 @@ import Card from '../components/Card.jsx';
 
 const SOURCE_OPTIONS = [
   { value: '', label: 'All Sources' },
-  { value: 'website_form', label: 'Website Form' },
-  { value: 'justdial', label: 'Justdial' },
-  { value: 'csv_import', label: 'CSV Import' },
-  { value: 'manual_entry', label: 'Manual Entry' }
+  { value: 'website_form', label: '🌐 Website Form' },
+  { value: 'justdial', label: '☎️ Justdial' },
+  { value: 'csv_import', label: '📥 Bulk Import CSV' },
+  { value: 'manual_entry', label: '✍️ Manual Entry' }
 ];
 
 const STATUS_OPTIONS = [
@@ -27,16 +27,16 @@ const STATUS_CLASSES = {
   New: 'bg-blue-50 text-blue-700 border-blue-200',
   Contacted: 'bg-sky-50 text-sky-700 border-sky-200',
   'Proposal Sent': 'bg-amber-50 text-amber-700 border-amber-200',
-  Negotiation: 'bg-violet-50 text-violet-700 border-violet-200',
+  Negotiation: 'bg-purple-50 text-purple-700 border-purple-200',
   Won: 'bg-emerald-50 text-emerald-700 border-emerald-200',
   Lost: 'bg-slate-100 text-slate-700 border-slate-300'
 };
 
 const SOURCE_META = {
-  website_form: { label: 'Website Form', icon: Globe },
-  justdial: { label: 'Justdial', icon: Phone },
-  csv_import: { label: 'CSV Import', icon: FileUp },
-  manual_entry: { label: 'Manual Entry', icon: PencilLine }
+  website_form: { label: '🌐 Website Form', icon: Globe },
+  justdial: { label: '☎️ Justdial', icon: Phone },
+  csv_import: { label: '📥 Bulk Import CSV', icon: FileUp },
+  manual_entry: { label: '✍️ Manual Entry', icon: PencilLine }
 };
 
 const emptyLead = {
@@ -52,14 +52,10 @@ const emptyLead = {
 
 function formatDateTime(value) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(new Date(value));
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return '-';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 function formatNoteTime(value) {
@@ -305,12 +301,12 @@ function LeadDrawer({
                       {isSuperAdmin ? (
                         <select value={form.assigneeId} onChange={(e) => onAssigneeChange(e.target.value)} className="input">
                           <option value="">Unassigned</option>
-                          {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role})</option>)}
+                          {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}
                         </select>
                       ) : (
                         <div className="input flex items-center justify-between gap-3 bg-slate-50 text-slate-700">
                           <span>{lead?.assignee?.name || 'Unassigned'}</span>
-                          {lead?.assignee ? <span className="text-xs text-slate-500">{lead.assignee.role}</span> : <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">Unassigned</span>}
+                          {lead?.assignee ? <span className="text-xs text-slate-500">{lead.assignee.role ? lead.assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}</span> : <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">Unassigned</span>}
                         </div>
                       )}
                     </label>
@@ -382,7 +378,8 @@ export default function LeadsManagementPage() {
   const [importBusy, setImportBusy] = useState(false);
   const [duplicatePrompt, setDuplicatePrompt] = useState(null);
 
-  const canManageLeads = user?.role === 'super_admin';
+  const isSuperAdmin = user?.role === 'super_admin';
+  const canCreateLeads = isSuperAdmin || user?.permissions?.includes('leads:create');
 
   async function load() {
     setLoading(true);
@@ -391,7 +388,7 @@ export default function LeadsManagementPage() {
       const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
       const [leadRes, assigneeRes] = await Promise.all([
         api.get('/v1/leads', { params }),
-        canManageLeads ? api.get('/v1/leads/assignees') : Promise.resolve({ data: { items: [] } })
+        isSuperAdmin ? api.get('/v1/leads/assignees') : Promise.resolve({ data: { items: [] } })
       ]);
       setLeads(leadRes.data.items || []);
       setAssignees(assigneeRes.data.items || []);
@@ -491,20 +488,27 @@ export default function LeadsManagementPage() {
     }
   }
 
-  async function deleteLead() {
-    if (!selectedLead) return;
+  async function deleteLeadDirectly(leadId) {
+    if (!leadId) return;
     if (!window.confirm('Delete this lead permanently?')) return;
     setSaving(true);
     setError('');
     try {
-      await api.delete(`/v1/leads/${selectedLead._id}`);
-      setLeads((current) => current.filter((item) => item._id !== selectedLead._id));
-      closeDrawer();
+      await api.delete(`/v1/leads/${leadId}`);
+      setLeads((current) => current.filter((item) => item._id !== leadId));
+      if (selectedLead && selectedLead._id === leadId) {
+        closeDrawer();
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to delete lead.');
     } finally {
       setSaving(false);
     }
+  }
+
+  async function deleteLead() {
+    if (!selectedLead) return;
+    await deleteLeadDirectly(selectedLead._id);
   }
 
   async function uploadCsv(file, { setError: setModalError }) {
@@ -559,9 +563,9 @@ export default function LeadsManagementPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={load} className="inline-flex items-center gap-2 px-4 py-2"><RefreshCw size={16} />Refresh</Button>
-          {canManageLeads ? (
+          {canCreateLeads ? (
             <>
-              <Button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 px-4 py-2"><Upload size={16} />Bulk Import CSV</Button>
+              <Button onClick={() => setImportOpen(true)} className="inline-flex items-center gap-2 px-4 py-2"><Upload size={16} />📥 Bulk Import CSV</Button>
               <Button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2"><PlusIcon />Add New</Button>
             </>
           ) : null}
@@ -597,12 +601,12 @@ export default function LeadsManagementPage() {
               <input className="w-full border-0 bg-transparent p-0 outline-none focus:ring-0" placeholder="Name, phone, email, requirements" value={filters.search} onChange={(e) => setFilters((current) => ({ ...current, search: e.target.value }))} />
             </div>
           </label>
-          {canManageLeads ? (
+          {isSuperAdmin ? (
             <label className="block lg:col-span-2">
               <span className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Assignee (Admin Only)</span>
               <select className="input" value={filters.assignee} onChange={(e) => setFilters((current) => ({ ...current, assignee: e.target.value }))}>
                 <option value="">All Assignees</option>
-                {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role})</option>)}
+                {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}
               </select>
             </label>
           ) : null}
@@ -625,13 +629,25 @@ export default function LeadsManagementPage() {
               ) : leads.length ? leads.map((lead) => (
                 <tr key={lead._id} className="hover:bg-slate-50">
                   <td className="px-4 py-4 align-top">
-                    <p className="font-semibold text-slate-900">{lead.companyName}</p>
+                    <p className="font-bold text-slate-900">{lead.companyName}</p>
                     <LeadSourceBadge lead={lead} />
                   </td>
                   <td className="px-4 py-4 align-top">
-                    <p className="font-medium text-slate-900">{lead.phone}</p>
-                    <p className="mt-1 text-xs text-slate-500">{lead.whatsapp || lead.email || '-'}</p>
-                    {lead.email ? <p className="mt-1 text-xs text-slate-500">{lead.email}</p> : null}
+                    <div className="flex flex-col space-y-1">
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-900">
+                        <span>📞 {lead.phone}</span>
+                      </div>
+                      {lead.whatsapp && (
+                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                          <span>💬 WhatsApp: {lead.whatsapp}</span>
+                        </div>
+                      )}
+                      {lead.email && (
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <span>✉️ {lead.email}</span>
+                        </div>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-4 align-top">
                     {lead.assignee ? (
@@ -639,12 +655,12 @@ export default function LeadsManagementPage() {
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{String(lead.assignee.name || 'U').slice(0, 2).toUpperCase()}</div>
                         <div>
                           <p className="font-semibold text-slate-900">{lead.assignee.name}</p>
-                          <p className="text-xs text-slate-500">{lead.assignee.role}</p>
+                          <p className="text-xs text-slate-500">{lead.assignee.role ? lead.assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}</p>
                         </div>
                       </div>
                     ) : (
-                      <button type="button" onClick={() => openLead(lead)} className="animate-pulse rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500 transition hover:bg-slate-200">
-                        Unassigned - Click to Route
+                      <button type="button" onClick={() => openLead(lead)} className="animate-pulse rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-500 border border-slate-200 transition hover:bg-slate-200 animate-pulse">
+                        [Unassigned - Click to Route]
                       </button>
                     )}
                   </td>
@@ -656,8 +672,8 @@ export default function LeadsManagementPage() {
                       <button type="button" onClick={() => openLead(lead)} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline">
                         <SquarePen size={14} />View/Edit Details
                       </button>
-                      {canManageLeads ? (
-                        <button type="button" onClick={() => { setSelectedLead(lead); setDrawerMode('edit'); }} className="inline-flex items-center gap-1 text-slate-500 transition hover:text-rose-600" aria-label="Delete lead">
+                      {isSuperAdmin ? (
+                        <button type="button" onClick={() => deleteLeadDirectly(lead._id)} className="inline-flex items-center justify-center h-8 w-8 rounded-full text-red-600 transition hover:bg-red-50 hover:text-red-800" aria-label="Delete lead">
                           <Trash2 size={16} />
                         </button>
                       ) : null}

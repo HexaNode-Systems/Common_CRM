@@ -497,7 +497,7 @@ export default function ProjectsManagementPage() {
                     <p className="text-xs text-slate-400">{project.client?.email || ''}</p>
                   </td>
                   <td className="px-3 py-4">
-                    <p className="text-sm font-medium text-slate-800">{formatDate(project.startDate)} -> {formatDate(project.deadline)}</p>
+                    <p className="text-sm font-medium text-slate-800">{formatDate(project.startDate)} to {formatDate(project.deadline)}</p>
                     <span className={`mt-2 inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadge(project.projectStatus)}`}>{getStatusIcon(project.projectStatus)}{project.projectStatus}</span>
                   </td>
                   <td className="px-3 py-4">
