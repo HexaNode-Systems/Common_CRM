@@ -13,6 +13,7 @@ import TaskManagementPage from './pages/TaskManagementPage.jsx';
 import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
 import LeadsManagementPage from './pages/LeadsManagementPage.jsx';
+import WhatsAppSettings from './pages/WhatsAppSettings.jsx';
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="theme" element={<ThemeSettings />} />
         <Route path="settings" element={<GeneralSettings section="general" title="General Settings" />} />
         <Route path="roles" element={<RolePermissionsPage />} />
+        <Route path="whatsapp" element={<WhatsAppSettings />} />
       </Route>
     </Routes>
   );

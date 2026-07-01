@@ -2,6 +2,7 @@ import { User } from '../models/User.js';
 import { Role } from '../models/Role.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
@@ -45,6 +46,7 @@ async function mutateUser(user, body) {
   let invalidatesTokens = false;
 
   if (body.name !== undefined) user.name = String(body.name || '').trim();
+  if (body.phone !== undefined) user.phone = String(body.phone || '').trim();
 
   if (body.email !== undefined) {
     const email = normalizeEmail(body.email);
@@ -118,6 +120,7 @@ export const createUser = asyncHandler(async (req, res) => {
     name,
     email,
     password,
+    phone: req.body.phone ? String(req.body.phone).trim() : undefined,
     role: role.slug,
     isActive,
     joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : undefined,
@@ -125,6 +128,11 @@ export const createUser = asyncHandler(async (req, res) => {
     baseSalary: Number(req.body.baseSalary || 0),
     monthlyLeaveQuota: Number(req.body.monthlyLeaveQuota || 2)
   });
+
+  if (user.phone) {
+    const welcomeMessage = `Hello *${user.name}*,\n\nWelcome to *Common CRM*! Your account has been created successfully.\n\n*Username/Email:* ${user.email}\n*Role:* ${role.name}\n\nYou can now log in to the CRM.`;
+    void sendWhatsAppMessage(user.phone, welcomeMessage);
+  }
 
   const roleMap = await buildRoleMap();
   res.status(201).json(serializeUser(user, roleMap));

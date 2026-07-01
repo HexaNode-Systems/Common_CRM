@@ -6,6 +6,7 @@ import { TaskActivity } from '../models/TaskActivity.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
 
 const taskStatuses = ['Backlog', 'In Progress', 'In Review', 'Completed', 'On Hold'];
 const taskPriorities = ['High', 'Medium', 'Low'];
@@ -74,7 +75,7 @@ async function loadProject(projectId) {
 }
 
 async function loadActiveAssignee(assigneeId) {
-  const assignee = await User.findOne({ _id: assigneeId, isActive: true }).select('name email role isActive');
+  const assignee = await User.findOne({ _id: assigneeId, isActive: true }).select('name email role isActive phone');
   if (!assignee) throw new ApiError(400, 'Select an active assignee from the workspace users list.');
   return assignee;
 }
@@ -192,6 +193,13 @@ export const createTask = asyncHandler(async (req, res) => {
   });
 
   const populated = await populateTask(await Task.findById(task._id));
+
+  // Send WhatsApp notification
+  if (assignee && assignee.phone) {
+    const taskMessage = `Hello *${assignee.name}*,\n\nYou have been assigned a new task: *${task.title}*.\n\n*Project:* ${project.title}\n*Priority:* ${task.priority}\n*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}\n*Description:* ${task.description || 'No description provided.'}\n\nPlease check your task dashboard.`;
+    void sendWhatsAppMessage(assignee.phone, taskMessage);
+  }
+
   res.status(201).json(populated);
 });
 
@@ -227,6 +235,12 @@ export const updateTask = asyncHandler(async (req, res) => {
     const message = `${req.user?.name || 'Task Manager'} reassigned task to ${assigneeName} on ${new Date().toISOString()}`;
     changeMessages.push(message);
     await logTaskActivity({ taskId: task._id, actorId: req.user?._id, action: 'assignee', message, metadata: { from: previous.assignee, to: task.assignee } });
+
+    // Send WhatsApp notification for reassignment
+    if (assignee && assignee.phone) {
+      const taskMessage = `Hello *${assignee.name}*,\n\nYou have been assigned a task (reassigned): *${task.title}*.\n\n*Project:* ${project.title}\n*Priority:* ${task.priority}\n*Due Date:* ${new Date(task.dueDate).toLocaleDateString()}\n\nPlease check your task dashboard.`;
+      void sendWhatsAppMessage(assignee.phone, taskMessage);
+    }
   }
   if (String(previous.status) !== String(task.status)) {
     const message = `${req.user?.name || 'Task Manager'} changed status to ${task.status} on ${new Date().toISOString()}`;

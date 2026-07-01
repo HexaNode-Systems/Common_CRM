@@ -3,6 +3,7 @@ import { Lead } from '../models/Lead.js';
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
 
 const leadSources = {
   website_form: 'Website Form',
@@ -273,7 +274,7 @@ async function loadLeadForUser(id, user) {
 }
 
 async function getActiveAssignee(assigneeId) {
-  const assignee = await User.findOne({ _id: assigneeId, isActive: true }).select('name email role isActive');
+  const assignee = await User.findOne({ _id: assigneeId, isActive: true }).select('name email role isActive phone');
   if (!assignee) throw new ApiError(400, 'Choose an active employee assignee.');
   return assignee;
 }
@@ -318,14 +319,28 @@ export const listLeadAssignees = asyncHandler(async (req, res) => {
 export const createLead = asyncHandler(async (req, res) => {
   const payload = mapExternalLeadPayload(req.body, req.body.source || 'manual_entry');
   const assigneeId = req.body.assigneeId || req.body.assignee;
+  let assignee = null;
   if (assigneeId) {
-    const assignee = await getActiveAssignee(assigneeId);
+    assignee = await getActiveAssignee(assigneeId);
     payload.assignee = assignee._id;
   } else if (req.user.role !== 'super_admin') {
     payload.assignee = req.user._id;
   }
 
   const result = await ingestLeadRecord(payload, { source: payload.source, createdBy: req.user?._id, overwrite: true });
+
+  // Send WhatsApp notification if assignee exists and has a phone
+  if (assignee && assignee.phone) {
+    const leadMessage = `Hello *${assignee.name}*,\n\nYou have been assigned a new lead: *${payload.companyName || 'No Company'}*.\n\n*Contact Name:* ${payload.contactName || 'N/A'}\n*Phone:* ${payload.phone}\n*Requirements:* ${payload.requirements || 'N/A'}\n\nPlease check your Lead Management dashboard.`;
+    void sendWhatsAppMessage(assignee.phone, leadMessage);
+  } else if (!assigneeId && req.user.role !== 'super_admin') {
+    const selfUser = await User.findById(req.user._id).select('name phone');
+    if (selfUser && selfUser.phone) {
+      const leadMessage = `Hello *${selfUser.name}*,\n\nYou have been assigned a new lead: *${payload.companyName || 'No Company'}*.\n\n*Contact Name:* ${payload.contactName || 'N/A'}\n*Phone:* ${payload.phone}\n*Requirements:* ${payload.requirements || 'N/A'}\n\nPlease check your Lead Management dashboard.`;
+      void sendWhatsAppMessage(selfUser.phone, leadMessage);
+    }
+  }
+
   res.status(result.action === 'created' ? 201 : 200).json(result.lead);
 });
 
@@ -436,18 +451,26 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
 
 export const routeLeadAssignee = asyncHandler(async (req, res) => {
   if (req.user.role !== 'super_admin') throw new ApiError(403, 'Only supervisors can reroute leads.');
-  const lead = await Lead.findById(req.params.id).populate('assignee', 'name email role isActive').populate('createdBy', 'name email role isActive');
+  const lead = await Lead.findById(req.params.id).populate('assignee', 'name email role isActive phone').populate('createdBy', 'name email role isActive');
   if (!lead) throw new ApiError(404, 'Lead not found');
 
+  let assignee = null;
   if (!req.body.assigneeId) {
     lead.assignee = null;
   } else {
-    const assignee = await getActiveAssignee(req.body.assigneeId);
+    assignee = await getActiveAssignee(req.body.assigneeId);
     lead.assignee = assignee._id;
   }
 
   await lead.save();
   const refreshed = await populateLead(lead);
+
+  // Send WhatsApp notification
+  if (assignee && assignee.phone) {
+    const leadMessage = `Hello *${assignee.name}*,\n\nYou have been assigned a new lead: *${refreshed.companyName || 'No Company'}*.\n\n*Contact Name:* ${refreshed.contactName || 'N/A'}\n*Phone:* ${refreshed.phone}\n*Requirements:* ${refreshed.requirements || 'N/A'}\n\nPlease check your Lead Management dashboard.`;
+    void sendWhatsAppMessage(assignee.phone, leadMessage);
+  }
+
   res.json(serializeLead(refreshed));
 });
 

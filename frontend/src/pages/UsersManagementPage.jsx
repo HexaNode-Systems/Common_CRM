@@ -42,6 +42,7 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
   const [form, setForm] = useState({
     name: '',
     email: '',
+    phone: '',
     role: '',
     password: '',
     isActive: true,
@@ -61,6 +62,7 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
     setForm({
       name: user?.name || '',
       email: user?.email || '',
+      phone: user?.phone || '',
       role: user?.roleSlug || user?.role || '',
       password: '',
       isActive: typeof user?.isActive === 'boolean' ? user.isActive : true,
@@ -107,9 +109,14 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
               <input required value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className="input" placeholder="JITENDRA KUMAR" />
             </label>
 
-            <label className="block sm:col-span-2">
+            <label className="block">
               <span className="mb-1 block text-sm font-medium text-slate-700">User ID / Email</span>
               <input required type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} className="input" placeholder="user@example.com" />
+            </label>
+
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">WhatsApp / Phone Number</span>
+              <input type="text" value={form.phone} onChange={(event) => setForm((current) => ({ ...current, phone: event.target.value }))} className="input" placeholder="e.g. 919876543210" />
             </label>
 
             <label className="block">
