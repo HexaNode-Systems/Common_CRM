@@ -9,7 +9,8 @@ const settingSchema = new mongoose.Schema(
     content: { type: Object, default: defaultSettings.content },
     contact: { type: Object, default: defaultSettings.contact },
     social: { type: Object, default: defaultSettings.social },
-    seo: { type: Object, default: defaultSettings.seo }
+    seo: { type: Object, default: defaultSettings.seo },
+    integrations: { type: Object, default: defaultSettings.integrations }
   },
   { timestamps: true, minimize: false }
 );

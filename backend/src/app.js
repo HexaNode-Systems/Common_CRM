@@ -23,10 +23,12 @@ import storageRoutes from './routes/storage.routes.js';
 import { notFound, errorHandler } from './middleware/error.middleware.js';
 import payrollRoutes from './routes/payroll.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
+import supportRoutes from './routes/support.routes.js';
+import workReportRoutes from './routes/workReport.routes.js';
 
 export const app = express();
 
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || '*', credentials: true }));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
@@ -62,6 +64,10 @@ app.use('/api/v1/vault', vaultRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/v1/storage', storageRoutes);
 app.use('/api/storage', storageRoutes);
+app.use('/api/v1/support', supportRoutes);
+app.use('/api/support', supportRoutes);
+app.use('/api/v1/work-reports', workReportRoutes);
+app.use('/api/work-reports', workReportRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

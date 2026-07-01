@@ -1,21 +1,21 @@
 import {
-  BadgePercent,
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  Target,
+  GitFork,
+  ClipboardList,
+  Lock,
+  FolderOpen,
+  QrCode,
   BarChart3,
-  Boxes,
+  Link2,
+  Palette,
+  Headphones,
+  ShieldCheck,
   ChevronLeft,
   ChevronRight,
-  FileText,
-  Home,
-  LayoutDashboard,
   LogOut,
-  MessageSquare,
-  Palette,
-  QrCode,
-  Receipt,
-  Settings,
-  ShieldCheck,
-  Users,
-  WalletCards,
   X
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
@@ -25,23 +25,23 @@ import { useSettings } from '../../context/SettingsContext.jsx';
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/users', label: 'Users', icon: Users },
-  { to: '/catalog', label: 'Projects Management', icon: Boxes },
-  { to: '/leads', label: 'Leads Management', icon: Receipt },
-  { to: '/tasks', label: 'Task Management', icon: WalletCards },
-  { to: '/vault', label: 'Vault / Credentials', icon: FileText },
-  { to: '/storage', label: 'Storage Management', icon: MessageSquare },
+  { to: '/catalog', label: 'Projects Management', icon: FolderKanban },
+  { to: '/leads', label: 'Leads Management', icon: Target },
+  { to: '/leads/distribution', label: 'Lead Distribution', icon: GitFork, roles: ['super_admin'] },
+  { to: '/tasks', label: 'Task Management', icon: ClipboardList },
+  { to: '/vault', label: 'Vault / Credentials', icon: Lock },
+  { to: '/storage', label: 'Storage Management', icon: FolderOpen },
   { to: '/whatsapp', label: 'WhatsApp Settings', icon: QrCode },
-  // { to: '/coupons', label: 'Coupons / Offers', icon: BadgePercent },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/Integrations', label: 'Integrations', icon: Home },
+  { to: '/Integrations', label: 'Integrations', icon: Link2 },
   { to: '/theme', label: 'Theme Settings', icon: Palette },
-  { to: '/support', label: 'Support', icon: Settings },
+  { to: '/support', label: 'Support Desk', icon: Headphones },
   { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck }
 ];
 
 export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle }) {
   const { settings } = useSettings();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   const renderSidebar = (isMobile = false) => {
     const iconOnly = collapsed && !isMobile;
@@ -86,7 +86,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle
         </div>
 
         <nav className="h-[calc(100vh-8rem)] space-y-1 overflow-y-auto px-3 py-4 pb-24">
-          {links.map((link) => {
+          {links.filter(link => !link.roles || link.roles.includes(user?.role)).map((link) => {
             const Icon = link.icon;
             return (
               <NavLink

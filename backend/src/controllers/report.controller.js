@@ -7,7 +7,19 @@ import { Enquiry } from '../models/Enquiry.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
 export const dashboardReport = asyncHandler(async (req, res) => {
-  const [users, products, services, orders, leads, payments, enquiries, revenue] = await Promise.all([
+  const [
+    users,
+    products,
+    services,
+    orders,
+    leads,
+    payments,
+    enquiries,
+    revenue,
+    leadSources,
+    revenueTrend,
+    leadsTrend
+  ] = await Promise.all([
     User.countDocuments(),
     CatalogItem.countDocuments({ type: 'product' }),
     CatalogItem.countDocuments({ type: 'service' }),
@@ -15,7 +27,17 @@ export const dashboardReport = asyncHandler(async (req, res) => {
     Lead.countDocuments(),
     Payment.countDocuments({ status: 'paid' }),
     Enquiry.countDocuments(),
-    Payment.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$amount' } } }])
+    Payment.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Lead.aggregate([{ $group: { _id: '$source', count: { $sum: 1 } } }]),
+    Payment.aggregate([
+      { $match: { status: 'paid' } },
+      { $group: { _id: { month: { $month: '$createdAt' } }, total: { $sum: '$amount' } } },
+      { $sort: { '_id.month': 1 } }
+    ]),
+    Lead.aggregate([
+      { $group: { _id: { month: { $month: '$createdAt' } }, total: { $sum: 1 } } },
+      { $sort: { '_id.month': 1 } }
+    ])
   ]);
 
   res.json({
@@ -26,7 +48,10 @@ export const dashboardReport = asyncHandler(async (req, res) => {
     leads,
     paidPayments: payments,
     enquiries,
-    revenue: revenue[0]?.total || 0
+    revenue: revenue[0]?.total || 0,
+    leadSources,
+    revenueTrend,
+    leadsTrend
   });
 });
 

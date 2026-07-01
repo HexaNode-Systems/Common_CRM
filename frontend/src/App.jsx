@@ -14,6 +14,10 @@ import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
 import LeadsManagementPage from './pages/LeadsManagementPage.jsx';
 import WhatsAppSettings from './pages/WhatsAppSettings.jsx';
+import SupportTicketsPage from './pages/SupportTicketsPage.jsx';
+import LeadDistributionPage from './pages/LeadDistributionPage.jsx';
+import IntegrationsPage from './pages/IntegrationsPage.jsx';
+import WorkReportsPage from './pages/WorkReportsPage.jsx';
 
 export default function App() {
   return (
@@ -33,6 +37,7 @@ export default function App() {
         <Route path="catalog" element={<ProjectsManagementPage />} />
         <Route path="orders" element={<ResourcePage title="Orders / Leads" endpoint="/orders" />} />
         <Route path="leads" element={<LeadsManagementPage />} />
+        <Route path="leads/distribution" element={<LeadDistributionPage />} />
         <Route path="tasks" element={<TaskManagementPage />} />
         <Route path="payments" element={<TaskManagementPage />} />
         <Route path="vault" element={<VaultManagementPage />} />
@@ -41,10 +46,13 @@ export default function App() {
         <Route path="enquiries" element={<ResourcePage title="Contact Enquiries" endpoint="/enquiries" />} />
         <Route path="banners" element={<ResourcePage title="Banner / Slider Management" endpoint="/banners" />} />
         <Route path="coupons" element={<ResourcePage title="Coupon / Offer Management" endpoint="/coupons" />} />
-        <Route path="reports" element={<Dashboard title="Reports" />} />
+        <Route path="reports" element={<WorkReportsPage />} />
+        <Route path="Integrations" element={<IntegrationsPage />} />
+        <Route path="integrations" element={<IntegrationsPage />} />
         <Route path="content" element={<GeneralSettings section="content" title="Website Content Management" />} />
         <Route path="theme" element={<ThemeSettings />} />
         <Route path="settings" element={<GeneralSettings section="general" title="General Settings" />} />
+        <Route path="support" element={<SupportTicketsPage />} />
         <Route path="roles" element={<RolePermissionsPage />} />
         <Route path="whatsapp" element={<WhatsAppSettings />} />
       </Route>

@@ -22,7 +22,7 @@ const leadSchema = new mongoose.Schema(
     requirements: { type: String, trim: true },
     source: {
       type: String,
-      enum: ['website_form', 'justdial', 'csv_import', 'manual_entry'],
+      enum: ['website_form', 'justdial', 'indiamart', 'zoho', 'csv_import', 'manual_entry'],
       default: 'manual_entry'
     },
     status: {

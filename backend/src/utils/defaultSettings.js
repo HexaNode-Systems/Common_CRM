@@ -34,6 +34,12 @@ export const defaultSettings = {
     title: 'Common CRM',
     description: 'Reusable CRM and admin panel boilerplate.',
     keywords: 'crm, admin panel, react, node'
+  },
+  integrations: {
+    justdial: { isActive: false, pollUrl: '', apiToken: '', pollIntervalMs: 300000 },
+    indiamart: { isActive: false, apiKey: '' },
+    zoho: { isActive: false, clientClientId: '', clientSecret: '', redirectUri: '' },
+    website: { isActive: true, webhookSecret: 'secret_key' }
   }
 };
 

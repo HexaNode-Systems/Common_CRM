@@ -11,7 +11,11 @@ import {
   listLeads,
   receiveLeadWebhook,
   routeLeadAssignee,
-  updateLeadStatus
+  updateLeadStatus,
+  listDistributionRules,
+  createDistributionRule,
+  updateDistributionRule,
+  deleteDistributionRule
 } from '../controllers/lead.controller.js';
 
 const router = Router();
@@ -20,6 +24,13 @@ router.post('/webhook/:sourceProvider', receiveLeadWebhook);
 
 router.use(protect);
 router.get('/assignees', authorize('leads:read'), listLeadAssignees);
+
+// Lead distribution rules CRUD
+router.get('/distribution-rules', listDistributionRules);
+router.post('/distribution-rules', createDistributionRule);
+router.put('/distribution-rules/:id', updateDistributionRule);
+router.delete('/distribution-rules/:id', deleteDistributionRule);
+
 router.get('/', authorize('leads:read'), listLeads);
 router.post('/', authorize('leads:create'), createLead);
 router.post('/import', authorize('leads:create'), upload.single('file'), importLeadsCsv);

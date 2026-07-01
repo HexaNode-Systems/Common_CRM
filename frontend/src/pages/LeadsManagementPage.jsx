@@ -9,6 +9,8 @@ const SOURCE_OPTIONS = [
   { value: '', label: 'All Sources' },
   { value: 'website_form', label: '🌐 Website Form' },
   { value: 'justdial', label: '☎️ Justdial' },
+  { value: 'indiamart', label: '🛒 IndiaMart' },
+  { value: 'zoho', label: '💼 Zoho CRM' },
   { value: 'csv_import', label: '📥 Bulk Import CSV' },
   { value: 'manual_entry', label: '✍️ Manual Entry' }
 ];
@@ -35,6 +37,8 @@ const STATUS_CLASSES = {
 const SOURCE_META = {
   website_form: { label: '🌐 Website Form', icon: Globe },
   justdial: { label: '☎️ Justdial', icon: Phone },
+  indiamart: { label: '🛒 IndiaMart', icon: Globe },
+  zoho: { label: '💼 Zoho CRM', icon: UserRound },
   csv_import: { label: '📥 Bulk Import CSV', icon: FileUp },
   manual_entry: { label: '✍️ Manual Entry', icon: PencilLine }
 };

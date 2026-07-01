@@ -22,7 +22,8 @@ export const updateSettings = asyncHandler(async (req, res) => {
     content: { ...existing.content, ...req.body.content },
     contact: { ...existing.contact, ...req.body.contact },
     social: { ...existing.social, ...req.body.social },
-    seo: { ...existing.seo, ...req.body.seo }
+    seo: { ...existing.seo, ...req.body.seo },
+    integrations: { ...existing.integrations, ...req.body.integrations }
   };
 
   const settings = await Setting.findOneAndUpdate({ key: 'global' }, payload, { new: true, runValidators: true });

@@ -1,51 +1,277 @@
 import { useEffect, useState } from 'react';
+import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import Input from '../components/Input.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { Upload, Image as ImageIcon, CheckCircle } from 'lucide-react';
 
 export default function ThemeSettings() {
   const { settings, updateSettings } = useSettings();
   const [theme, setTheme] = useState({});
   const [brand, setBrand] = useState({});
+  const [seo, setSeo] = useState({});
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     setTheme(settings?.theme || {});
     setBrand(settings?.brand || {});
+    setSeo(settings?.seo || {});
   }, [settings]);
+
+  const handleFileUpload = async (event, field) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (field === 'logo') setUploadingLogo(true);
+    if (field === 'favicon') setUploadingFavicon(true);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const res = await api.post('/uploads/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setBrand(prev => ({ ...prev, [field]: res.data.url }));
+    } catch (err) {
+      console.error('File upload failed', err);
+      alert('Upload failed: ' + (err.response?.data?.message || err.message));
+    } finally {
+      if (field === 'logo') setUploadingLogo(false);
+      if (field === 'favicon') setUploadingFavicon(false);
+    }
+  };
 
   async function submit(event) {
     event.preventDefault();
-    await updateSettings({ brand, theme });
+    try {
+      setMessage('');
+      await updateSettings({ brand, theme, seo });
+      setMessage('✅ Theme settings saved successfully!');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      console.error(err);
+      setMessage('❌ Failed to save theme settings.');
+    }
   }
 
   return (
-    <form onSubmit={submit}>
-      <div className="mb-5 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Theme Settings</h1>
-        <Button type="submit" className="px-4 py-2">Save Theme</Button>
+    <form onSubmit={submit} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Theme & Branding</h1>
+          <p className="text-sm text-slate-500">Customize the colors, typography, logos, and general layout of the CRM.</p>
+        </div>
+        <Button type="submit" className="bg-primary text-white flex items-center gap-2">
+          <CheckCircle size={16} />
+          Save Theme
+        </Button>
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card title="Brand">
-          <div className="space-y-4">
-            <Input label="Brand Name" value={brand.name || ''} onChange={(e) => setBrand({ ...brand, name: e.target.value })} />
-            <Input label="Logo URL" value={brand.logo || ''} onChange={(e) => setBrand({ ...brand, logo: e.target.value })} />
-            <Input label="Favicon URL" value={brand.favicon || ''} onChange={(e) => setBrand({ ...brand, favicon: e.target.value })} />
+
+      {message && (
+        <div className="rounded-xl bg-slate-900 text-white p-3 text-sm font-semibold flex items-center justify-between shadow-md">
+          <span>{message}</span>
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Brand & Assets Card */}
+        <Card title="Brand & Identity">
+          <div className="space-y-6">
+            <Input
+              label="Brand Name"
+              placeholder="e.g. My Business CRM"
+              value={brand.name || ''}
+              onChange={(e) => setBrand({ ...brand, name: e.target.value })}
+            />
+
+            <Input
+              label="Browser Tab Title"
+              placeholder="e.g. My Business Hub | CRM"
+              value={seo.title || ''}
+              onChange={(e) => setSeo({ ...seo, title: e.target.value })}
+            />
+
+            {/* Logo Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Company Logo</label>
+              <div className="flex items-center gap-5">
+                <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden">
+                  {brand.logo ? (
+                    <img src={brand.logo} alt="Logo Preview" className="h-full w-full object-contain p-1" />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition">
+                      <Upload size={14} />
+                      {uploadingLogo ? 'Uploading...' : 'Upload Logo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'logo')}
+                        className="hidden"
+                        disabled={uploadingLogo}
+                      />
+                    </label>
+                    {brand.logo && (
+                      <button
+                        type="button"
+                        onClick={() => setBrand({ ...brand, logo: '' })}
+                        className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Or enter logo URL manually"
+                    value={brand.logo || ''}
+                    onChange={(e) => setBrand({ ...brand, logo: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Favicon Section */}
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Favicon Icon</label>
+              <div className="flex items-center gap-5">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden">
+                  {brand.favicon ? (
+                    <img src={brand.favicon} alt="Favicon Preview" className="h-8 w-8 object-contain" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer inline-flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition">
+                      <Upload size={14} />
+                      {uploadingFavicon ? 'Uploading...' : 'Upload Favicon'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'favicon')}
+                        className="hidden"
+                        disabled={uploadingFavicon}
+                      />
+                    </label>
+                    {brand.favicon && (
+                      <button
+                        type="button"
+                        onClick={() => setBrand({ ...brand, favicon: '' })}
+                        className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Or enter favicon URL manually"
+                    value={brand.favicon || ''}
+                    onChange={(e) => setBrand({ ...brand, favicon: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
           </div>
         </Card>
-        <Card title="Design Tokens">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Input label="Primary Color" type="color" value={theme.primaryColor || '#2563eb'} onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })} />
-            <Input label="Secondary Color" type="color" value={theme.secondaryColor || '#0f172a'} onChange={(e) => setTheme({ ...theme, secondaryColor: e.target.value })} />
-            <Input label="Accent Color" type="color" value={theme.accentColor || '#f59e0b'} onChange={(e) => setTheme({ ...theme, accentColor: e.target.value })} />
-            <Input label="Border Radius" value={theme.borderRadius || '8px'} onChange={(e) => setTheme({ ...theme, borderRadius: e.target.value })} />
-            <Input label="Font Family" value={theme.fontFamily || ''} onChange={(e) => setTheme({ ...theme, fontFamily: e.target.value })} />
-            <Input label="Button Style" value={theme.buttonStyle || 'solid'} onChange={(e) => setTheme({ ...theme, buttonStyle: e.target.value })} />
-            <Input label="Card Style" value={theme.cardStyle || 'bordered'} onChange={(e) => setTheme({ ...theme, cardStyle: e.target.value })} />
+
+        {/* Color Tokens Card */}
+        <Card title="Design Tokens & Theme Colors">
+          <div className="grid gap-5 sm:grid-cols-2">
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+              <input
+                type="color"
+                value={theme.primaryColor || '#2563eb'}
+                onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
+                className="h-10 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200 focus:outline-none"
+              />
+              <div className="flex-1 min-w-0">
+                <span className="block text-xs font-semibold text-slate-500 uppercase">Primary Color</span>
+                <span className="font-mono text-xs text-slate-600 uppercase">{theme.primaryColor || '#2563eb'}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+              <input
+                type="color"
+                value={theme.secondaryColor || '#0f172a'}
+                onChange={(e) => setTheme({ ...theme, secondaryColor: e.target.value })}
+                className="h-10 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200 focus:outline-none"
+              />
+              <div className="flex-1 min-w-0">
+                <span className="block text-xs font-semibold text-slate-500 uppercase">Secondary Color</span>
+                <span className="font-mono text-xs text-slate-600 uppercase">{theme.secondaryColor || '#0f172a'}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50/50 p-3">
+              <input
+                type="color"
+                value={theme.accentColor || '#f59e0b'}
+                onChange={(e) => setTheme({ ...theme, accentColor: e.target.value })}
+                className="h-10 w-10 shrink-0 cursor-pointer rounded-lg border border-slate-200 focus:outline-none"
+              />
+              <div className="flex-1 min-w-0">
+                <span className="block text-xs font-semibold text-slate-500 uppercase">Accent Color</span>
+                <span className="font-mono text-xs text-slate-600 uppercase">{theme.accentColor || '#f59e0b'}</span>
+              </div>
+            </div>
+
+            <Input
+              label="Border Radius"
+              placeholder="e.g. 8px, 12px, 0px"
+              value={theme.borderRadius || '8px'}
+              onChange={(e) => setTheme({ ...theme, borderRadius: e.target.value })}
+            />
+
+            <Input
+              label="Font Family"
+              placeholder="e.g. Inter, sans-serif"
+              value={theme.fontFamily || 'Inter, system-ui, sans-serif'}
+              onChange={(e) => setTheme({ ...theme, fontFamily: e.target.value })}
+            />
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Button Style</label>
+              <select
+                value={theme.buttonStyle || 'solid'}
+                onChange={(e) => setTheme({ ...theme, buttonStyle: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-primary focus:outline-none bg-white"
+              >
+                <option value="solid">Solid Filled</option>
+                <option value="outline">Outline Bordered</option>
+                <option value="soft">Soft Tinted</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700">Card Style</label>
+              <select
+                value={theme.cardStyle || 'bordered'}
+                onChange={(e) => setTheme({ ...theme, cardStyle: e.target.value })}
+                className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-primary focus:outline-none bg-white"
+              >
+                <option value="bordered">Bordered Outline</option>
+                <option value="elevated">Shadow Elevated</option>
+              </select>
+            </div>
           </div>
         </Card>
       </div>
     </form>
   );
 }
-

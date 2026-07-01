@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { Lead } from '../models/Lead.js';
 import { User } from '../models/User.js';
+import { LeadDistributionRule } from '../models/LeadDistributionRule.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
@@ -8,6 +9,8 @@ import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
 const leadSources = {
   website_form: 'Website Form',
   justdial: 'Justdial',
+  indiamart: 'IndiaMart',
+  zoho: 'Zoho CRM',
   csv_import: 'CSV Import',
   manual_entry: 'Manual Entry'
 };
@@ -27,6 +30,8 @@ function normalizeSource(value) {
   if (leadSources[normalized]) return normalized;
   if (normalized === 'website') return 'website_form';
   if (normalized === 'just_dial') return 'justdial';
+  if (normalized === 'india_mart') return 'indiamart';
+  if (normalized === 'zoho_crm') return 'zoho';
   if (normalized === 'csv') return 'csv_import';
   if (normalized === 'manual') return 'manual_entry';
   return 'manual_entry';
@@ -200,12 +205,39 @@ function mapCsvLead(row) {
 
 function mapExternalLeadPayload(body = {}, source = 'manual_entry') {
   const flattened = typeof body === 'string' ? { message: body } : body;
-  const companyName = normalizeString(flattened.companyName || flattened.company || flattened.name || flattened.lead_name || flattened.caller_name || flattened.customer_name);
-  const contactName = normalizeString(flattened.contactName || flattened.contact || flattened.name || flattened.caller_name || flattened.customer_name || companyName);
-  const phone = normalizeString(flattened.phone || flattened.mobile || flattened.phoneNumber || flattened.phone_number);
-  const whatsapp = normalizeString(flattened.whatsapp || flattened.whatsappNumber || flattened.whatsapp_number);
-  const email = normalizeString(flattened.email || flattened.emailAddress || flattened.email_address);
-  const requirements = normalizeString(flattened.requirements || flattened.query || flattened.message || flattened.notes || flattened.description);
+
+  // IndiaMart specific keys
+  const imName = flattened.SENDER_NAME || flattened.sender_name || flattened.SENDERNAME;
+  const imCompany = flattened.SENDER_COMPANY || flattened.sender_company || flattened.SENDERCOMPANY;
+  const imPhone = flattened.SENDER_MOBILE || flattened.sender_mobile || flattened.SENDERMOBILE || flattened.MOBILE || flattened.mobile;
+  const imEmail = flattened.SENDER_EMAIL || flattened.sender_email || flattened.SENDEREMAIL;
+  const imReq = flattened.QUERY_MESSAGE || flattened.query_message || flattened.QUERYMESSAGE || flattened.QUERY || flattened.query;
+
+  // Zoho specific keys
+  const zohoCompany = flattened.Company || flattened.company;
+  const zohoFirstName = flattened.First_Name || flattened.first_name || '';
+  const zohoLastName = flattened.Last_Name || flattened.last_name || '';
+  const zohoName = (zohoFirstName + ' ' + zohoLastName).trim() || flattened.Full_Name || flattened.full_name;
+  const zohoPhone = flattened.Phone || flattened.Mobile || flattened.phone || flattened.mobile;
+  const zohoEmail = flattened.Email || flattened.email;
+  const zohoReq = flattened.Description || flattened.description || flattened.Subject || flattened.subject;
+
+  const companyName = normalizeString(
+    imCompany || zohoCompany || flattened.companyName || flattened.company || flattened.name || flattened.lead_name || flattened.caller_name || flattened.customer_name
+  );
+  const contactName = normalizeString(
+    imName || zohoName || flattened.contactName || flattened.contact || flattened.name || flattened.caller_name || flattened.customer_name || companyName
+  );
+  const phone = normalizeString(
+    imPhone || zohoPhone || flattened.phone || flattened.mobile || flattened.phoneNumber || flattened.phone_number
+  );
+  const whatsapp = normalizeString(flattened.whatsapp || flattened.whatsappNumber || flattened.whatsapp_number || phone);
+  const email = normalizeString(
+    imEmail || zohoEmail || flattened.email || flattened.emailAddress || flattened.email_address
+  );
+  const requirements = normalizeString(
+    imReq || zohoReq || flattened.requirements || flattened.query || flattened.message || flattened.notes || flattened.description
+  );
 
   if (!companyName && !contactName && !phone) {
     throw new ApiError(400, 'Lead payload is missing core contact data.');
@@ -279,9 +311,77 @@ async function getActiveAssignee(assigneeId) {
   return assignee;
 }
 
+export async function assignLeadViaRules(lead) {
+  try {
+    let rule = await LeadDistributionRule.findOne({ triggerSource: lead.source, isActive: true })
+      .populate('salespersons', 'name email role isActive phone')
+      .populate('singleAssignee', 'name email role isActive phone');
+
+    if (!rule) {
+      rule = await LeadDistributionRule.findOne({ triggerSource: 'all', isActive: true })
+        .populate('salespersons', 'name email role isActive phone')
+        .populate('singleAssignee', 'name email role isActive phone');
+    }
+
+    if (!rule) return lead;
+
+    let assigneeId = null;
+    let assigneeObj = null;
+
+    if (rule.distributionType === 'single_assignee') {
+      if (rule.singleAssignee && rule.singleAssignee.isActive) {
+        assigneeId = rule.singleAssignee._id;
+        assigneeObj = rule.singleAssignee;
+      }
+    } else if (rule.distributionType === 'round_robin' && rule.salespersons && rule.salespersons.length > 0) {
+      const totalSales = rule.salespersons.length;
+      let selectedSalesperson = null;
+
+      for (let i = 0; i < totalSales; i++) {
+        const checkIndex = (rule.currentIndex + i) % totalSales;
+        const candidate = rule.salespersons[checkIndex];
+        if (candidate && candidate.isActive) {
+          selectedSalesperson = candidate;
+          rule.currentIndex = (checkIndex + 1) % totalSales;
+          await rule.save();
+          break;
+        }
+      }
+
+      if (selectedSalesperson) {
+        assigneeId = selectedSalesperson._id;
+        assigneeObj = selectedSalesperson;
+      }
+    }
+
+    if (assigneeId) {
+      lead.assignee = assigneeId;
+      await lead.save();
+
+      if (assigneeObj && assigneeObj.phone) {
+        const leadMessage = `Hello *${assigneeObj.name}*,\n\nYou have been assigned a new lead automatically: *${lead.companyName || 'No Company'}*.\n\n*Source:* ${leadSources[lead.source] || lead.source}\n*Contact Name:* ${lead.contactName || 'N/A'}\n*Phone:* ${lead.phone}\n*Requirements:* ${lead.requirements || 'N/A'}\n\nPlease check your Lead Management dashboard.`;
+        void sendWhatsAppMessage(assigneeObj.phone, leadMessage);
+      }
+    }
+
+    return lead;
+  } catch (error) {
+    console.error('Failed to auto-assign lead:', error);
+    return lead;
+  }
+}
+
 export async function ingestLeadRecord(payload, options = {}) {
   const result = await resolveLeadUpsert(payload, options);
   if (result.action === 'skipped') return result;
+
+  if (result.action === 'created' && !result.lead.assignee) {
+    const assigned = await assignLeadViaRules(result.lead);
+    if (assigned) {
+      result.lead = assigned;
+    }
+  }
+
   const populated = await populateLead(await Lead.findById(result.lead._id));
   return { ...result, lead: serializeLead(populated) };
 }
@@ -489,3 +589,112 @@ export async function readLeadCsv(filePath) {
   const content = await fs.readFile(filePath, 'utf8');
   return parseCsv(content);
 }
+
+// Lead distribution rules CRUD
+export const listDistributionRules = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    throw new ApiError(403, 'Only supervisors can manage lead distribution rules.');
+  }
+
+  const rules = await LeadDistributionRule.find()
+    .populate('salespersons', 'name email role isActive')
+    .populate('singleAssignee', 'name email role isActive')
+    .sort({ createdAt: -1 });
+
+  res.json({ items: rules });
+});
+
+export const createDistributionRule = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    throw new ApiError(403, 'Only supervisors can manage lead distribution rules.');
+  }
+
+  const { name, isActive, triggerSource, distributionType, salespersons, singleAssignee } = req.body;
+
+  if (!name) throw new ApiError(400, 'Rule name is required.');
+
+  if (isActive !== false) {
+    const existingActive = await LeadDistributionRule.findOne({ triggerSource, isActive: true });
+    if (existingActive) {
+      throw new ApiError(400, `An active distribution rule for source "${triggerSource}" already exists.`);
+    }
+  }
+
+  const rule = await LeadDistributionRule.create({
+    name,
+    isActive: isActive !== false,
+    triggerSource: triggerSource || 'all',
+    distributionType: distributionType || 'round_robin',
+    salespersons: salespersons || [],
+    singleAssignee: singleAssignee || null
+  });
+
+  const populated = await LeadDistributionRule.findById(rule._id)
+    .populate('salespersons', 'name email role isActive')
+    .populate('singleAssignee', 'name email role isActive');
+
+  res.status(201).json(populated);
+});
+
+export const updateDistributionRule = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    throw new ApiError(403, 'Only supervisors can manage lead distribution rules.');
+  }
+
+  const rule = await LeadDistributionRule.findById(req.params.id);
+  if (!rule) throw new ApiError(404, 'Rule not found.');
+
+  const { name, isActive, triggerSource, distributionType, salespersons, singleAssignee } = req.body;
+
+  if (name !== undefined) rule.name = name;
+  if (isActive !== undefined) {
+    rule.isActive = isActive;
+    if (isActive) {
+      const sourceToCheck = triggerSource !== undefined ? triggerSource : rule.triggerSource;
+      const existingActive = await LeadDistributionRule.findOne({
+        _id: { $ne: rule._id },
+        triggerSource: sourceToCheck,
+        isActive: true
+      });
+      if (existingActive) {
+        throw new ApiError(400, `An active distribution rule for source "${sourceToCheck}" already exists.`);
+      }
+    }
+  }
+  if (triggerSource !== undefined) {
+    rule.triggerSource = triggerSource;
+    const activeToCheck = isActive !== undefined ? isActive : rule.isActive;
+    if (activeToCheck) {
+      const existingActive = await LeadDistributionRule.findOne({
+        _id: { $ne: rule._id },
+        triggerSource,
+        isActive: true
+      });
+      if (existingActive) {
+        throw new ApiError(400, `An active distribution rule for source "${triggerSource}" already exists.`);
+      }
+    }
+  }
+  if (distributionType !== undefined) rule.distributionType = distributionType;
+  if (salespersons !== undefined) rule.salespersons = salespersons;
+  if (singleAssignee !== undefined) rule.singleAssignee = singleAssignee || null;
+
+  await rule.save();
+
+  const populated = await LeadDistributionRule.findById(rule._id)
+    .populate('salespersons', 'name email role isActive')
+    .populate('singleAssignee', 'name email role isActive');
+
+  res.json(populated);
+});
+
+export const deleteDistributionRule = asyncHandler(async (req, res) => {
+  if (req.user.role !== 'super_admin') {
+    throw new ApiError(403, 'Only supervisors can manage lead distribution rules.');
+  }
+
+  const rule = await LeadDistributionRule.findByIdAndDelete(req.params.id);
+  if (!rule) throw new ApiError(404, 'Rule not found.');
+
+  res.json({ message: 'Lead distribution rule deleted successfully.' });
+});
