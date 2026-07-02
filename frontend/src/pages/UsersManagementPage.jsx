@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Eye, EyeOff, Plus, RefreshCw, PencilLine, X, Calendar, DollarSign, Check, Lock, Unlock, FileSpreadsheet } from 'lucide-react';
+import { Eye, EyeOff, Plus, RefreshCw, PencilLine, X, Calendar, DollarSign, Check, Lock, Unlock, FileSpreadsheet, Mail, Phone, UserCheck, Cake } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
@@ -49,7 +49,14 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
     joiningDate: '',
     employmentClassification: 'regular_employee',
     baseSalary: 0,
-    monthlyLeaveQuota: 2
+    monthlyLeaveQuota: 2,
+    profilePhoto: '',
+    city: '',
+    location: '',
+    correspondenceAddress: '',
+    permanentAddress: '',
+    gender: '',
+    age: ''
   });
   const [showPassword, setShowPassword] = useState(false);
 
@@ -69,7 +76,14 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
       joiningDate: joinDateStr,
       employmentClassification: user?.employmentClassification || 'regular_employee',
       baseSalary: user?.baseSalary || 0,
-      monthlyLeaveQuota: user?.monthlyLeaveQuota ?? 2
+      monthlyLeaveQuota: user?.monthlyLeaveQuota ?? 2,
+      profilePhoto: user?.profilePhoto || '',
+      city: user?.city || '',
+      location: user?.location || '',
+      correspondenceAddress: user?.correspondenceAddress || '',
+      permanentAddress: user?.permanentAddress || '',
+      gender: user?.gender || '',
+      age: user?.age || ''
     });
   }, [user]);
 
@@ -219,6 +233,125 @@ function UserFormModal({ mode, user, roles, saving, onClose, onSave, isHR }) {
               </div>
             </div>
           )}
+
+          {/* Profile & Location Details Section */}
+          <div className="border-t border-slate-200 pt-5 space-y-4">
+            <h3 className="text-sm font-semibold text-slate-800 uppercase tracking-wider">Profile & Location Details</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Gender</span>
+                <select
+                  value={form.gender}
+                  onChange={(event) => setForm((current) => ({ ...current, gender: event.target.value }))}
+                  className="input"
+                >
+                  <option value="">Select Gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Age</span>
+                <input
+                  type="number"
+                  value={form.age}
+                  onChange={(event) => setForm((current) => ({ ...current, age: event.target.value }))}
+                  className="input"
+                  placeholder="e.g. 28"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">City</span>
+                <input
+                  type="text"
+                  value={form.city}
+                  onChange={(event) => setForm((current) => ({ ...current, city: event.target.value }))}
+                  className="input"
+                  placeholder="e.g. Noida"
+                />
+              </label>
+
+              <label className="block">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Location</span>
+                <input
+                  type="text"
+                  value={form.location}
+                  onChange={(event) => setForm((current) => ({ ...current, location: event.target.value }))}
+                  className="input"
+                  placeholder="e.g. Sector 62"
+                />
+              </label>
+
+              <label className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Correspondence Address</span>
+                <textarea
+                  rows={2}
+                  value={form.correspondenceAddress}
+                  onChange={(event) => setForm((current) => ({ ...current, correspondenceAddress: event.target.value }))}
+                  className="input resize-none"
+                  placeholder="Street details..."
+                />
+              </label>
+
+              <div className="block sm:col-span-2">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="text-sm font-medium text-slate-700">Permanent Address</span>
+                  <button
+                    type="button"
+                    onClick={() => setForm((current) => ({ ...current, permanentAddress: current.correspondenceAddress }))}
+                    className="text-xs text-primary font-semibold hover:underline"
+                  >
+                    Same as correspondence address
+                  </button>
+                </div>
+                <textarea
+                  rows={2}
+                  value={form.permanentAddress}
+                  onChange={(event) => setForm((current) => ({ ...current, permanentAddress: event.target.value }))}
+                  className="input resize-none"
+                  placeholder="Street details..."
+                />
+              </div>
+
+              <div className="block sm:col-span-2">
+                <span className="mb-1 block text-sm font-medium text-slate-700">Profile Photo URL</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={form.profilePhoto}
+                    onChange={(event) => setForm((current) => ({ ...current, profilePhoto: event.target.value }))}
+                    className="input flex-1"
+                    placeholder="https://example.com/avatar.jpg"
+                  />
+                  <label className="cursor-pointer bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-theme px-3 flex items-center justify-center text-xs font-semibold text-slate-700 transition">
+                    Upload
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append('image', file);
+                        try {
+                          const res = await api.post('/auth/upload-avatar', fd, {
+                            headers: { 'Content-Type': 'multipart/form-data' }
+                          });
+                          setForm((current) => ({ ...current, profilePhoto: res.data.url }));
+                        } catch (err) {
+                          alert('Failed to upload image');
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4 bg-slate-50">
@@ -666,6 +799,10 @@ export default function UsersManagementPage() {
     return role === 'super_admin' || role === 'hr_manager';
   }, [currentUser]);
 
+  const hasReadPermission = useMemo(() => {
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('users:read');
+  }, [currentUser]);
+
   async function loadData() {
     setLoading(true);
     setError('');
@@ -717,6 +854,11 @@ export default function UsersManagementPage() {
   function openEdit(user) {
     setSelectedUser(user);
     setModalMode('edit');
+  }
+
+  function openView(user) {
+    setSelectedUser(user);
+    setModalMode('view');
   }
 
   function closeModal() {
@@ -825,6 +967,7 @@ export default function UsersManagementPage() {
             <table className="min-w-[920px] w-full divide-y divide-slate-200 text-sm">
               <thead>
                 <tr className="text-left text-slate-500">
+                  <th className="px-3 py-3 font-semibold">Sr. No.</th>
                   <th className="px-3 py-3 font-semibold">Name / Title</th>
                   <th className="px-3 py-3 font-semibold">Type / Status</th>
                   <th className="px-3 py-3 font-semibold">Status</th>
@@ -834,10 +977,11 @@ export default function UsersManagementPage() {
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {loading ? (
-                  <tr><td className="px-3 py-4 text-slate-500" colSpan="5">Loading directory...</td></tr>
+                  <tr><td className="px-3 py-4 text-slate-500" colSpan="6">Loading directory...</td></tr>
                 ) : users.length ? (
-                  users.map((u) => (
+                  users.map((u, index) => (
                     <tr key={u._id} className="transition hover:bg-slate-50">
+                      <td className="px-3 py-3 font-semibold text-slate-500">{index + 1}</td>
                       <td className="px-3 py-3">
                         <div className="font-bold text-slate-900">{u.name}</div>
                         <div className="text-xs text-slate-400 font-mono">{u.email}</div>
@@ -855,15 +999,31 @@ export default function UsersManagementPage() {
                       </td>
                       <td className="px-3 py-3 text-slate-600">{formatDate(u.createdAt)}</td>
                       <td className="px-3 py-3">
-                        <button type="button" onClick={() => openEdit(u)} className="inline-flex items-center gap-1 font-semibold text-primary transition hover:text-blue-700">
-                          <PencilLine size={16} />
-                          Edit Details
-                        </button>
+                        <div className="flex items-center gap-3">
+                          {hasReadPermission && (
+                            <button
+                              type="button"
+                              onClick={() => openView(u)}
+                              className="inline-flex items-center gap-1 font-semibold text-slate-600 transition hover:text-slate-900"
+                            >
+                              <Eye size={16} />
+                              View
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => openEdit(u)}
+                            className="inline-flex items-center gap-1 font-semibold text-primary transition hover:text-blue-700"
+                          >
+                            <PencilLine size={16} />
+                            Edit Details
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
-                  <tr><td className="px-3 py-4 text-slate-500" colSpan="5">No users found.</td></tr>
+                  <tr><td className="px-3 py-4 text-slate-500" colSpan="6">No users found.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1015,7 +1175,7 @@ export default function UsersManagementPage() {
       )}
 
       {/* User Create/Edit Modal */}
-      {modalMode ? (
+      {modalMode && modalMode !== 'view' ? (
         <UserFormModal
           mode={modalMode}
           user={selectedUser}
@@ -1024,6 +1184,14 @@ export default function UsersManagementPage() {
           isHR={isHRAdmin}
           onClose={closeModal}
           onSave={saveUser}
+        />
+      ) : null}
+
+      {/* User View Modal */}
+      {modalMode === 'view' && selectedUser ? (
+        <UserViewModal
+          user={selectedUser}
+          onClose={closeModal}
         />
       ) : null}
 
@@ -1050,6 +1218,103 @@ export default function UsersManagementPage() {
           }}
         />
       )}
+    </div>
+  );
+}
+
+// Read-Only User View Modal
+function UserViewModal({ user, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-6 backdrop-blur-sm overflow-y-auto">
+      <button type="button" className="absolute inset-0 cursor-default" aria-label="Close" onClick={onClose} />
+      <div className="relative z-10 w-full max-w-2xl my-8 overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">User Details View</h2>
+            <p className="mt-1 text-xs text-slate-500">Full information details of the user.</p>
+          </div>
+          <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50" aria-label="Close">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Avatar & Quick Stats */}
+            <div className="md:col-span-1 flex flex-col items-center text-center p-4 border border-slate-100 rounded-theme bg-slate-50/50">
+              <div className="relative mb-3">
+                {user.profilePhoto ? (
+                  <img src={user.profilePhoto} alt="Profile" className="h-24 w-24 rounded-full object-cover border-2 border-white shadow-md" />
+                ) : (
+                  <div className="h-24 w-24 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold text-2xl border-2 border-white shadow-md">
+                    {user.name ? user.name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) : 'A'}
+                  </div>
+                )}
+              </div>
+              <h3 className="text-base font-semibold text-slate-950">{user.name}</h3>
+              <p className="text-xs text-slate-500 capitalize mb-3">{(user.roleSlug || user.role || 'customer').replaceAll('_', ' ')}</p>
+              
+              <div className="w-full border-t border-slate-200/60 my-2 pt-2 text-left space-y-2 text-xs text-slate-600">
+                <div className="flex items-center gap-2"><Mail size={12} className="text-slate-400" /> <span className="truncate">{user.email}</span></div>
+                {user.phone && <div className="flex items-center gap-2"><Phone size={12} className="text-slate-400" /> <span>{user.phone}</span></div>}
+                {user.gender && <div className="flex items-center gap-2"><UserCheck size={12} className="text-slate-400" /> <span className="capitalize">{user.gender}</span></div>}
+                {user.age && <div className="flex items-center gap-2"><Cake size={12} className="text-slate-400" /> <span>{user.age} Years Old</span></div>}
+              </div>
+            </div>
+
+            {/* Profile details */}
+            <div className="md:col-span-2 space-y-4 text-xs">
+              <div>
+                <h4 className="font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 mb-2">Location details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="block font-semibold text-slate-500">City</span>
+                    <span className="text-slate-800 font-medium">{user.city || 'Not provided'}</span>
+                  </div>
+                  <div>
+                    <span className="block font-semibold text-slate-500">Location</span>
+                    <span className="text-slate-800 font-medium">{user.location || 'Not provided'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block font-semibold text-slate-500">Correspondence Address</span>
+                    <span className="text-slate-800 whitespace-pre-line font-medium">{user.correspondenceAddress || 'Not provided'}</span>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="block font-semibold text-slate-500">Permanent Address</span>
+                    <span className="text-slate-800 whitespace-pre-line font-medium">{user.permanentAddress || 'Not provided'}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100 pb-1 mb-2">HR & Compensation Details</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="block font-semibold text-slate-500">Joining Date</span>
+                    <span className="text-slate-800 font-medium">{user.joiningDate ? new Intl.DateTimeFormat('en-GB').format(new Date(user.joiningDate)) : '-'}</span>
+                  </div>
+                  <div>
+                    <span className="block font-semibold text-slate-500">Employment classification</span>
+                    <span className="text-slate-800 font-medium capitalize">{(user.employmentClassification || 'regular_employee').replaceAll('_', ' ')}</span>
+                  </div>
+                  <div>
+                    <span className="block font-semibold text-slate-500">Base Salary / Stipend</span>
+                    <span className="text-slate-800 font-bold">₹{(user.baseSalary || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div>
+                    <span className="block font-semibold text-slate-500">Monthly Leaves Quota</span>
+                    <span className="text-slate-800 font-medium">{user.monthlyLeaveQuota || 2} Days</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end border-t border-slate-200 px-5 py-4 bg-slate-50">
+          <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 bg-white">Close</button>
+        </div>
+      </div>
     </div>
   );
 }

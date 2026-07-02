@@ -184,7 +184,8 @@ function LeadDrawer({
   onAssigneeChange,
   onAddNote,
   onDelete,
-  currentUser
+  currentUser,
+  error
 }) {
   const [form, setForm] = useState(emptyLead);
   const [note, setNote] = useState('');
@@ -235,6 +236,7 @@ function LeadDrawer({
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
+          {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
           {mode === 'create' ? (
             <form onSubmit={submit} className="space-y-5">
               <section className="rounded-2xl border border-slate-200 p-4">
@@ -247,8 +249,8 @@ function LeadDrawer({
                   <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">WhatsApp</span><input className="input" value={form.whatsapp} onChange={(e) => updateField('whatsapp', e.target.value)} /></label>
                   <label className="block sm:col-span-2"><span className="mb-1 block text-sm font-medium text-slate-700">Requirements</span><textarea className="input min-h-32" value={form.requirements} onChange={(e) => updateField('requirements', e.target.value)} /></label>
                   <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Lead Source</span><select className="input" value={form.source} onChange={(e) => updateField('source', e.target.value)}>{SOURCE_OPTIONS.filter((item) => item.value).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
-                  {isSuperAdmin ? (
-                    <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Initial Assignee</span><select className="input" value={form.assigneeId} onChange={(e) => updateField('assigneeId', e.target.value)}><option value="">Unassigned</option>{assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role})</option>)}</select></label>
+                  {canManage ? (
+                    <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Initial Assignee</span><select className="input" value={form.assigneeId} onChange={(e) => updateField('assigneeId', e.target.value)}><option value="">Unassigned</option>{assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}</select></label>
                   ) : null}
                 </div>
               </section>
@@ -302,7 +304,7 @@ function LeadDrawer({
                     </label>
                     <label className="block">
                       <span className="mb-1 block text-sm font-medium text-slate-700">Assignee</span>
-                      {isSuperAdmin ? (
+                      {canManage ? (
                         <select value={form.assigneeId} onChange={(e) => onAssigneeChange(e.target.value)} className="input">
                           <option value="">Unassigned</option>
                           {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}
@@ -384,6 +386,7 @@ export default function LeadsManagementPage() {
 
   const isSuperAdmin = user?.role === 'super_admin';
   const canCreateLeads = isSuperAdmin || user?.permissions?.includes('leads:create');
+  const canManageLeads = isSuperAdmin || user?.permissions?.includes('leads:update');
 
   async function load() {
     setLoading(true);
@@ -392,7 +395,7 @@ export default function LeadsManagementPage() {
       const params = Object.fromEntries(Object.entries(filters).filter(([, value]) => value));
       const [leadRes, assigneeRes] = await Promise.all([
         api.get('/v1/leads', { params }),
-        isSuperAdmin ? api.get('/v1/leads/assignees') : Promise.resolve({ data: { items: [] } })
+        canManageLeads ? api.get('/v1/leads/assignees') : Promise.resolve({ data: { items: [] } })
       ]);
       setLeads(leadRes.data.items || []);
       setAssignees(assigneeRes.data.items || []);
@@ -410,16 +413,19 @@ export default function LeadsManagementPage() {
   function openCreate() {
     setSelectedLead(null);
     setDrawerMode('create');
+    setError('');
   }
 
   function openLead(lead) {
     setSelectedLead(lead);
     setDrawerMode('edit');
+    setError('');
   }
 
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedLead(null);
+    setError('');
   }
 
   async function createLead(form) {
@@ -713,6 +719,7 @@ export default function LeadsManagementPage() {
           onAssigneeChange={updateLeadAssignee}
           onAddNote={addNote}
           onDelete={deleteLead}
+          error={error}
         />
       ) : null}
 

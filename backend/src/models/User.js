@@ -14,7 +14,15 @@ const userSchema = new mongoose.Schema(
     joiningDate: Date,
     employmentClassification: { type: String, enum: ['regular_employee', 'intern'], default: 'regular_employee' },
     baseSalary: { type: Number, default: 0 },
-    monthlyLeaveQuota: { type: Number, default: 2 }
+    monthlyLeaveQuota: { type: Number, default: 2 },
+    // Profile details
+    profilePhoto: { type: String, default: '' },
+    city: { type: String, default: '' },
+    location: { type: String, default: '' },
+    correspondenceAddress: { type: String, default: '' },
+    permanentAddress: { type: String, default: '' },
+    gender: { type: String, default: '' },
+    age: { type: Number, default: null }
   },
   { timestamps: true }
 );

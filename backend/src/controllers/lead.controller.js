@@ -411,7 +411,6 @@ export const getLead = asyncHandler(async (req, res) => {
 });
 
 export const listLeadAssignees = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'super_admin') throw new ApiError(403, 'Only supervisors can view assignee routing.');
   const items = await User.find({ isActive: true, role: { $ne: 'super_admin' } }).select('name email role isActive').sort({ name: 1 });
   res.json({ items });
 });
@@ -427,7 +426,7 @@ export const createLead = asyncHandler(async (req, res) => {
     payload.assignee = req.user._id;
   }
 
-  const result = await ingestLeadRecord(payload, { source: payload.source, createdBy: req.user?._id, overwrite: true });
+  const result = await ingestLeadRecord(payload, { source: payload.source, createdBy: req.user?._id, user: req.user, overwrite: true });
 
   // Send WhatsApp notification if assignee exists and has a phone
   if (assignee && assignee.phone) {
@@ -550,7 +549,6 @@ export const updateLeadStatus = asyncHandler(async (req, res) => {
 });
 
 export const routeLeadAssignee = asyncHandler(async (req, res) => {
-  if (req.user.role !== 'super_admin') throw new ApiError(403, 'Only supervisors can reroute leads.');
   const lead = await Lead.findById(req.params.id).populate('assignee', 'name email role isActive phone').populate('createdBy', 'name email role isActive');
   if (!lead) throw new ApiError(404, 'Lead not found');
 

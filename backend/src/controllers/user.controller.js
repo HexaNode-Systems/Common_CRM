@@ -70,6 +70,14 @@ async function mutateUser(user, body) {
   if (body.employmentClassification !== undefined) user.employmentClassification = body.employmentClassification;
   if (body.baseSalary !== undefined) user.baseSalary = Number(body.baseSalary || 0);
   if (body.monthlyLeaveQuota !== undefined) user.monthlyLeaveQuota = Number(body.monthlyLeaveQuota || 2);
+  
+  if (body.profilePhoto !== undefined) user.profilePhoto = String(body.profilePhoto || '').trim();
+  if (body.city !== undefined) user.city = String(body.city || '').trim();
+  if (body.location !== undefined) user.location = String(body.location || '').trim();
+  if (body.correspondenceAddress !== undefined) user.correspondenceAddress = String(body.correspondenceAddress || '').trim();
+  if (body.permanentAddress !== undefined) user.permanentAddress = String(body.permanentAddress || '').trim();
+  if (body.gender !== undefined) user.gender = String(body.gender || '').trim();
+  if (body.age !== undefined) user.age = body.age ? Number(body.age) : null;
 
   if (typeof body.password === 'string' && body.password.trim()) {
     user.password = body.password.trim();
@@ -126,7 +134,14 @@ export const createUser = asyncHandler(async (req, res) => {
     joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : undefined,
     employmentClassification: req.body.employmentClassification || 'regular_employee',
     baseSalary: Number(req.body.baseSalary || 0),
-    monthlyLeaveQuota: Number(req.body.monthlyLeaveQuota || 2)
+    monthlyLeaveQuota: Number(req.body.monthlyLeaveQuota || 2),
+    profilePhoto: req.body.profilePhoto ? String(req.body.profilePhoto).trim() : undefined,
+    city: req.body.city ? String(req.body.city).trim() : undefined,
+    location: req.body.location ? String(req.body.location).trim() : undefined,
+    correspondenceAddress: req.body.correspondenceAddress ? String(req.body.correspondenceAddress).trim() : undefined,
+    permanentAddress: req.body.permanentAddress ? String(req.body.permanentAddress).trim() : undefined,
+    gender: req.body.gender ? String(req.body.gender).trim() : undefined,
+    age: req.body.age ? Number(req.body.age) : undefined
   });
 
   if (user.phone) {

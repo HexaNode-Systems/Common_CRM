@@ -33,4 +33,28 @@ export const me = asyncHandler(async (req, res) => {
   res.json(req.user);
 });
 
+export const updateProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) throw new ApiError(404, 'User not found');
+
+  if (req.body.name !== undefined) user.name = String(req.body.name || '').trim();
+  if (req.body.phone !== undefined) user.phone = String(req.body.phone || '').trim();
+  if (req.body.city !== undefined) user.city = String(req.body.city || '').trim();
+  if (req.body.location !== undefined) user.location = String(req.body.location || '').trim();
+  if (req.body.profilePhoto !== undefined) user.profilePhoto = String(req.body.profilePhoto || '').trim();
+  if (req.body.correspondenceAddress !== undefined) user.correspondenceAddress = String(req.body.correspondenceAddress || '').trim();
+  if (req.body.permanentAddress !== undefined) user.permanentAddress = String(req.body.permanentAddress || '').trim();
+  if (req.body.gender !== undefined) user.gender = String(req.body.gender || '').trim();
+  if (req.body.age !== undefined) user.age = req.body.age ? Number(req.body.age) : null;
+
+  if (typeof req.body.password === 'string' && req.body.password.trim()) {
+    user.password = req.body.password.trim();
+    user.permissionVersion = (user.permissionVersion || 0) + 1;
+  }
+
+  await user.save();
+  const updatedUser = await User.findById(user._id).select('-password');
+  res.json(sanitizeUser(updatedUser));
+});
+
 
