@@ -9,6 +9,8 @@ import GeneralSettings from './pages/GeneralSettings.jsx';
 import RolePermissionsPage from './pages/RolePermissionsPage.jsx';
 import UsersManagementPage from './pages/UsersManagementPage.jsx';
 import ProjectsManagementPage from './pages/ProjectsManagementPage.jsx';
+import ProjectDetailsPage from './pages/ProjectDetailsPage.jsx';
+import ProjectFormPage from './pages/ProjectFormPage.jsx';
 import TaskManagementPage from './pages/TaskManagementPage.jsx';
 import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
@@ -35,6 +37,9 @@ export default function App() {
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="users" element={<UsersManagementPage />} />
         <Route path="catalog" element={<ProjectsManagementPage />} />
+        <Route path="catalog/create" element={<ProjectFormPage />} />
+        <Route path="catalog/edit/:id" element={<ProjectFormPage />} />
+        <Route path="catalog/:id" element={<ProjectDetailsPage />} />
         <Route path="orders" element={<ResourcePage title="Orders / Leads" endpoint="/orders" />} />
         <Route path="leads" element={<LeadsManagementPage />} />
         <Route path="leads/distribution" element={<LeadDistributionPage />} />
