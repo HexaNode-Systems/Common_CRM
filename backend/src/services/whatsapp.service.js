@@ -28,7 +28,7 @@ export async function initializeWhatsApp() {
       }),
       webVersionCache: {
         type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.2412.54.html'
+        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1039435889-alpha.html'
       },
       puppeteer: {
         headless: true,
@@ -40,7 +40,6 @@ export async function initializeWhatsApp() {
           '--disable-accelerated-2d-canvas',
           '--no-first-run',
           '--no-zygote',
-          '--single-process', // helpful in low memory environments
           '--disable-gpu',
           '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36'
         ]

@@ -16,7 +16,7 @@ const leadSchema = new mongoose.Schema(
     companyName: { type: String, required: true, trim: true },
     contactName: { type: String, trim: true },
     phone: { type: String, required: true, trim: true },
-    phoneNormalized: { type: String, required: true, trim: true, index: true },
+    phoneNormalized: { type: String, required: true, trim: true },
     email: { type: String, trim: true, lowercase: true },
     whatsapp: { type: String, trim: true },
     requirements: { type: String, trim: true },
