@@ -626,6 +626,7 @@ export default function LeadsManagementPage() {
           <table className="min-w-[1200px] w-full text-sm">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                <th className="px-4 py-3 font-semibold text-slate-700 w-16">S.No</th>
                 <th className="px-4 py-3 font-semibold text-slate-700">Lead Details & Source</th>
                 <th className="px-4 py-3 font-semibold text-slate-700">Contact Context</th>
                 <th className="px-4 py-3 font-semibold text-slate-700">Assignee User</th>
@@ -635,9 +636,10 @@ export default function LeadsManagementPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-4 py-8 text-center text-slate-500" colSpan="5">Loading leads...</td></tr>
-              ) : leads.length ? leads.map((lead) => (
+                <tr><td className="px-4 py-8 text-center text-slate-500" colSpan="6">Loading leads...</td></tr>
+              ) : leads.length ? leads.map((lead, index) => (
                 <tr key={lead._id} className="hover:bg-slate-50">
+                  <td className="px-4 py-4 align-top font-semibold text-slate-500">{index + 1}</td>
                   <td className="px-4 py-4 align-top">
                     <p className="font-bold text-slate-900">{lead.companyName}</p>
                     <LeadSourceBadge lead={lead} />
@@ -692,7 +694,7 @@ export default function LeadsManagementPage() {
                 </tr>
               )) : (
                 <tr>
-                  <td className="px-4 py-10 text-center text-slate-500" colSpan="5">
+                  <td className="px-4 py-10 text-center text-slate-500" colSpan="6">
                     No leads found. Use Bulk Import CSV, a webhook, or Add New to populate the pipeline.
                   </td>
                 </tr>
