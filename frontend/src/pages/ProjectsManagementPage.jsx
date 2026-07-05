@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Search, UploadCloud, X, AlertCircle, Clock, DollarSign, Users } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
@@ -347,11 +348,11 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
 }
 
 export default function ProjectsManagementPage() {
+  const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [drawerState, setDrawerState] = useState({ mode: null, project: null });
   const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', status: '', search: '' });
 
   async function loadProjects(nextFilters = filters) {
@@ -389,10 +390,7 @@ export default function ProjectsManagementPage() {
     setFilters((current) => ({ ...current, [field]: value }));
   }
 
-  const activeDrawerProject = useMemo(() => {
-    if (drawerState.mode === 'create') return null;
-    return drawerState.project;
-  }, [drawerState]);
+
 
   function openDocuments(project) {
     if (!project.documents?.length) {
@@ -448,7 +446,7 @@ export default function ProjectsManagementPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => loadProjects()} className="inline-flex items-center gap-2 px-3 py-2" variant="outline"><RefreshCw size={16} />Refresh</Button>
-          <Button onClick={() => setDrawerState({ mode: 'create', project: null })} className="inline-flex items-center gap-2 px-3 py-2"><Plus size={16} />Add New</Button>
+          <Button onClick={() => navigate('/catalog/create')} className="inline-flex items-center gap-2 px-3 py-2"><Plus size={16} />Add New</Button>
         </div>
       </div>
 
@@ -480,6 +478,7 @@ export default function ProjectsManagementPage() {
           <table className="min-w-[900px] w-full divide-y divide-slate-200 text-sm">
             <thead>
               <tr className="text-left text-slate-500">
+                <th className="px-3 py-3 w-16">S.No.</th>
                 <th className="px-3 py-3">Project Name & Client Name</th>
                 <th className="px-3 py-3">Timeline & Status</th>
                 <th className="px-3 py-3">Financials & Team</th>
@@ -488,9 +487,10 @@ export default function ProjectsManagementPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-3 py-4" colSpan="4"><div className="flex items-center justify-center gap-2"><div className="h-2 w-2 animate-pulse rounded-full bg-slate-400"></div>Loading...</div></td></tr>
-              ) : projects.length ? projects.map((project) => (
+                <tr><td className="px-3 py-4" colSpan="5"><div className="flex items-center justify-center gap-2"><div className="h-2 w-2 animate-pulse rounded-full bg-slate-400"></div>Loading...</div></td></tr>
+              ) : projects.length ? projects.map((project, index) => (
                 <tr key={project._id} className="transition hover:bg-slate-50">
+                  <td className="px-3 py-4 text-slate-500 font-medium">{index + 1}</td>
                   <td className="px-3 py-4">
                     <p className="font-semibold text-slate-900">{project.title}</p>
                     <p className="mt-1 text-sm text-slate-500">{project.client?.name || '-'}</p>
@@ -506,26 +506,19 @@ export default function ProjectsManagementPage() {
                   </td>
                   <td className="px-3 py-4">
                     <div className="flex flex-wrap items-center gap-3">
-                      <button type="button" onClick={() => setDrawerState({ mode: 'edit', project })} className="font-semibold text-primary transition hover:underline">Edit</button>
+                      <button type="button" onClick={() => navigate(`/catalog/${project._id}`)} className="font-semibold text-primary transition hover:underline">View</button>
+                      <button type="button" onClick={() => navigate(`/catalog/edit/${project._id}`)} className="font-semibold text-primary transition hover:underline">Edit</button>
                       <button type="button" onClick={() => openDocuments(project)} className="inline-flex items-center gap-1 font-semibold text-primary transition hover:underline"><FileText size={15} />Documents</button>
                     </div>
                   </td>
                 </tr>
               )) : (
-                <tr><td className="px-3 py-6 text-center text-slate-500" colSpan="4">No projects yet. Start by creating your first one!</td></tr>
+                <tr><td className="px-3 py-6 text-center text-slate-500" colSpan="5">No projects yet. Start by creating your first one!</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </Card>
-
-      <ProjectDrawer
-        mode={drawerState.mode}
-        project={drawerState.mode === 'create' ? null : activeDrawerProject}
-        users={users}
-        onClose={() => setDrawerState({ mode: null, project: null })}
-        onSave={() => loadProjects()}
-      />
     </div>
   );
 }
