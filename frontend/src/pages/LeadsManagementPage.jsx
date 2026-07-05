@@ -51,7 +51,8 @@ const emptyLead = {
   whatsapp: '',
   requirements: '',
   source: 'manual_entry',
-  assigneeId: ''
+  assigneeId: '',
+  status: 'New'
 };
 
 function formatDateTime(value) {
@@ -185,7 +186,9 @@ function LeadDrawer({
   onAddNote,
   onDelete,
   currentUser,
-  error
+  error,
+  success,
+  onSave
 }) {
   const [form, setForm] = useState(emptyLead);
   const [note, setNote] = useState('');
@@ -204,13 +207,13 @@ function LeadDrawer({
       whatsapp: lead?.whatsapp || '',
       requirements: lead?.requirements || '',
       source: lead?.source || 'manual_entry',
+      status: lead?.status || 'New',
       assigneeId: lead?.assignee?._id || lead?.assignee || ''
     });
     setNote('');
   }, [lead, mode]);
 
   const isSuperAdmin = currentUser?.role === 'super_admin';
-  const readOnly = mode !== 'create';
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }));
@@ -218,8 +221,46 @@ function LeadDrawer({
 
   function submit(event) {
     event.preventDefault();
-    onCreate(form);
+    if (mode === 'create') {
+      onCreate(form);
+    } else {
+      const payload = {
+        companyName: form.companyName,
+        contactName: form.contactName,
+        phone: form.phone,
+        email: form.email,
+        whatsapp: form.whatsapp,
+        requirements: form.requirements,
+        source: form.source,
+        status: form.status,
+        assigneeId: form.assigneeId || null,
+        note: note.trim() || undefined
+      };
+      onSave(payload, () => {
+        setNote('');
+      });
+    }
   }
+
+  const isDirty = useMemo(() => {
+    if (mode === 'create') return true;
+
+    const originalAssigneeId = lead?.assignee?._id || lead?.assignee || '';
+    const hasFieldChanges =
+      form.companyName !== (lead?.companyName || '') ||
+      form.contactName !== (lead?.contactName || '') ||
+      form.phone !== (lead?.phone || '') ||
+      form.email !== (lead?.email || '') ||
+      form.whatsapp !== (lead?.whatsapp || '') ||
+      form.requirements !== (lead?.requirements || '') ||
+      form.source !== (lead?.source || 'manual_entry') ||
+      form.status !== (lead?.status || 'New') ||
+      form.assigneeId !== originalAssigneeId;
+
+    const hasNewNote = note.trim().length > 0;
+
+    return hasFieldChanges || hasNewNote;
+  }, [form, note, lead, mode]);
 
   const noteFeed = [...(lead?.notes || [])].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
@@ -235,10 +276,12 @@ function LeadDrawer({
           <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-theme border border-slate-200 text-slate-600 transition hover:bg-slate-50" aria-label="Close lead drawer"><X size={18} /></button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-5">
-          {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
-          {mode === 'create' ? (
-            <form onSubmit={submit} className="space-y-5">
+        <form onSubmit={submit} className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-5">
+            {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+            {success ? <p className="mb-4 rounded-theme bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{success}</p> : null}
+
+            {mode === 'create' ? (
               <section className="rounded-2xl border border-slate-200 p-4">
                 <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Lead Intake</h3>
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -254,117 +297,92 @@ function LeadDrawer({
                   ) : null}
                 </div>
               </section>
-              <div className="flex items-center justify-end gap-2 border-t border-slate-200 pt-4">
-                <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-                <Button type="submit" disabled={saving} className="px-4 py-2">{saving ? 'Saving...' : 'Create Lead'}</Button>
-              </div>
-            </form>
-          ) : (
-            <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
-              <section className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Lead Snapshot</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="sm:col-span-2">
-                      <p className="text-sm text-slate-500">Lead / Company Name</p>
-                      <p className="text-lg font-semibold text-slate-900">{lead?.companyName}</p>
-                      <LeadSourceBadge lead={lead || {}} />
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Primary Contact</p>
-                      <p className="font-medium text-slate-900">{lead?.contactName || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Phone / WhatsApp</p>
-                      <p className="font-medium text-slate-900">{lead?.phone || '-'}{lead?.whatsapp ? ` / ${lead.whatsapp}` : ''}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Email</p>
-                      <p className="font-medium text-slate-900">{lead?.email || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500">Created</p>
-                      <p className="font-medium text-slate-900">{formatDateTime(lead?.createdAt)}</p>
-                    </div>
-                    <div className="sm:col-span-2">
-                      <p className="text-sm text-slate-500">Requirements</p>
-                      <p className="whitespace-pre-line text-sm text-slate-700">{lead?.requirements || '-'}</p>
+            ) : (
+              <div className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+                <section className="space-y-4">
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Lead Edit Details</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block sm:col-span-2"><span className="mb-1 block text-sm font-medium text-slate-700">Lead / Company Name</span><input className="input" required value={form.companyName} onChange={(e) => updateField('companyName', e.target.value)} /></label>
+                      <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Primary Contact</span><input className="input" value={form.contactName} onChange={(e) => updateField('contactName', e.target.value)} /></label>
+                      <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Phone</span><input className="input" required value={form.phone} onChange={(e) => updateField('phone', e.target.value)} /></label>
+                      <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Email</span><input className="input" type="email" value={form.email} onChange={(e) => updateField('email', e.target.value)} /></label>
+                      <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">WhatsApp</span><input className="input" value={form.whatsapp} onChange={(e) => updateField('whatsapp', e.target.value)} /></label>
+                      <label className="block sm:col-span-2"><span className="mb-1 block text-sm font-medium text-slate-700">Requirements</span><textarea className="input min-h-24" value={form.requirements} onChange={(e) => updateField('requirements', e.target.value)} /></label>
+                      <label className="block"><span className="mb-1 block text-sm font-medium text-slate-700">Lead Source</span><select className="input" value={form.source} onChange={(e) => updateField('source', e.target.value)}>{SOURCE_OPTIONS.filter((item) => item.value).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></label>
                     </div>
                   </div>
-                </div>
 
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Lifecycle Controls</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1 block text-sm font-medium text-slate-700">Status</span>
-                      <select value={lead?.status || 'New'} onChange={(e) => onStatusChange(e.target.value)} className="input">
-                        {STATUS_OPTIONS.filter((item) => item.value).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="mb-1 block text-sm font-medium text-slate-700">Assignee</span>
-                      {canManage ? (
-                        <select value={form.assigneeId} onChange={(e) => onAssigneeChange(e.target.value)} className="input">
-                          <option value="">Unassigned</option>
-                          {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Lifecycle Controls</h3>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-slate-700">Status</span>
+                        <select value={form.status} onChange={(e) => updateField('status', e.target.value)} className="input">
+                          {STATUS_OPTIONS.filter((item) => item.value).map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
-                      ) : (
-                        <div className="input flex items-center justify-between gap-3 bg-slate-50 text-slate-700">
-                          <span>{lead?.assignee?.name || 'Unassigned'}</span>
-                          {lead?.assignee ? <span className="text-xs text-slate-500">{lead.assignee.role ? lead.assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}</span> : <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">Unassigned</span>}
-                        </div>
-                      )}
-                    </label>
-                  </div>
-                </div>
-              </section>
-
-              <section className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Chronological Notes Feed</h3>
-                  <div className="space-y-3">
-                    {noteFeed.length ? noteFeed.map((item, index) => (
-                      <div key={`${item.label}-${index}`} className="rounded-2xl bg-slate-50 p-3">
-                        <p className="text-xs font-semibold text-slate-500">{item.label}</p>
-                        <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{item.message}</p>
-                      </div>
-                    )) : <p className="text-sm text-slate-500">No audit notes yet.</p>}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 p-4">
-                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Add Note</h3>
-                  <textarea className="input min-h-32" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Client called back, requested pricing for 50 users" />
-                  <div className="mt-3 flex items-center justify-end gap-2">
-                    <Button
-                      onClick={() => onAddNote(note, setNote)}
-                      disabled={saving || !note.trim()}
-                      className="inline-flex items-center gap-2 px-4 py-2"
-                    >
-                      <PencilLine size={16} />
-                      Add Note
-                    </Button>
-                  </div>
-                </div>
-
-                {isSuperAdmin ? (
-                  <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                    <div className="flex items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-sm font-semibold text-rose-700">Danger Zone</h3>
-                        <p className="mt-1 text-xs text-rose-600">Only super admin can remove a lead record.</p>
-                      </div>
-                      <button type="button" onClick={onDelete} className="inline-flex items-center gap-2 rounded-theme bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">
-                        <Trash2 size={16} />Delete Lead
-                      </button>
+                      </label>
+                      <label className="block">
+                        <span className="mb-1 block text-sm font-medium text-slate-700">Assignee</span>
+                        {canManage ? (
+                          <select value={form.assigneeId} onChange={(e) => updateField('assigneeId', e.target.value)} className="input">
+                            <option value="">Unassigned</option>
+                            {assignees.map((assignee) => <option key={assignee._id} value={assignee._id}>{assignee.name} ({assignee.role ? assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''})</option>)}
+                          </select>
+                        ) : (
+                          <div className="input flex items-center justify-between gap-3 bg-slate-50 text-slate-700">
+                            <span>{lead?.assignee?.name || 'Unassigned'}</span>
+                            {lead?.assignee ? <span className="text-xs text-slate-500">{lead.assignee.role ? lead.assignee.role.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : ''}</span> : <span className="rounded-full bg-slate-200 px-2 py-0.5 text-xs font-semibold text-slate-600">Unassigned</span>}
+                          </div>
+                        )}
+                      </label>
                     </div>
                   </div>
-                ) : null}
-              </section>
-            </div>
-          )}
-        </div>
+                </section>
+
+                <section className="space-y-4">
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Chronological Notes Feed</h3>
+                    <div className="space-y-3">
+                      {noteFeed.length ? noteFeed.map((item, index) => (
+                        <div key={`${item.label}-${index}`} className="rounded-2xl bg-slate-50 p-3">
+                          <p className="text-xs font-semibold text-slate-500">{item.label}</p>
+                          <p className="mt-2 whitespace-pre-line text-sm text-slate-700">{item.message}</p>
+                        </div>
+                      )) : <p className="text-sm text-slate-500">No audit notes yet.</p>}
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-slate-200 p-4">
+                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Add Note</h3>
+                    <textarea className="input min-h-32" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Client called back, requested pricing for 50 users" />
+                  </div>
+
+                  {isSuperAdmin ? (
+                    <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+                      <div className="flex items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-sm font-semibold text-rose-700">Danger Zone</h3>
+                          <p className="mt-1 text-xs text-rose-600">Only super admin can remove a lead record.</p>
+                        </div>
+                        <button type="button" onClick={onDelete} className="inline-flex items-center gap-2 rounded-theme bg-rose-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-700">
+                          <Trash2 size={16} />Delete Lead
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+                </section>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center justify-end gap-2 border-t border-slate-200 p-4 bg-slate-50">
+            <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 bg-white">Cancel</button>
+            <Button type="submit" disabled={saving || !isDirty} className="px-4 py-2">
+              {saving ? 'Saving...' : mode === 'create' ? 'Create Lead' : 'Save Changes'}
+            </Button>
+          </div>
+        </form>
       </aside>
     </div>
   );
@@ -377,6 +395,7 @@ export default function LeadsManagementPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [filters, setFilters] = useState({ source: '', status: '', from: '', to: '', assignee: '', search: '' });
   const [drawerMode, setDrawerMode] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
@@ -414,18 +433,21 @@ export default function LeadsManagementPage() {
     setSelectedLead(null);
     setDrawerMode('create');
     setError('');
+    setSuccess('');
   }
 
   function openLead(lead) {
     setSelectedLead(lead);
     setDrawerMode('edit');
     setError('');
+    setSuccess('');
   }
 
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedLead(null);
     setError('');
+    setSuccess('');
   }
 
   async function createLead(form) {
@@ -493,6 +515,24 @@ export default function LeadsManagementPage() {
       clearNote('');
     } catch (err) {
       setError(err.response?.data?.message || 'Unable to add note.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveLeadEdit(draftPayload, onCompletion) {
+    if (!selectedLead) return;
+    setSaving(true);
+    setError('');
+    setSuccess('');
+    try {
+      const { data } = await api.put(`/v1/leads/${selectedLead._id}`, draftPayload);
+      setSelectedLead(data);
+      setLeads((current) => current.map((item) => (item._id === data._id ? data : item)));
+      setSuccess('Lead updated successfully.');
+      if (onCompletion) onCompletion();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to save lead changes.');
     } finally {
       setSaving(false);
     }
@@ -722,6 +762,8 @@ export default function LeadsManagementPage() {
           onAddNote={addNote}
           onDelete={deleteLead}
           error={error}
+          success={success}
+          onSave={saveLeadEdit}
         />
       ) : null}
 

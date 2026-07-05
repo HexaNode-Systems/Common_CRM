@@ -13,7 +13,7 @@ import TaskManagementPage from './pages/TaskManagementPage.jsx';
 import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
 import LeadsManagementPage from './pages/LeadsManagementPage.jsx';
-import WhatsAppSettings from './pages/WhatsAppSettings.jsx';
+import WhatsAppInboxPage from './pages/WhatsAppInboxPage.jsx';
 import SupportTicketsPage from './pages/SupportTicketsPage.jsx';
 import LeadDistributionPage from './pages/LeadDistributionPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
@@ -54,7 +54,7 @@ export default function App() {
         <Route path="settings" element={<GeneralSettings section="general" title="General Settings" />} />
         <Route path="support" element={<SupportTicketsPage />} />
         <Route path="roles" element={<RolePermissionsPage />} />
-        <Route path="whatsapp" element={<WhatsAppSettings />} />
+        <Route path="whatsapp-inbox" element={<WhatsAppInboxPage />} />
       </Route>
     </Routes>
   );

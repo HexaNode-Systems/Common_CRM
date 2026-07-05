@@ -12,6 +12,7 @@ import {
   receiveLeadWebhook,
   routeLeadAssignee,
   updateLeadStatus,
+  updateLead,
   listDistributionRules,
   createDistributionRule,
   updateDistributionRule,
@@ -35,6 +36,7 @@ router.get('/', authorize('leads:read'), listLeads);
 router.post('/', authorize('leads:create'), createLead);
 router.post('/import', authorize('leads:create'), upload.single('file'), importLeadsCsv);
 router.get('/:id', authorize('leads:read'), getLead);
+router.put('/:id', authorize('leads:update'), updateLead);
 router.patch('/:id/status', authorize('leads:update'), updateLeadStatus);
 router.patch('/:id/assignee', authorize('leads:update'), routeLeadAssignee);
 router.post('/:id/notes', authorize('leads:update'), addLeadNote);

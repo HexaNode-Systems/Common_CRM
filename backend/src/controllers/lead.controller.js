@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import { Lead } from '../models/Lead.js';
 import { User } from '../models/User.js';
+import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { LeadDistributionRule } from '../models/LeadDistributionRule.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
@@ -103,9 +104,10 @@ function buildLeadFilter(req) {
 }
 
 async function populateLead(lead) {
-  return lead
-    .populate('assignee', 'name email role isActive')
-    .populate('createdBy', 'name email role isActive');
+  return lead.populate([
+    { path: 'assignee', select: 'name email role isActive' },
+    { path: 'createdBy', select: 'name email role isActive' }
+  ]);
 }
 
 function serializeLead(lead) {
@@ -282,6 +284,16 @@ async function resolveLeadUpsert(payload, { source = 'manual_entry', createdBy =
     if (leadPayload.assignee !== undefined) existing.assignee = leadPayload.assignee || null;
     if (createdBy && !existing.createdBy) existing.createdBy = createdBy;
     await existing.save();
+
+    // Link WhatsApp Chat if it exists
+    const last10 = leadPayload.phoneNormalized.slice(-10);
+    if (last10.length >= 10) {
+      await WhatsAppChat.findOneAndUpdate(
+        { phone: new RegExp(last10 + '$') },
+        { lead: existing._id }
+      );
+    }
+
     return { action: 'updated', lead: existing };
   }
 
@@ -291,6 +303,16 @@ async function resolveLeadUpsert(payload, { source = 'manual_entry', createdBy =
     createdBy,
     ingestedAt: new Date()
   });
+
+  // Link WhatsApp Chat if it exists
+  const last10 = leadPayload.phoneNormalized.slice(-10);
+  if (last10.length >= 10) {
+    await WhatsAppChat.findOneAndUpdate(
+      { phone: new RegExp(last10 + '$') },
+      { lead: created._id }
+    );
+  }
+
   return { action: 'created', lead: created };
 }
 
@@ -569,6 +591,48 @@ export const routeLeadAssignee = asyncHandler(async (req, res) => {
     void sendWhatsAppMessage(assignee.phone, leadMessage);
   }
 
+  res.json(serializeLead(refreshed));
+});
+
+export const updateLead = asyncHandler(async (req, res) => {
+  const lead = await Lead.findById(req.params.id);
+  if (!lead) throw new ApiError(404, 'Lead not found');
+
+  const { companyName, contactName, phone, email, whatsapp, requirements, source, status, assigneeId, note } = req.body;
+
+  if (companyName !== undefined) lead.companyName = normalizeString(companyName);
+  if (contactName !== undefined) lead.contactName = normalizeString(contactName);
+  if (phone !== undefined) {
+    lead.phone = normalizeString(phone);
+    lead.phoneNormalized = normalizePhone(phone);
+  }
+  if (email !== undefined) lead.email = normalizeString(email);
+  if (whatsapp !== undefined) lead.whatsapp = normalizeString(whatsapp);
+  if (requirements !== undefined) lead.requirements = normalizeString(requirements);
+  if (source !== undefined) lead.source = normalizeSource(source);
+  if (status !== undefined) lead.status = normalizeStatus(status);
+
+  if (assigneeId !== undefined) {
+    if (!assigneeId) {
+      lead.assignee = null;
+    } else {
+      const assignee = await getActiveAssignee(assigneeId);
+      lead.assignee = assignee._id;
+    }
+  }
+
+  if (note && String(note).trim()) {
+    lead.notes.push({
+      message: String(note).trim(),
+      addedBy: req.user._id,
+      addedByName: req.user.name,
+      addedByRole: req.user.role,
+      label: formatNoteLabel(req.user.name, req.user.role, new Date())
+    });
+  }
+
+  await lead.save();
+  const refreshed = await populateLead(lead);
   res.json(serializeLead(refreshed));
 });
 

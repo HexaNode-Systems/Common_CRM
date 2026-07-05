@@ -7,7 +7,6 @@ import {
   ClipboardList,
   Lock,
   FolderOpen,
-  QrCode,
   BarChart3,
   Link2,
   Palette,
@@ -16,7 +15,8 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  X
+  X,
+  MessageSquare
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -31,7 +31,7 @@ const links = [
   { to: '/tasks', label: 'Task Management', icon: ClipboardList },
   { to: '/vault', label: 'Vault / Credentials', icon: Lock },
   { to: '/storage', label: 'Storage Management', icon: FolderOpen },
-  { to: '/whatsapp', label: 'WhatsApp Settings', icon: QrCode },
+  { to: '/whatsapp-inbox', label: 'WhatsApp Inbox', icon: MessageSquare },
   { to: '/reports', label: 'Reports', icon: BarChart3 },
   { to: '/Integrations', label: 'Integrations', icon: Link2 },
   { to: '/theme', label: 'Theme Settings', icon: Palette },
