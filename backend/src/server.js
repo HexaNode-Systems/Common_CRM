@@ -20,3 +20,11 @@ connectDb().then(() => {
   });
 });
 
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Common CRM Backend is running 🚀",
+    version: "1.0.0"
+  });
+});
+
