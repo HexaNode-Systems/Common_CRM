@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const workReportSchema = new mongoose.Schema(
@@ -13,4 +14,4 @@ const workReportSchema = new mongoose.Schema(
 );
 
 // Prevent duplicate reports by the same user on the same calendar day (UTC-based index or simple query check in controller)
-export const WorkReport = mongoose.model('WorkReport', workReportSchema);
+export const WorkReport = makeTenantModel('WorkReport', workReportSchema);

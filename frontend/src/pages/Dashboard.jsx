@@ -3,18 +3,15 @@ import { api } from '../api/client.js';
 import Card from '../components/Card.jsx';
 import {
   Users,
-  Boxes,
   Target,
   ShoppingCart,
-  DollarSign,
-  HelpCircle,
-  MessageSquare,
   TrendingUp,
-  Globe,
-  Phone,
-  Layers,
   ArrowUpRight,
-  TrendingDown
+  TrendingDown,
+  Package,
+  CheckCircle2,
+  Inbox,
+  IndianRupee
 } from 'lucide-react';
 
 const sourceLabelMap = {
@@ -106,22 +103,13 @@ export default function Dashboard({ title = 'Dashboard' }) {
 
   const summaryCards = [
     { label: 'Total Users', value: report?.users || 0, icon: Users, color: 'text-blue-600 bg-blue-50 border-blue-100', pct: '+4%' },
-    { label: 'Products', value: report?.products || 0, icon: Boxes, color: 'text-indigo-600 bg-indigo-50 border-indigo-100', pct: '+0%' },
+    { label: 'Products', value: report?.products || 0, icon: Package, color: 'text-indigo-600 bg-indigo-50 border-indigo-100', pct: '+0%' },
     { label: 'Leads Ingested', value: report?.leads || 0, icon: Target, color: 'text-emerald-600 bg-emerald-50 border-emerald-100', pct: '+24%' },
     { label: 'Total Orders', value: report?.orders || 0, icon: ShoppingCart, color: 'text-violet-600 bg-violet-50 border-violet-100', pct: '+18%' },
-    { label: 'Paid Invoices', value: report?.paidPayments || 0, icon: CheckCircle, color: 'text-sky-600 bg-sky-50 border-sky-100', pct: '+8%' },
-    { label: 'Client Enquiries', value: report?.enquiries || 0, icon: HelpCircle, color: 'text-pink-600 bg-pink-50 border-pink-100', pct: '-5%' },
-    { label: 'Total Revenue', value: `₹${(report?.revenue || 0).toLocaleString()}`, icon: DollarSign, color: 'text-amber-600 bg-amber-50 border-amber-100', pct: '+12%' }
+    { label: 'Paid Invoices', value: report?.paidPayments || 0, icon: CheckCircle2, color: 'text-sky-600 bg-sky-50 border-sky-100', pct: '+8%' },
+    { label: 'Client Enquiries', value: report?.enquiries || 0, icon: Inbox, color: 'text-pink-600 bg-pink-50 border-pink-100', pct: '-5%' },
+    { label: 'Total Revenue', value: `₹${(report?.revenue || 0).toLocaleString()}`, icon: IndianRupee, color: 'text-amber-600 bg-amber-50 border-amber-100', pct: '+12%' }
   ];
-
-  function CheckCircle(props) {
-    return (
-      <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-check-circle">
-        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-        <path d="m9 11 3 3L22 4" />
-      </svg>
-    );
-  }
 
   if (loading) {
     return (
@@ -139,21 +127,32 @@ export default function Dashboard({ title = 'Dashboard' }) {
       </div>
 
       {/* Summary KPI Grid */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {summaryCards.map((card) => {
           const Icon = card.icon;
+          const isPositive = card.pct.startsWith('+');
+          const isZero = card.pct === '+0%';
           return (
-            <Card key={card.label} className="p-4 flex flex-col justify-between hover:shadow-md transition duration-250 border border-slate-200 hover:border-slate-300">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-2xs font-medium text-slate-400 uppercase tracking-wider line-clamp-1">{card.label}</span>
-                <div className={`rounded-lg p-1.5 ${card.color.split(' ')[1]} ${card.color.split(' ')[2]}`}>
-                  <Icon size={14} className={card.color.split(' ')[0]} />
+            <Card key={card.label} className="p-5 flex flex-col justify-between hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 border border-slate-200/80 hover:border-slate-300 rounded-2xl bg-white shadow-xs">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">{card.label}</span>
+                  <div className={`rounded-xl p-2.5 border ${card.color.split(' ')[1]} ${card.color.split(' ')[2]}`}>
+                    <Icon size={18} className={card.color.split(' ')[0]} />
+                  </div>
+                </div>
+                <div className="mt-4 flex items-baseline gap-2">
+                  <span className="text-2xl font-extrabold text-slate-900 tracking-tight">{card.value}</span>
                 </div>
               </div>
-              <div className="mt-4 flex items-end justify-between gap-1">
-                <span className="text-lg font-bold text-slate-800 tracking-tight truncate">{card.value}</span>
-                <span className={`text-2xs font-semibold flex items-center gap-0.5 ${card.pct.startsWith('+') ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {card.pct.startsWith('+') ? <TrendingUp size={10} /> : <TrendingDown size={10} />}
+              <div className="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between">
+                <span className="text-[11px] text-slate-400 font-medium">vs last month</span>
+                <span className={`text-2xs font-bold px-2 py-0.5 rounded-full flex items-center gap-0.5 border ${
+                  isZero ? 'bg-slate-50 text-slate-500 border-slate-200' :
+                  isPositive ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                  'bg-rose-50 text-rose-700 border-rose-200'
+                }`}>
+                  {!isZero && (isPositive ? <TrendingUp size={10} /> : <TrendingDown size={10} />)}
                   {card.pct}
                 </span>
               </div>

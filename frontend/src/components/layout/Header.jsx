@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, LogOut, Menu, Search, User as UserIcon, ChevronDown, Camera, X, PencilLine, Mail, Phone, UserCheck, Cake, Loader2 } from 'lucide-react';
 import Button from '../Button.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -8,6 +9,34 @@ import { api } from '../../api/client.js';
 export default function Header({ onMenuClick }) {
   const { user, logout, setUser } = useAuth();
   const { settings } = useSettings();
+  const navigate = useNavigate();
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
+  const [searching, setSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const { data } = await api.get(`/search?q=${encodeURIComponent(searchQuery)}`);
+        setSearchResults(data);
+        setShowResults(true);
+      } catch (err) {
+        console.error('Error performing search', err);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchQuery]);
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
@@ -100,6 +129,129 @@ export default function Header({ onMenuClick }) {
     }
   };
 
+  const renderSearchResults = () => {
+    if (!showResults || !searchQuery) return null;
+
+    const hasResults =
+      (searchResults?.users?.length > 0) ||
+      (searchResults?.leads?.length > 0) ||
+      (searchResults?.orders?.length > 0) ||
+      (searchResults?.products?.length > 0);
+
+    return (
+      <>
+        {/* Backdrop to close on click outside */}
+        <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowResults(false)} />
+        <div className="absolute top-full left-0 right-0 mt-2 w-full min-w-[280px] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          {searching ? (
+            <div className="flex items-center justify-center py-6 text-slate-500 gap-2">
+              <Loader2 size={16} className="animate-spin text-primary" />
+              <span className="text-xs font-semibold">Searching database...</span>
+            </div>
+          ) : !searchResults ? (
+            <div className="flex items-center justify-center py-6 text-slate-500 gap-2">
+              <Loader2 size={16} className="animate-spin text-primary" />
+              <span className="text-xs font-semibold">Searching database...</span>
+            </div>
+          ) : !hasResults ? (
+            <div className="text-center py-6 text-slate-500 text-xs font-medium">
+              No results found for "{searchQuery}"
+            </div>
+          ) : (
+            <div className="space-y-4 max-h-[350px] overflow-y-auto pr-1 text-left">
+              {/* Leads Section */}
+              {searchResults.leads?.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">Leads</h4>
+                  <div className="space-y-1.5">
+                    {searchResults.leads.map(l => (
+                      <div key={l._id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition cursor-pointer" onClick={() => { setShowResults(false); navigate(`/leads?search=${encodeURIComponent(l.contactName || l.companyName)}`); }}>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{l.companyName}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{l.contactName ? `${l.contactName} • ${l.phone}` : l.phone}</p>
+                        </div>
+                        <span className="text-[9px] font-bold px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-full">{l.status}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Products/Projects Section */}
+              {searchResults.products?.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">Products & Projects</h4>
+                  <div className="space-y-1.5">
+                    {searchResults.products.map(p => (
+                      <div key={p._id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition cursor-pointer" onClick={() => { setShowResults(false); navigate(`/catalog?search=${encodeURIComponent(p.title)}`); }}>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">{p.title}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{p.sku ? `SKU: ${p.sku}` : p.type ? `Type: ${p.type}` : ''}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {p.price > 0 && <p className="text-xs font-bold text-slate-800">₹{p.price.toLocaleString()}</p>}
+                          {p.projectStatus && <span className="text-[9px] font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 border border-indigo-100 rounded-full">{p.projectStatus}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Orders Section */}
+              {searchResults.orders?.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">Orders</h4>
+                  <div className="space-y-1.5">
+                    {searchResults.orders.map(o => (
+                      <div key={o._id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition cursor-pointer" onClick={() => { setShowResults(false); navigate(`/orders`); }}>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-slate-800 truncate">Order: {o.customerInfo?.name || 'Walk-in Client'}</p>
+                          <p className="text-[10px] text-slate-500 truncate">{new Date(o.createdAt).toLocaleDateString()} • {o.customerInfo?.phone || ''}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs font-bold text-slate-800">₹{o.total.toLocaleString()}</p>
+                          <span className="text-[9px] font-bold px-2 py-0.5 bg-violet-50 text-violet-700 border border-violet-100 rounded-full uppercase">{o.status}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Users Section */}
+              {searchResults.users?.length > 0 && (
+                <div>
+                  <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-1 mb-2">Users</h4>
+                  <div className="space-y-1.5">
+                    {searchResults.users.map(u => (
+                      <div key={u._id} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-xl transition cursor-pointer" onClick={() => { setShowResults(false); navigate(`/users`); }}>
+                        <div className="flex items-center gap-2 min-w-0">
+                          {u.profilePhoto ? (
+                            <img src={u.profilePhoto} alt={u.name} className="h-6 w-6 rounded-full object-cover border border-slate-200" />
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-bold">
+                              {u.name.slice(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-slate-800 truncate">{u.name}</p>
+                            <p className="text-[10px] text-slate-500 truncate">{u.email}</p>
+                          </div>
+                        </div>
+                        <span className="text-[9px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full uppercase shrink-0">{u.role.replaceAll('_', ' ')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </>
+    );
+  };
+
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
       <div className="grid h-16 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-8">
@@ -114,19 +266,26 @@ export default function Header({ onMenuClick }) {
         </button>
 
         <div className="min-w-0">
-          <p className="text-sm text-slate-500">{settings?.brand?.name || 'Common CRM'}</p>
+          {/* <p className="text-sm text-slate-500">{settings?.brand?.name || 'Common CRM'}</p> */}
           <h1 className="truncate text-base font-semibold">Admin Panel</h1>
         </div>
 
-        <div className="mx-auto hidden w-full max-w-xl md:block">
+        <div className="mx-auto hidden w-full max-w-xl md:block relative">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
               className="h-10 w-full rounded-theme border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
               placeholder="Search users, orders, products..."
               type="search"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setShowResults(true);
+              }}
+              onFocus={() => setShowResults(true)}
             />
           </label>
+          {renderSearchResults()}
         </div>
 
         <div className="flex items-center justify-end gap-2 sm:gap-3">
@@ -199,15 +358,22 @@ export default function Header({ onMenuClick }) {
         </div>
       </div>
 
-      <div className="px-4 pb-3 md:hidden">
+      <div className="px-4 pb-3 md:hidden relative">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
           <input
             className="h-10 w-full rounded-theme border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-900 outline-none transition focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
             placeholder="Search users, orders, products..."
             type="search"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowResults(true);
+            }}
+            onFocus={() => setShowResults(true)}
           />
         </label>
+        {renderSearchResults()}
       </div>
 
       {/* Profile Settings Modal */}

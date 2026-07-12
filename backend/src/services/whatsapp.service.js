@@ -216,7 +216,9 @@ export async function initializeWhatsApp() {
           '--disable-gpu',
           '--no-default-browser-check',
           '--disable-default-apps',
-          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+          '--window-position=-10000,-10000',
+          '--window-size=0,0'
         ]
       }
     });

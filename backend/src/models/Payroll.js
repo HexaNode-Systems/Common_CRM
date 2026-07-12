@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const payrollSchema = new mongoose.Schema(
@@ -18,4 +19,4 @@ const payrollSchema = new mongoose.Schema(
 
 payrollSchema.index({ employee: 1, monthYear: 1 }, { unique: true });
 
-export const Payroll = mongoose.model('Payroll', payrollSchema);
+export const Payroll = makeTenantModel('Payroll', payrollSchema);

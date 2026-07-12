@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const auditLogSchema = new mongoose.Schema(
@@ -19,4 +20,4 @@ auditLogSchema.pre('save', function preventMutation(next) {
   next();
 });
 
-export const AuditLog = mongoose.model('AuditLog', auditLogSchema);
+export const AuditLog = makeTenantModel('AuditLog', auditLogSchema);

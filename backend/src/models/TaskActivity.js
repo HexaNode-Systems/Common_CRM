@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const taskActivitySchema = new mongoose.Schema(
@@ -11,4 +12,4 @@ const taskActivitySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const TaskActivity = mongoose.model('TaskActivity', taskActivitySchema);
+export const TaskActivity = makeTenantModel('TaskActivity', taskActivitySchema);

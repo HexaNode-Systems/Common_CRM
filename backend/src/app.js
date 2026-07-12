@@ -25,6 +25,10 @@ import payrollRoutes from './routes/payroll.routes.js';
 import attendanceRoutes from './routes/attendance.routes.js';
 import supportRoutes from './routes/support.routes.js';
 import workReportRoutes from './routes/workReport.routes.js';
+import searchRoutes from './routes/search.routes.js';
+import accessoryRoutes from './routes/accessory.routes.js';
+import superAdminRoutes from './routes/superAdmin.routes.js';
+import { tenantContextMiddleware } from './middleware/tenant.middleware.js';
 
 export const app = express();
 
@@ -34,6 +38,8 @@ app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/storage', express.static('storage'));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+app.use(tenantContextMiddleware);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 app.use('/api/auth', authRoutes);
@@ -64,10 +70,15 @@ app.use('/api/v1/vault', vaultRoutes);
 app.use('/api/vault', vaultRoutes);
 app.use('/api/v1/storage', storageRoutes);
 app.use('/api/storage', storageRoutes);
-app.use('/api/v1/support', supportRoutes);
-app.use('/api/support', supportRoutes);
+app.use('/api/v1/support/tickets', supportRoutes);
+app.use('/api/support/tickets', supportRoutes);
 app.use('/api/v1/work-reports', workReportRoutes);
 app.use('/api/work-reports', workReportRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/v1/accessories', accessoryRoutes);
+app.use('/api/accessories', accessoryRoutes);
+app.use('/api/v1/super-admin', superAdminRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

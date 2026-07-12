@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const leadNoteSchema = new mongoose.Schema(
@@ -42,4 +43,4 @@ const leadSchema = new mongoose.Schema(
 leadSchema.index({ phoneNormalized: 1 }, { unique: true, sparse: true });
 leadSchema.index({ assignee: 1, status: 1, source: 1, ingestedAt: -1 });
 
-export const Lead = mongoose.model('Lead', leadSchema);
+export const Lead = makeTenantModel('Lead', leadSchema);

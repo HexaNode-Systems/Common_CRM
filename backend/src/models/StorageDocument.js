@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const storageDocumentSchema = new mongoose.Schema(
@@ -29,4 +30,4 @@ const storageDocumentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const StorageDocument = mongoose.model('StorageDocument', storageDocumentSchema);
+export const StorageDocument = makeTenantModel('StorageDocument', storageDocumentSchema);

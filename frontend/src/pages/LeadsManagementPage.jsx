@@ -1,18 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
-import { AlertCircle, ArrowRightLeft, CalendarClock, CheckCircle2, FileUp, Globe, LoaderCircle, PencilLine, Phone, Plus, RefreshCw, Search, ShieldAlert, SquarePen, Trash2, Upload, UserRound, X } from 'lucide-react';
+import { AlertCircle, ArrowRightLeft, CalendarClock, CheckCircle2, FileUp, Globe, LoaderCircle, PencilLine, Phone, Plus, RefreshCw, Search, ShieldAlert, SquarePen, Trash2, Upload, UserRound, X, ShoppingBag, Database, Mail, MessageSquare } from 'lucide-react';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import { useSearchParams } from 'react-router-dom';
 
 const SOURCE_OPTIONS = [
   { value: '', label: 'All Sources' },
-  { value: 'website_form', label: '🌐 Website Form' },
-  { value: 'justdial', label: '☎️ Justdial' },
-  { value: 'indiamart', label: '🛒 IndiaMart' },
-  { value: 'zoho', label: '💼 Zoho CRM' },
-  { value: 'csv_import', label: '📥 Bulk Import CSV' },
-  { value: 'manual_entry', label: '✍️ Manual Entry' }
+  { value: 'website_form', label: 'Website Form' },
+  { value: 'justdial', label: 'Justdial' },
+  { value: 'indiamart', label: 'IndiaMart' },
+  { value: 'zoho', label: 'Zoho CRM' },
+  { value: 'csv_import', label: 'Bulk Import CSV' },
+  { value: 'manual_entry', label: 'Manual Entry' }
 ];
 
 const STATUS_OPTIONS = [
@@ -35,12 +36,12 @@ const STATUS_CLASSES = {
 };
 
 const SOURCE_META = {
-  website_form: { label: '🌐 Website Form', icon: Globe },
-  justdial: { label: '☎️ Justdial', icon: Phone },
-  indiamart: { label: '🛒 IndiaMart', icon: Globe },
-  zoho: { label: '💼 Zoho CRM', icon: UserRound },
-  csv_import: { label: '📥 Bulk Import CSV', icon: FileUp },
-  manual_entry: { label: '✍️ Manual Entry', icon: PencilLine }
+  website_form: { label: 'Website Form', icon: Globe },
+  justdial: { label: 'Justdial', icon: Phone },
+  indiamart: { label: 'IndiaMart', icon: ShoppingBag },
+  zoho: { label: 'Zoho CRM', icon: Database },
+  csv_import: { label: 'Bulk Import CSV', icon: FileUp },
+  manual_entry: { label: 'Manual Entry', icon: PencilLine }
 };
 
 const emptyLead = {
@@ -390,13 +391,15 @@ function LeadDrawer({
 
 export default function LeadsManagementPage() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
   const [leads, setLeads] = useState([]);
   const [assignees, setAssignees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [filters, setFilters] = useState({ source: '', status: '', from: '', to: '', assignee: '', search: '' });
+  const [filters, setFilters] = useState({ source: '', status: '', from: '', to: '', assignee: '', search: initialSearch });
   const [drawerMode, setDrawerMode] = useState(null);
   const [selectedLead, setSelectedLead] = useState(null);
   const [importOpen, setImportOpen] = useState(false);
@@ -424,6 +427,13 @@ export default function LeadsManagementPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    const searchVal = searchParams.get('search');
+    if (searchVal !== null) {
+      setFilters(prev => ({ ...prev, search: searchVal }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     load();
@@ -686,17 +696,20 @@ export default function LeadsManagementPage() {
                   </td>
                   <td className="px-4 py-4 align-top">
                     <div className="flex flex-col space-y-1">
-                      <div className="flex items-center gap-1.5 font-semibold text-slate-900">
-                        <span>📞 {lead.phone}</span>
+                      <div className="flex items-center gap-1.5 font-semibold text-slate-900 text-sm">
+                        <Phone size={13} className="text-slate-400 shrink-0" />
+                        <span>{lead.phone}</span>
                       </div>
                       {lead.whatsapp && (
                         <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                          <span>💬 WhatsApp: {lead.whatsapp}</span>
+                          <MessageSquare size={13} className="text-emerald-500 shrink-0" />
+                          <span>WhatsApp: {lead.whatsapp}</span>
                         </div>
                       )}
                       {lead.email && (
                         <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <span>✉️ {lead.email}</span>
+                          <Mail size={13} className="text-slate-400 shrink-0" />
+                          <span>{lead.email}</span>
                         </div>
                       )}
                     </div>

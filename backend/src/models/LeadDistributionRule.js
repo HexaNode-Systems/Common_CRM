@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const leadDistributionRuleSchema = new mongoose.Schema(
@@ -21,4 +22,4 @@ const leadDistributionRuleSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const LeadDistributionRule = mongoose.model('LeadDistributionRule', leadDistributionRuleSchema);
+export const LeadDistributionRule = makeTenantModel('LeadDistributionRule', leadDistributionRuleSchema);

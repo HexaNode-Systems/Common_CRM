@@ -13,6 +13,7 @@ export default function ThemeSettings() {
   const [seo, setSeo] = useState({});
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [uploadingFavicon, setUploadingFavicon] = useState(false);
+  const [uploadingSplashLogo, setUploadingSplashLogo] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function ThemeSettings() {
 
     if (field === 'logo') setUploadingLogo(true);
     if (field === 'favicon') setUploadingFavicon(true);
+    if (field === 'splashLogo') setUploadingSplashLogo(true);
 
     const formData = new FormData();
     formData.append('image', file);
@@ -37,13 +39,18 @@ export default function ThemeSettings() {
           'Content-Type': 'multipart/form-data'
         }
       });
-      setBrand(prev => ({ ...prev, [field]: res.data.url }));
+      if (field === 'splashLogo') {
+        setTheme(prev => ({ ...prev, splashLogo: res.data.url }));
+      } else {
+        setBrand(prev => ({ ...prev, [field]: res.data.url }));
+      }
     } catch (err) {
       console.error('File upload failed', err);
       alert('Upload failed: ' + (err.response?.data?.message || err.message));
     } finally {
       if (field === 'logo') setUploadingLogo(false);
       if (field === 'favicon') setUploadingFavicon(false);
+      if (field === 'splashLogo') setUploadingSplashLogo(false);
     }
   };
 
@@ -268,6 +275,103 @@ export default function ThemeSettings() {
                 <option value="bordered">Bordered Outline</option>
                 <option value="elevated">Shadow Elevated</option>
               </select>
+            </div>
+          </div>
+        </Card>
+
+        {/* Splash Screen Card */}
+        <Card title="Animated Splash Screen Settings">
+          <div className="space-y-5">
+            <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/50 p-4">
+              <div>
+                <span className="block text-sm font-bold text-slate-700">Enable Splash Screen</span>
+                <span className="block text-xs text-slate-500">Show a premium animated greeting on app loading.</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={theme.splashEnabled ?? true}
+                onChange={(e) => setTheme({ ...theme, splashEnabled: e.target.checked })}
+                className="h-5 w-5 rounded border-slate-300 text-primary focus:ring-primary cursor-pointer"
+              />
+            </div>
+
+            <Input
+              label="Splash Screen Message"
+              placeholder="e.g. Loading Premium CRM..."
+              value={theme.splashText || ''}
+              onChange={(e) => setTheme({ ...theme, splashText: e.target.value })}
+              disabled={theme.splashEnabled === false}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <Input
+                label="Splash Duration (ms)"
+                type="number"
+                placeholder="e.g. 2000"
+                value={theme.splashDuration || ''}
+                onChange={(e) => setTheme({ ...theme, splashDuration: e.target.value })}
+                disabled={theme.splashEnabled === false}
+              />
+
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700">Splash Background</label>
+                <select
+                  value={theme.splashBgStyle || 'gradient'}
+                  onChange={(e) => setTheme({ ...theme, splashBgStyle: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 p-2.5 text-sm focus:border-primary focus:outline-none bg-white"
+                  disabled={theme.splashEnabled === false}
+                >
+                  <option value="gradient">Modern Dark Gradient</option>
+                  <option value="primary">Theme Primary Color</option>
+                  <option value="secondary">Theme Secondary Color</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">Custom Splash Logo (Optional)</label>
+              <div className="flex items-center gap-5">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 overflow-hidden">
+                  {theme.splashLogo ? (
+                    <img src={theme.splashLogo} alt="Splash Logo Preview" className="h-full w-full object-contain p-1" />
+                  ) : (
+                    <ImageIcon className="h-6 w-6 text-slate-300" />
+                  )}
+                </div>
+                <div className="flex-1 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <label className={`cursor-pointer inline-flex items-center gap-2 rounded-xl bg-primary/10 border border-primary/20 px-4 py-2 text-xs font-semibold text-primary hover:bg-primary/20 transition ${theme.splashEnabled === false ? 'opacity-55 pointer-events-none' : ''}`}>
+                      <Upload size={14} />
+                      {uploadingSplashLogo ? 'Uploading...' : 'Upload Logo'}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleFileUpload(e, 'splashLogo')}
+                        className="hidden"
+                        disabled={uploadingSplashLogo || theme.splashEnabled === false}
+                      />
+                    </label>
+                    {theme.splashLogo && (
+                      <button
+                        type="button"
+                        onClick={() => setTheme({ ...theme, splashLogo: '' })}
+                        className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                        disabled={theme.splashEnabled === false}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Or enter logo URL manually (defaults to Brand Logo)"
+                    value={theme.splashLogo || ''}
+                    onChange={(e) => setTheme({ ...theme, splashLogo: e.target.value })}
+                    className="w-full rounded-xl border border-slate-200 px-3 py-1.5 text-xs focus:border-primary focus:outline-none"
+                    disabled={theme.splashEnabled === false}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </Card>

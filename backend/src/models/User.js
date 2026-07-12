@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { makeTenantModel } from '../utils/tenantModel.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -33,11 +34,65 @@ userSchema.pre('save', async function hashPassword(next) {
   next();
 });
 
+userSchema.pre('save', async function populatePermissions(next) {
+  if (this.isModified('role') || this.isNew || !this.permissions || this.permissions.length === 0) {
+    if (this.role === 'super_admin') {
+      const { allPermissions } = await import('../utils/permissions.js');
+      this.permissions = allPermissions;
+    } else {
+      try {
+        const { Role } = await import('./Role.js');
+        const { matrixToPermissionStrings } = await import('../utils/roles.js');
+        const roleObj = await Role.findOne({ slug: this.role });
+        if (roleObj) {
+          this.permissions = matrixToPermissionStrings(roleObj.permissions);
+        }
+      } catch (err) {
+        console.error('Error populating permissions for user:', err);
+      }
+    }
+  }
+  next();
+});
+
+userSchema.post('save', async function syncMasterUser(doc) {
+  try {
+    const { MasterUser } = await import('./master/MasterUser.js');
+    const { tenantStorage } = await import('../utils/tenantStorage.js');
+    const tenantId = tenantStorage.getStore()?.tenantId || null;
+    const isSuperAdmin = doc.role === 'super_admin' && !tenantId;
+
+    await MasterUser.findOneAndUpdate(
+      { email: doc.email.toLowerCase() },
+      {
+        email: doc.email.toLowerCase(),
+        tenantId: isSuperAdmin ? null : tenantId,
+        role: doc.role,
+        isActive: doc.isActive
+      },
+      { upsert: true, new: true }
+    );
+  } catch (err) {
+    console.error('Error syncing User to MasterUser:', err);
+  }
+});
+
+userSchema.post('findOneAndDelete', async function syncDeleteMasterUser(doc) {
+  if (doc) {
+    try {
+      const { MasterUser } = await import('./master/MasterUser.js');
+      await MasterUser.deleteOne({ email: doc.email.toLowerCase() });
+    } catch (err) {
+      console.error('Error deleting MasterUser mapping:', err);
+    }
+  }
+});
+
 userSchema.methods.comparePassword = function comparePassword(password) {
   return bcrypt.compare(password, this.password);
 };
 
-export const User = mongoose.model('User', userSchema);
+export const User = makeTenantModel('User', userSchema);
 
 
 

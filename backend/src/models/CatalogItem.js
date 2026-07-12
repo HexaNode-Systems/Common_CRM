@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const assignedTeamSchema = new mongoose.Schema(
@@ -73,4 +74,4 @@ const catalogItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const CatalogItem = mongoose.model('CatalogItem', catalogItemSchema);
+export const CatalogItem = makeTenantModel('CatalogItem', catalogItemSchema);

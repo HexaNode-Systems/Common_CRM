@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const ticketMessageSchema = new mongoose.Schema(
@@ -36,4 +37,4 @@ const supportTicketSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const SupportTicket = mongoose.model('SupportTicket', supportTicketSchema);
+export const SupportTicket = makeTenantModel('SupportTicket', supportTicketSchema);

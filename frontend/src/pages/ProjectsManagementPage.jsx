@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CalendarDays, CheckCircle2, FileText, Plus, RefreshCw, Search, UploadCloud, X, AlertCircle, Clock, DollarSign, Users } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
@@ -349,11 +349,13 @@ function ProjectDrawer({ mode, project, users, onClose, onSave }) {
 
 export default function ProjectsManagementPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const initialSearch = searchParams.get('search') || '';
   const [projects, setProjects] = useState([]);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', status: '', search: '' });
+  const [filters, setFilters] = useState({ dateFrom: '', dateTo: '', status: '', search: initialSearch });
 
   async function loadProjects(nextFilters = filters) {
     setLoading(true);
@@ -380,6 +382,13 @@ export default function ProjectsManagementPage() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useEffect(() => {
+    const searchVal = searchParams.get('search');
+    if (searchVal !== null) {
+      setFilters((current) => ({ ...current, search: searchVal }));
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => loadProjects(filters), 250);

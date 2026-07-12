@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const couponSchema = new mongoose.Schema(
@@ -17,5 +18,5 @@ const couponSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Coupon = mongoose.model('Coupon', couponSchema);
+export const Coupon = makeTenantModel('Coupon', couponSchema);
 

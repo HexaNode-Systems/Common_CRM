@@ -3,7 +3,6 @@ import { createServer } from 'http';
 import { app } from './app.js';
 import { connectDb } from './config/db.js';
 import { startJustdialLeadPolling } from './services/justdial.service.js';
-import { initializeWhatsApp } from './services/whatsapp.service.js';
 import { initializeSocket } from './services/socket.service.js';
 
 dotenv.config();
@@ -16,7 +15,6 @@ initializeSocket(server);
 
 connectDb().then(() => {
   startJustdialLeadPolling();
-  void initializeWhatsApp();
   server.listen(port, () => {
     console.log(`API running on http://localhost:${port}`);
   });

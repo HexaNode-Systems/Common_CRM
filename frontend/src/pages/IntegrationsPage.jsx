@@ -20,7 +20,9 @@ import {
   LogOut,
   Loader2,
   Send,
-  AlertCircle
+  AlertCircle,
+  ShoppingBag,
+  Database
 } from 'lucide-react';
 
 export default function IntegrationsPage() {
@@ -215,7 +217,7 @@ export default function IntegrationsPage() {
                   <Phone size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">☎️ Justdial Integration</h3>
+                  <h3 className="font-bold text-slate-900 text-base">Justdial Integration</h3>
                   <p className="text-xs text-slate-500">Automatic polling or webhook lead ingestion</p>
                 </div>
               </div>
@@ -294,10 +296,10 @@ export default function IntegrationsPage() {
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-teal-50 p-2.5 text-teal-600 border border-teal-100">
-                  <Globe size={24} />
+                  <ShoppingBag size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">🛒 IndiaMart Integration</h3>
+                  <h3 className="font-bold text-slate-900 text-base">IndiaMart Integration</h3>
                   <p className="text-xs text-slate-500">Real-time webhook ingestion</p>
                 </div>
               </div>
@@ -356,7 +358,7 @@ export default function IntegrationsPage() {
                   <Code size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">🌐 Website Form Integration</h3>
+                  <h3 className="font-bold text-slate-900 text-base">Website Form Integration</h3>
                   <p className="text-xs text-slate-500">Ingest contact forms directly into CRM</p>
                 </div>
               </div>
@@ -412,10 +414,10 @@ export default function IntegrationsPage() {
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
                 <div className="rounded-xl bg-blue-50 p-2.5 text-blue-600 border border-blue-100">
-                  <Layers size={24} />
+                  <Database size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">💼 Zoho CRM Integration</h3>
+                  <h3 className="font-bold text-slate-900 text-base">Zoho CRM Integration</h3>
                   <p className="text-xs text-slate-500">Map Zoho CRM module leads</p>
                 </div>
               </div>
@@ -486,7 +488,7 @@ export default function IntegrationsPage() {
                   <QrCode size={24} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">🟢 WhatsApp QR Code Connection</h3>
+                  <h3 className="font-bold text-slate-900 text-base">WhatsApp QR Code Connection</h3>
                   <p className="text-xs text-slate-500">Link your WhatsApp account via QR Scan to automate alerts and reply via Inbox</p>
                 </div>
               </div>

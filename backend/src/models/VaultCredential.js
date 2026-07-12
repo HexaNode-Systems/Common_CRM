@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const vaultCredentialSchema = new mongoose.Schema(
@@ -15,4 +16,4 @@ const vaultCredentialSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const VaultCredential = mongoose.model('VaultCredential', vaultCredentialSchema);
+export const VaultCredential = makeTenantModel('VaultCredential', vaultCredentialSchema);

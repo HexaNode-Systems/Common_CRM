@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const whatsappMessageSchema = new mongoose.Schema(
@@ -20,4 +21,4 @@ const whatsappMessageSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const WhatsAppMessage = mongoose.model('WhatsAppMessage', whatsappMessageSchema);
+export const WhatsAppMessage = makeTenantModel('WhatsAppMessage', whatsappMessageSchema);

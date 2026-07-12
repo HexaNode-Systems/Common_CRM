@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 import { defaultSettings } from '../utils/defaultSettings.js';
 
@@ -15,5 +16,5 @@ const settingSchema = new mongoose.Schema(
   { timestamps: true, minimize: false }
 );
 
-export const Setting = mongoose.model('Setting', settingSchema);
+export const Setting = makeTenantModel('Setting', settingSchema);
 

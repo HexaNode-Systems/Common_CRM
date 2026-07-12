@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const attachmentSchema = new mongoose.Schema(
@@ -35,4 +36,4 @@ const taskSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Task = mongoose.model('Task', taskSchema);
+export const Task = makeTenantModel('Task', taskSchema);

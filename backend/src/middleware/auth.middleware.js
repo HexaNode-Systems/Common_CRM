@@ -19,7 +19,14 @@ export const protect = asyncHandler(async (req, res, next) => {
     throw new ApiError(401, 'Permissions changed. Please sign in again.');
   }
 
-  req.user = user;
+  const userObj = user.toObject();
+  userObj.tenantId = decoded.tenantId || null;
+  if (decoded.impersonatorId) {
+    userObj.impersonatorId = decoded.impersonatorId;
+    userObj.impersonatorName = decoded.impersonatorName;
+  }
+
+  req.user = userObj;
   req.role = role;
   next();
 });

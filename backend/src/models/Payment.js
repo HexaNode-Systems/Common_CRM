@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema(
@@ -15,5 +16,5 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Payment = mongoose.model('Payment', paymentSchema);
+export const Payment = makeTenantModel('Payment', paymentSchema);
 

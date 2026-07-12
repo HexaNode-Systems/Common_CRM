@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const attendanceSchema = new mongoose.Schema(
@@ -11,4 +12,4 @@ const attendanceSchema = new mongoose.Schema(
 
 attendanceSchema.index({ employee: 1, date: 1 }, { unique: true });
 
-export const Attendance = mongoose.model('Attendance', attendanceSchema);
+export const Attendance = makeTenantModel('Attendance', attendanceSchema);

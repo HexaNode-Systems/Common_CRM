@@ -11,6 +11,7 @@ export const roleModules = [
   { module: 'orders', label: 'Orders / Leads' },
   { module: 'payments', label: 'Payments' },
   { module: 'invoices', label: 'Invoices' },
+  { module: 'accessories', label: 'Accessories' }
 ];
 
 export const defaultRoleNames = [

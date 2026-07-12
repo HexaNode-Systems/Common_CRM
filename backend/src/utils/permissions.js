@@ -48,10 +48,15 @@ export const allPermissions = [
   'coupons:update',
   'coupons:delete',
   'settings:update',
+  'accessories:create',
+  'accessories:read',
+  'accessories:update',
+  'accessories:delete',
   'uploads:create',
   'reports:read',
   'roles:read',
   'roles:update'
 ];
+
 
 

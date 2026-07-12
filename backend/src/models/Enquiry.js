@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const enquirySchema = new mongoose.Schema(
@@ -14,5 +15,5 @@ const enquirySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Enquiry = mongoose.model('Enquiry', enquirySchema);
+export const Enquiry = makeTenantModel('Enquiry', enquirySchema);
 

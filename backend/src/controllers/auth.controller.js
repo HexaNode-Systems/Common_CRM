@@ -2,11 +2,25 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { ApiError } from '../utils/apiError.js';
+import { MasterUser } from '../models/master/MasterUser.js';
+import { Tenant } from '../models/master/Tenant.js';
+import { tenantStorage } from '../utils/tenantStorage.js';
+import { getTenantDbConnection } from '../utils/connectionManager.js';
 
-function signToken(user) {
-  return jwt.sign({ id: user._id, role: user.role, permissionVersion: user.permissionVersion || 0 }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d'
-  });
+function signToken(user, tenantId = null, dbName = null) {
+  return jwt.sign(
+    { 
+      id: user._id, 
+      role: user.role, 
+      permissionVersion: user.permissionVersion || 0,
+      tenantId,
+      dbName
+    }, 
+    process.env.JWT_SECRET, 
+    {
+      expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+    }
+  );
 }
 
 function sanitizeUser(user) {
@@ -22,11 +36,56 @@ export const register = asyncHandler(async (req, res) => {
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email }).select('+password');
+  if (!email || !password) throw new ApiError(400, 'Email and password are required');
+
+  const normalizedEmail = email.toLowerCase().trim();
+
+  // 1. Look up user in Master Database
+  const masterUser = await MasterUser.findOne({ email: normalizedEmail });
+  if (!masterUser) throw new ApiError(401, 'Invalid email or password');
+  if (!masterUser.isActive) throw new ApiError(401, 'Your account has been deactivated. Please contact your administrator.');
+
+  let user = null;
+  let tenantId = null;
+  let dbName = null;
+
+  if (masterUser.tenantId) {
+    // Tenant user: look up tenant status and database name
+    const tenant = await Tenant.findOne({ tenantId: masterUser.tenantId });
+    if (!tenant) throw new ApiError(401, 'Company associated with this account not found.');
+    if (tenant.status !== 'active') {
+      throw new ApiError(403, `Your company account is currently ${tenant.status}. Please contact support.`);
+    }
+
+    tenantId = tenant.tenantId;
+    dbName = tenant.dbName;
+
+    const connection = getTenantDbConnection(dbName);
+    
+    // Retrieve user in tenant connection context
+    await tenantStorage.run({ connection, tenantId, dbName }, async () => {
+      user = await User.findOne({ email: normalizedEmail }).select('+password');
+    });
+  } else {
+    // Global Super Admin: check user on default (Master DB) connection
+    user = await User.findOne({ email: normalizedEmail }).select('+password');
+  }
+
   if (!user) throw new ApiError(401, 'Invalid email or password');
   if (!user.isActive) throw new ApiError(401, 'Your account has been deactivated. Please contact your administrator.');
-  if (!(await user.comparePassword(password))) throw new ApiError(401, 'Invalid email or password');
-  res.json({ user: sanitizeUser(user), token: signToken(user) });
+
+  // Verify password
+  const isMatch = await user.comparePassword(password);
+  if (!isMatch) throw new ApiError(401, 'Invalid email or password');
+
+  // Update login timestamp
+  masterUser.lastLoginAt = new Date();
+  await masterUser.save();
+
+  res.json({
+    user: sanitizeUser(user),
+    token: signToken(user, tenantId, dbName)
+  });
 });
 
 export const me = asyncHandler(async (req, res) => {

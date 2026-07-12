@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const bannerSchema = new mongoose.Schema(
@@ -14,5 +15,5 @@ const bannerSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Banner = mongoose.model('Banner', bannerSchema);
+export const Banner = makeTenantModel('Banner', bannerSchema);
 

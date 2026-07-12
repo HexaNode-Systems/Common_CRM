@@ -1,3 +1,4 @@
+import { makeTenantModel } from '../utils/tenantModel.js';
 import mongoose from 'mongoose';
 
 const invoiceSchema = new mongoose.Schema(
@@ -16,5 +17,5 @@ const invoiceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-export const Invoice = mongoose.model('Invoice', invoiceSchema);
+export const Invoice = makeTenantModel('Invoice', invoiceSchema);
 

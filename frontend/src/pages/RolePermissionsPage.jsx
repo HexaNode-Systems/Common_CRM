@@ -12,7 +12,8 @@ const EMPTY_MODULES = [
   { module: 'orders', label: 'Orders / Leads', access: 'view' },
   { module: 'payments', label: 'Payments', access: 'view' },
   { module: 'invoices', label: 'Invoices', access: 'view' },
-  { module: 'vault', label: 'Vault / Credentials', access: 'view' }
+  { module: 'vault', label: 'Vault / Credentials', access: 'view' },
+  { module: 'accessories', label: 'Accessories Tracking', access: 'view' }
 ];
 
 const ACCESS_OPTIONS = [
