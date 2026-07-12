@@ -42,6 +42,13 @@ app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 app.use(tenantContextMiddleware);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Appnix CRM Backend is running 🚀",
+    version: "1.0.0"
+  });
+});
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/v1/users', userRoutes);

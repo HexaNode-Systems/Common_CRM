@@ -11,15 +11,6 @@ const port = process.env.PORT || 5000;
 const server = createServer(app);
 
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: "Common CRM Backend is running 🚀",
-    version: "1.0.0"
-  });
-});
-
-
 // Initialize WebSockets
 initializeSocket(server);
 
