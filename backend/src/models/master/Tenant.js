@@ -15,6 +15,7 @@ const tenantSchema = new mongoose.Schema(
     },
     plan: { type: mongoose.Schema.Types.ObjectId, ref: 'SubscriptionPlan', required: true },
     planExpiresAt: { type: Date },
+    subscriptionDuration: { type: Number, default: 1 },
     branding: {
       logo: { type: String, default: '' },
       favicon: { type: String, default: '' },

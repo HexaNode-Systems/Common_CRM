@@ -28,7 +28,7 @@ const links = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/users', label: 'Users', icon: Users },
   { to: '/catalog', label: 'Projects Management', icon: FolderKanban },
-  { to: '/leads', label: 'Leads Management', icon: Target },
+  { to: '/leads', label: 'Leads Management', icon: Target, end: true },
   { to: '/leads/distribution', label: 'Lead Distribution', icon: GitFork, roles: ['super_admin'] },
   { to: '/tasks', label: 'Task Management', icon: ClipboardList },
   { to: '/vault', label: 'Vault / Credentials', icon: Lock },
@@ -109,6 +109,7 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle
               <NavLink
                 key={link.to}
                 to={link.to}
+                end={link.end}
                 title={iconOnly ? link.label : undefined}
                 onClick={isMobile ? onCloseMobile : undefined}
                 className={({ isActive }) =>

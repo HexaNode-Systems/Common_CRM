@@ -53,13 +53,13 @@ export const listTenants = asyncHandler(async (req, res) => {
 
 // 2. Create Tenant
 export const createTenant = asyncHandler(async (req, res) => {
-  const { name, email, password, planSlug, subdomain } = req.body;
+  const { name, email, password, planSlug, subdomain, durationMonths } = req.body;
 
   if (!name || !email || !password) {
     throw new ApiError(400, 'Company Name, Admin Email, and Admin Password are required.');
   }
 
-  const tenant = await provisionTenant({ name, email, password, planSlug, subdomain });
+  const tenant = await provisionTenant({ name, email, password, planSlug, subdomain, durationMonths });
 
   // Log platform audit
   await SystemAuditLog.create({
@@ -68,11 +68,47 @@ export const createTenant = asyncHandler(async (req, res) => {
     action: 'create_tenant',
     targetType: 'tenant',
     targetId: tenant._id,
-    message: `Provisioned new tenant: ${tenant.name} (${tenant.tenantId})`,
+    message: `Provisioned new tenant: ${tenant.name} (${tenant.tenantId}) with duration ${durationMonths || 1} months`,
     ipAddress: req.ip
   });
 
   res.status(201).json(tenant);
+});
+
+// 2b. Update Tenant Subscription
+export const updateTenantSubscription = asyncHandler(async (req, res) => {
+  const { subscriptionDuration, planExpiresAt } = req.body;
+
+  if (!subscriptionDuration) {
+    throw new ApiError(400, 'Subscription duration is required.');
+  }
+
+  const tenant = await Tenant.findById(req.params.id);
+  if (!tenant) throw new ApiError(404, 'Tenant not found.');
+
+  tenant.subscriptionDuration = Number(subscriptionDuration);
+  if (planExpiresAt) {
+    tenant.planExpiresAt = new Date(planExpiresAt);
+  } else {
+    const expiry = new Date();
+    expiry.setMonth(expiry.getMonth() + Number(subscriptionDuration));
+    tenant.planExpiresAt = expiry;
+  }
+
+  await tenant.save();
+
+  // Log platform audit
+  await SystemAuditLog.create({
+    actor: req.user?._id,
+    actorName: req.user?.name || 'Super Admin',
+    action: 'update_tenant_subscription',
+    targetType: 'tenant',
+    targetId: tenant._id,
+    message: `Updated subscription for ${tenant.name}: Duration ${subscriptionDuration} months, Expiry ${tenant.planExpiresAt.toISOString()}`,
+    ipAddress: req.ip
+  });
+
+  res.json(tenant);
 });
 
 // 3. Update Tenant Status

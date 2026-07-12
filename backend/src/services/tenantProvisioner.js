@@ -30,7 +30,7 @@ function generateCompanyCode(name) {
   return `${prefix}${rand}`;
 }
 
-export async function provisionTenant({ name, email, password, planSlug, subdomain }) {
+export async function provisionTenant({ name, email, password, planSlug, subdomain, durationMonths = 1 }) {
   // 1. Verify Subscription Plan
   const plan = await SubscriptionPlan.findOne({ slug: planSlug || 'starter' });
   if (!plan) {
@@ -61,6 +61,10 @@ export async function provisionTenant({ name, email, password, planSlug, subdoma
     throw new Error('This email is already registered on the platform.');
   }
 
+  // Calculate expiry date based on selected duration
+  const expiryDate = new Date();
+  expiryDate.setMonth(expiryDate.getMonth() + Number(durationMonths));
+
   // 4. Create Tenant Registry in Master Database
   const tenant = await Tenant.create({
     name,
@@ -69,7 +73,8 @@ export async function provisionTenant({ name, email, password, planSlug, subdoma
     subdomain: finalSubdomain,
     dbName,
     plan: plan._id,
-    planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // Default 30-day trial
+    planExpiresAt: expiryDate,
+    subscriptionDuration: Number(durationMonths),
     branding: {
       companyName: name
     }

@@ -9,7 +9,8 @@ import {
   listPlans,
   listTenants,
   updatePlan,
-  updateTenantStatus
+  updateTenantStatus,
+  updateTenantSubscription
 } from '../controllers/superAdmin.controller.js';
 
 const router = Router();
@@ -21,6 +22,7 @@ router.use(requireSuperAdmin);
 router.get('/tenants', listTenants);
 router.post('/tenants', createTenant);
 router.patch('/tenants/:id/status', updateTenantStatus);
+router.patch('/tenants/:id/subscription', updateTenantSubscription);
 router.post('/tenants/:id/impersonate', impersonateTenant);
 
 router.get('/plans', listPlans);

@@ -252,6 +252,100 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
   );
 }
 
+function SubscriptionEditModal({ tenant, saving, onClose, onSave }) {
+  const [duration, setDuration] = useState(tenant.subscriptionDuration || 1);
+  const [expiryDate, setExpiryDate] = useState(() => {
+    if (tenant.planExpiresAt) {
+      return new Date(tenant.planExpiresAt).toISOString().split('T')[0];
+    }
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
+    return d.toISOString().split('T')[0];
+  });
+
+  const handleDurationChange = (e) => {
+    const months = Number(e.target.value);
+    setDuration(months);
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    setExpiryDate(d.toISOString().split('T')[0]);
+  };
+
+  const handleDateChange = (e) => {
+    setExpiryDate(e.target.value);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onSave({
+      subscriptionDuration: duration,
+      planExpiresAt: expiryDate
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-4 backdrop-blur-sm">
+      <button type="button" className="absolute inset-0 cursor-default" aria-label="Close modal" onClick={onClose} />
+      <form onSubmit={handleSubmit} className="relative z-10 flex w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/50 px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+              <CreditCard size={20} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Manage Tenant Subscription</h2>
+              <p className="text-xs text-slate-500 font-medium">Modify subscription duration and expiry for {tenant.name}.</p>
+            </div>
+          </div>
+          <button type="button" onClick={onClose} className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:bg-slate-100">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="space-y-4 px-6 py-5">
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Subscription Duration</label>
+            <select
+              className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 bg-white outline-none focus:border-blue-500"
+              value={duration}
+              onChange={handleDurationChange}
+            >
+              <option value={1}>1 Month</option>
+              <option value={3}>3 Months</option>
+              <option value={6}>6 Months</option>
+              <option value={12}>12 Months</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Recalculated Expiry Date</label>
+            <input 
+              type="date"
+              required
+              className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500"
+              value={expiryDate}
+              onChange={handleDateChange}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 border-t border-slate-100 bg-slate-50/50 px-6 py-4">
+          <button 
+            type="button" 
+            onClick={onClose} 
+            className="rounded-theme border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+          >
+            Cancel
+          </button>
+          <Button type="submit" disabled={saving} className="px-6 py-2.5">
+            {saving ? 'Updating...' : 'Save Subscription'}
+          </Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 export default function SuperAdminDashboard() {
   const { impersonate } = useAuth();
   
@@ -279,12 +373,31 @@ export default function SuperAdminDashboard() {
     subdomain: '',
     email: '',
     password: '',
-    planSlug: 'starter'
+    planSlug: 'starter',
+    durationMonths: 1
   });
   const [creating, setCreating] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
   const [savingPlan, setSavingPlan] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState(1);
+  const [editingSubscription, setEditingSubscription] = useState(null);
+  const [savingSubscription, setSavingSubscription] = useState(false);
+
+  async function handleSaveSubscription(subForm) {
+    setSavingSubscription(true);
+    setError('');
+    setSuccess('');
+    try {
+      const { data } = await api.patch(`/v1/super-admin/tenants/${editingSubscription._id}/subscription`, subForm);
+      setTenants((current) => current.map((t) => (t._id === data._id ? { ...t, ...data } : t)));
+      setSuccess(`Subscription for '${data.name}' updated successfully!`);
+      setEditingSubscription(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update subscription.');
+    } finally {
+      setSavingSubscription(false);
+    }
+  }
 
   async function handleSavePlan(planForm) {
     setSavingPlan(true);
@@ -378,7 +491,8 @@ export default function SuperAdminDashboard() {
         subdomain: '',
         email: '',
         password: '',
-        planSlug: 'starter'
+        planSlug: 'starter',
+        durationMonths: 1
       });
       setActiveTab('companies');
       setPage(1);
@@ -632,6 +746,9 @@ export default function SuperAdminDashboard() {
                         <td className="px-5 py-4">
                           <div>
                             <p className="font-semibold text-slate-800">{t.plan?.name || '—'}</p>
+                            <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                              Duration: {t.subscriptionDuration || 1} {(t.subscriptionDuration || 1) === 1 ? 'Month' : 'Months'}
+                            </p>
                             <p className="text-xs text-slate-400 mt-0.5">
                               Expires: {t.planExpiresAt ? new Date(t.planExpiresAt).toLocaleDateString() : 'Lifetime'}
                             </p>
@@ -648,6 +765,15 @@ export default function SuperAdminDashboard() {
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="inline-flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditingSubscription(t)}
+                              disabled={actionLoadingId === t._id}
+                              className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1"
+                              title="Manage Subscription"
+                            >
+                              <CreditCard size={12} /> Subscription
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleImpersonate(t)}
@@ -771,17 +897,55 @@ export default function SuperAdminDashboard() {
               </div>
             </div>
 
-            <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Subscription Plan</label>
-              <select
-                className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none bg-white focus:border-blue-500"
-                value={newCompany.planSlug}
-                onChange={(e) => setNewCompany(prev => ({ ...prev, planSlug: e.target.value }))}
-              >
-                <option value="starter">Starter Plan ($49/mo)</option>
-                <option value="professional">Professional Plan ($99/mo)</option>
-                <option value="enterprise">Enterprise Plan ($249/mo)</option>
-              </select>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Subscription Plan</label>
+                <select
+                  className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none bg-white focus:border-blue-500"
+                  value={newCompany.planSlug}
+                  onChange={(e) => setNewCompany(prev => ({ ...prev, planSlug: e.target.value }))}
+                >
+                  <option value="starter">Starter Plan ($49/mo)</option>
+                  <option value="professional">Professional Plan ($99/mo)</option>
+                  <option value="enterprise">Enterprise Plan ($249/mo)</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Subscription Duration</label>
+                <select
+                  className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none bg-white focus:border-blue-500"
+                  value={newCompany.durationMonths}
+                  onChange={(e) => setNewCompany(prev => ({ ...prev, durationMonths: Number(e.target.value) }))}
+                >
+                  <option value={1}>1 Month</option>
+                  <option value={3}>3 Months</option>
+                  <option value={6}>6 Months</option>
+                  <option value={12}>12 Months</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Provisioning Summary */}
+            <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm text-slate-700 space-y-2 mt-4">
+              <p className="font-bold text-slate-800 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5 mb-2">Provisioning Summary</p>
+              <div className="flex justify-between">
+                <span>Selected Plan:</span>
+                <span className="font-semibold text-slate-900 capitalize">{newCompany.planSlug} Plan</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Billing Duration:</span>
+                <span className="font-semibold text-slate-900">{newCompany.durationMonths} {newCompany.durationMonths === 1 ? 'Month' : 'Months'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Calculated Expiry:</span>
+                <span className="font-semibold text-slate-900">
+                  {(() => {
+                    const expiry = new Date();
+                    expiry.setMonth(expiry.getMonth() + newCompany.durationMonths);
+                    return expiry.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' });
+                  })()}
+                </span>
+              </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end">
@@ -900,6 +1064,14 @@ export default function SuperAdminDashboard() {
           saving={savingPlan} 
           onClose={() => setEditingPlan(null)} 
           onSave={handleSavePlan} 
+        />
+      )}
+      {editingSubscription && (
+        <SubscriptionEditModal 
+          tenant={editingSubscription}
+          saving={savingSubscription}
+          onClose={() => setEditingSubscription(null)}
+          onSave={handleSaveSubscription}
         />
       )}
     </div>
