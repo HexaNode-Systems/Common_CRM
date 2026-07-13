@@ -9,7 +9,7 @@ import { allPermissions } from './permissions.js';
 import { defaultSettings } from './defaultSettings.js';
 import { buildPermissionMatrix, defaultRoleNames } from './roles.js';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 await connectDb();
 
@@ -99,10 +99,18 @@ for (const plan of plansPayload) {
 }
 
 // 2. Seed Super Admin
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@12345';
+
+if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD)) {
+  console.error('ERROR: ADMIN_EMAIL and ADMIN_PASSWORD must be set in the environment (.env) for production.');
+  process.exit(1);
+}
+
 const adminPayload = {
   name: 'Super Admin',
-  email: 'admin@example.com',
-  password: 'Admin@12345',
+  email: adminEmail,
+  password: adminPassword,
   role: 'super_admin',
   permissions: allPermissions,
   isActive: true
@@ -158,5 +166,5 @@ for (const role of defaultRoleNames) {
   );
 }
 
-console.log('Seed complete. Login: admin@example.com / Admin@12345');
+console.log(`Seed complete. Login with: ${adminEmail}`);
 process.exit(0);

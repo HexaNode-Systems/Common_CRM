@@ -5,7 +5,7 @@ import { connectDb } from './config/db.js';
 import { startJustdialLeadPolling } from './services/justdial.service.js';
 import { initializeSocket } from './services/socket.service.js';
 
-dotenv.config();
+dotenv.config({ override: true });
 
 const port = process.env.PORT || 5000;
 const server = createServer(app);
