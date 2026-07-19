@@ -37,7 +37,7 @@ const links = [
   { to: '/storage', label: 'Storage Management', icon: FolderOpen, module: 'storage' },
   { to: '/whatsapp-inbox', label: 'WhatsApp Inbox', icon: MessageSquare, module: 'whatsapp' },
   { to: '/reports', label: 'Reports', icon: BarChart3, module: 'reports' },
-  { to: '/Integrations', label: 'Integrations', icon: Link2, module: 'settings' },
+  { to: '/Integrations', label: 'Integrations', icon: Link2, module: 'settings|whatsapp_integration' },
   { to: '/theme', label: 'Theme Settings', icon: Palette, module: 'settings' },
   { to: '/support', label: 'Support Desk', icon: Headphones, module: 'support' },
   { to: '/accessories', label: 'Accessories', icon: Laptop, module: 'accessories' },
@@ -108,7 +108,8 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle
               return false;
             }
             if (link.module) {
-              return hasPermission(user, link.module, 'read');
+              const modules = link.module.split('|');
+              return modules.some((m) => hasPermission(user, m, 'read'));
             }
             return true;
           }).map((link) => {

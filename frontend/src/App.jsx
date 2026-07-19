@@ -151,8 +151,8 @@ export default function App() {
           <Route path="banners" element={<ProtectedRoute permission="banners:read"><ResourcePage title="Banner / Slider Management" endpoint="/banners" /></ProtectedRoute>} />
           <Route path="coupons" element={<ProtectedRoute permission="coupons:read"><ResourcePage title="Coupon / Offer Management" endpoint="/coupons" /></ProtectedRoute>} />
           <Route path="reports" element={<ProtectedRoute permission="reports:read"><WorkReportsPage /></ProtectedRoute>} />
-          <Route path="Integrations" element={<ProtectedRoute permission="settings:update"><IntegrationsPage /></ProtectedRoute>} />
-          <Route path="integrations" element={<ProtectedRoute permission="settings:update"><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="Integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
           <Route path="content" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="content" title="Website Content Management" /></ProtectedRoute>} />
           <Route path="theme" element={<ProtectedRoute permission="settings:update"><ThemeSettings /></ProtectedRoute>} />
           <Route path="settings" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="general" title="General Settings" /></ProtectedRoute>} />

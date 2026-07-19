@@ -9,8 +9,12 @@ export default function ProtectedRoute({ children, permission }) {
   if (!user) return <Navigate to="/login" replace />;
 
   if (permission) {
-    const [moduleName, action] = permission.split(':');
-    if (!hasPermission(user, moduleName, action || 'read')) {
+    const alternatives = permission.split('|');
+    const hasAny = alternatives.some((p) => {
+      const [moduleName, action] = p.split(':');
+      return hasPermission(user, moduleName, action || 'read');
+    });
+    if (!hasAny) {
       return <Navigate to="/forbidden" replace />;
     }
   }
