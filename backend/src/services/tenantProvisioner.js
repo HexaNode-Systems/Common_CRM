@@ -10,6 +10,7 @@ import { getTenantDbConnection } from '../utils/connectionManager.js';
 import { tenantStorage } from '../utils/tenantStorage.js';
 import { buildPermissionMatrix, defaultRoleNames } from '../utils/roles.js';
 import { defaultSettings } from '../utils/defaultSettings.js';
+import { seedModulesAndPermissions } from '../utils/moduleSeeder.js';
 
 function slugify(text) {
   return text
@@ -113,6 +114,9 @@ export async function provisionTenant({ name, email, password, planSlug, subdoma
         { upsert: true, new: true }
       );
     }
+
+    // Seed dynamic modules and permissions in the tenant database
+    await seedModulesAndPermissions();
 
     // C. Create Tenant Admin account
     // (This triggers User post-save hook which registers the login mapping in MasterUser automatically)

@@ -1,3 +1,17 @@
+export const PermissionLevels = {
+  NO_ACCESS: 0,
+  VIEW_ONLY: 1,
+  UPDATE_ONLY: 2,
+  FULL_ACCESS: 3
+};
+
+export const PermissionLevelStrings = {
+  [PermissionLevels.NO_ACCESS]: 'none',
+  [PermissionLevels.VIEW_ONLY]: 'view',
+  [PermissionLevels.UPDATE_ONLY]: 'update',
+  [PermissionLevels.FULL_ACCESS]: 'full'
+};
+
 export const allPermissions = [
   'users:create',
   'users:read',
@@ -57,6 +71,3 @@ export const allPermissions = [
   'roles:read',
   'roles:update'
 ];
-
-
-

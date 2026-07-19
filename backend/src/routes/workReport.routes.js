@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect } from '../middleware/auth.middleware.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
 import {
   createWorkReport,
   listWorkReports,
@@ -11,9 +11,9 @@ const router = Router();
 
 router.use(protect);
 
-router.post('/', createWorkReport);
-router.get('/', listWorkReports);
-router.get('/:id', getWorkReport);
-router.delete('/:id', deleteWorkReport);
+router.post('/', authorize('reports:create'), createWorkReport);
+router.get('/', authorize('reports:read'), listWorkReports);
+router.get('/:id', authorize('reports:read'), getWorkReport);
+router.delete('/:id', authorize('reports:delete'), deleteWorkReport);
 
 export default router;

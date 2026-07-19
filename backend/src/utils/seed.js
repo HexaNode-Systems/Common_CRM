@@ -5,13 +5,16 @@ import { Role } from '../models/Role.js';
 import { Setting } from '../models/Setting.js';
 import { SubscriptionPlan } from '../models/master/SubscriptionPlan.js';
 import { MasterUser } from '../models/master/MasterUser.js';
-import { allPermissions } from './permissions.js';
 import { defaultSettings } from './defaultSettings.js';
-import { buildPermissionMatrix, defaultRoleNames } from './roles.js';
+import { buildPermissionMatrix, defaultRoleNames, getPermissionStringsForRole } from './roles.js';
+import { seedModulesAndPermissions } from './moduleSeeder.js';
 
 dotenv.config({ override: true });
 
 await connectDb();
+
+console.log('Seeding dynamic modules and permissions first...');
+await seedModulesAndPermissions();
 
 // 1. Seed Subscription Plans
 const plansPayload = [
@@ -107,12 +110,15 @@ if (process.env.NODE_ENV === 'production' && (!process.env.ADMIN_EMAIL || !proce
   process.exit(1);
 }
 
+// Compute Super Admin permissions dynamically based on seeded modules
+const adminPermissions = await getPermissionStringsForRole(null, 'super_admin');
+
 const adminPayload = {
   name: 'Super Admin',
   email: adminEmail,
   password: adminPassword,
   role: 'super_admin',
-  permissions: allPermissions,
+  permissions: adminPermissions,
   isActive: true
 };
 

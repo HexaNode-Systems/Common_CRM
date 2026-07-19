@@ -24,6 +24,7 @@ import IntegrationsPage from './pages/IntegrationsPage.jsx';
 import WorkReportsPage from './pages/WorkReportsPage.jsx';
 import AccessoriesManagementPage from './pages/AccessoriesManagementPage.jsx';
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
+import ForbiddenPage from './pages/ForbiddenPage.jsx';
 
 export default function App() {
   const { settings } = useSettings();
@@ -123,45 +124,46 @@ export default function App() {
       {renderSplashScreen()}
       <Routes>
         <Route path="/login" element={<Login />} />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AdminLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="users" element={<UsersManagementPage />} />
-        <Route path="catalog" element={<ProjectsManagementPage />} />
-        <Route path="catalog/create" element={<ProjectFormPage />} />
-        <Route path="catalog/edit/:id" element={<ProjectFormPage />} />
-        <Route path="catalog/:id" element={<ProjectDetailsPage />} />
-        <Route path="orders" element={<ResourcePage title="Orders / Leads" endpoint="/orders" />} />
-        <Route path="leads" element={<LeadsManagementPage />} />
-        <Route path="leads/distribution" element={<LeadDistributionPage />} />
-        <Route path="tasks" element={<TaskManagementPage />} />
-        <Route path="payments" element={<TaskManagementPage />} />
-        <Route path="vault" element={<VaultManagementPage />} />
-        <Route path="storage" element={<StorageManagementPage />} />
-        <Route path="invoices" element={<ResourcePage title="Invoices" endpoint="/invoices" />} />
-        <Route path="enquiries" element={<ResourcePage title="Contact Enquiries" endpoint="/enquiries" />} />
-        <Route path="banners" element={<ResourcePage title="Banner / Slider Management" endpoint="/banners" />} />
-        <Route path="coupons" element={<ResourcePage title="Coupon / Offer Management" endpoint="/coupons" />} />
-        <Route path="reports" element={<WorkReportsPage />} />
-        <Route path="Integrations" element={<IntegrationsPage />} />
-        <Route path="integrations" element={<IntegrationsPage />} />
-        <Route path="content" element={<GeneralSettings section="content" title="Website Content Management" />} />
-        <Route path="theme" element={<ThemeSettings />} />
-        <Route path="settings" element={<GeneralSettings section="general" title="General Settings" />} />
-        <Route path="support" element={<SupportTicketsPage />} />
-        <Route path="roles" element={<RolePermissionsPage />} />
-        <Route path="whatsapp-inbox" element={<WhatsAppInboxPage />} />
-        <Route path="accessories" element={<AccessoriesManagementPage />} />
-        <Route path="super-admin" element={<SuperAdminDashboard />} />
-      </Route>
-    </Routes>
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<ProtectedRoute permission="dashboard:read"><Dashboard /></ProtectedRoute>} />
+          <Route path="users" element={<ProtectedRoute permission="users:read"><UsersManagementPage /></ProtectedRoute>} />
+          <Route path="catalog" element={<ProtectedRoute permission="catalog:read"><ProjectsManagementPage /></ProtectedRoute>} />
+          <Route path="catalog/create" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
+          <Route path="catalog/edit/:id" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
+          <Route path="catalog/:id" element={<ProtectedRoute permission="catalog:read"><ProjectDetailsPage /></ProtectedRoute>} />
+          <Route path="orders" element={<ProtectedRoute permission="orders:read"><ResourcePage title="Orders / Leads" endpoint="/orders" /></ProtectedRoute>} />
+          <Route path="leads" element={<ProtectedRoute permission="leads:read"><LeadsManagementPage /></ProtectedRoute>} />
+          <Route path="leads/distribution" element={<ProtectedRoute permission="leads:update"><LeadDistributionPage /></ProtectedRoute>} />
+          <Route path="tasks" element={<ProtectedRoute permission="tasks:read"><TaskManagementPage /></ProtectedRoute>} />
+          <Route path="payments" element={<ProtectedRoute permission="payments:read"><TaskManagementPage /></ProtectedRoute>} />
+          <Route path="vault" element={<ProtectedRoute permission="vault:read"><VaultManagementPage /></ProtectedRoute>} />
+          <Route path="storage" element={<ProtectedRoute permission="storage:read"><StorageManagementPage /></ProtectedRoute>} />
+          <Route path="invoices" element={<ProtectedRoute permission="invoices:read"><ResourcePage title="Invoices" endpoint="/invoices" /></ProtectedRoute>} />
+          <Route path="enquiries" element={<ProtectedRoute permission="enquiries:read"><ResourcePage title="Contact Enquiries" endpoint="/enquiries" /></ProtectedRoute>} />
+          <Route path="banners" element={<ProtectedRoute permission="banners:read"><ResourcePage title="Banner / Slider Management" endpoint="/banners" /></ProtectedRoute>} />
+          <Route path="coupons" element={<ProtectedRoute permission="coupons:read"><ResourcePage title="Coupon / Offer Management" endpoint="/coupons" /></ProtectedRoute>} />
+          <Route path="reports" element={<ProtectedRoute permission="reports:read"><WorkReportsPage /></ProtectedRoute>} />
+          <Route path="Integrations" element={<ProtectedRoute permission="settings:update"><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="integrations" element={<ProtectedRoute permission="settings:update"><IntegrationsPage /></ProtectedRoute>} />
+          <Route path="content" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="content" title="Website Content Management" /></ProtectedRoute>} />
+          <Route path="theme" element={<ProtectedRoute permission="settings:update"><ThemeSettings /></ProtectedRoute>} />
+          <Route path="settings" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="general" title="General Settings" /></ProtectedRoute>} />
+          <Route path="support" element={<ProtectedRoute permission="support:read"><SupportTicketsPage /></ProtectedRoute>} />
+          <Route path="roles" element={<ProtectedRoute permission="roles:read"><RolePermissionsPage /></ProtectedRoute>} />
+          <Route path="whatsapp-inbox" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppInboxPage /></ProtectedRoute>} />
+          <Route path="accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
+          <Route path="super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
+          <Route path="forbidden" element={<ForbiddenPage />} />
+        </Route>
+      </Routes>
     </>
   );
 }

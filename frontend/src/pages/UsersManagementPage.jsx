@@ -795,12 +795,19 @@ export default function UsersManagementPage() {
   const activeRoles = useMemo(() => roles.filter((role) => role.isActive !== false), [roles]);
 
   const isHRAdmin = useMemo(() => {
-    const role = currentUser?.role?.toLowerCase();
-    return role === 'super_admin' || role === 'hr_manager';
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('users:update');
   }, [currentUser]);
 
   const hasReadPermission = useMemo(() => {
     return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('users:read');
+  }, [currentUser]);
+
+  const canCreateUsers = useMemo(() => {
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('users:create');
+  }, [currentUser]);
+
+  const canUpdateUsers = useMemo(() => {
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('users:update');
   }, [currentUser]);
 
   async function loadData() {
@@ -931,10 +938,12 @@ export default function UsersManagementPage() {
             <RefreshCw size={16} />
             Refresh
           </Button>
-          <Button onClick={openCreate} className="inline-flex items-center gap-2 px-3 py-2">
-            <Plus size={16} />
-            Add New
-          </Button>
+          {canCreateUsers && (
+            <Button onClick={openCreate} className="inline-flex items-center gap-2 px-3 py-2">
+              <Plus size={16} />
+              Add New
+            </Button>
+          )}
         </div>
       </div>
 
@@ -994,7 +1003,7 @@ export default function UsersManagementPage() {
                       <td className="px-3 py-3">
                         <div className="flex items-center gap-3">
                           <StatusBadge active={u.isActive} />
-                          <StatusToggle active={u.isActive} disabled={savingId === u._id} onChange={() => toggleStatus(u)} />
+                          <StatusToggle active={u.isActive} disabled={savingId === u._id || !canUpdateUsers} onChange={() => toggleStatus(u)} />
                         </div>
                       </td>
                       <td className="px-3 py-3 text-slate-600">{formatDate(u.createdAt)}</td>
@@ -1010,14 +1019,16 @@ export default function UsersManagementPage() {
                               View
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => openEdit(u)}
-                            className="inline-flex items-center gap-1 font-semibold text-primary transition hover:text-blue-700"
-                          >
-                            <PencilLine size={16} />
-                            Edit Details
-                          </button>
+                          {canUpdateUsers && (
+                            <button
+                              type="button"
+                              onClick={() => openEdit(u)}
+                              className="inline-flex items-center gap-1 font-semibold text-primary transition hover:text-blue-700"
+                            >
+                              <PencilLine size={16} />
+                              Edit Details
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

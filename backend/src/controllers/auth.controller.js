@@ -82,6 +82,18 @@ export const login = asyncHandler(async (req, res) => {
   masterUser.lastLoginAt = new Date();
   await masterUser.save();
 
+  // Dynamically load permissions
+  const { Role } = await import('../models/Role.js');
+  const { getPermissionStringsForRole } = await import('../utils/roles.js');
+  const roleObj = await Role.findOne({ slug: user.role, isDeleted: { $ne: true } });
+  if (roleObj) {
+    user.permissions = await getPermissionStringsForRole(roleObj._id, roleObj.slug);
+    await User.updateOne({ _id: user._id }, { $set: { permissions: user.permissions } });
+  } else if (user.role === 'super_admin') {
+    user.permissions = await getPermissionStringsForRole(null, 'super_admin');
+    await User.updateOne({ _id: user._id }, { $set: { permissions: user.permissions } });
+  }
+
   res.json({
     user: sanitizeUser(user),
     token: signToken(user, tenantId, dbName)
@@ -89,7 +101,21 @@ export const login = asyncHandler(async (req, res) => {
 });
 
 export const me = asyncHandler(async (req, res) => {
-  res.json(req.user);
+  const { Role } = await import('../models/Role.js');
+  const { getPermissionStringsForRole } = await import('../utils/roles.js');
+  
+  const roleObj = await Role.findOne({ slug: req.user.role, isDeleted: { $ne: true } });
+  let permissions = [];
+  if (roleObj) {
+    permissions = await getPermissionStringsForRole(roleObj._id, roleObj.slug);
+  } else if (req.user.role === 'super_admin') {
+    permissions = await getPermissionStringsForRole(null, 'super_admin');
+  } else {
+    permissions = req.user.permissions;
+  }
+  
+  const updatedUser = { ...req.user, permissions };
+  res.json(updatedUser);
 });
 
 export const updateProfile = asyncHandler(async (req, res) => {

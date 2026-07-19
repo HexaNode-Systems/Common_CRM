@@ -36,20 +36,17 @@ userSchema.pre('save', async function hashPassword(next) {
 
 userSchema.pre('save', async function populatePermissions(next) {
   if (this.isModified('role') || this.isNew || !this.permissions || this.permissions.length === 0) {
-    if (this.role === 'super_admin') {
-      const { allPermissions } = await import('../utils/permissions.js');
-      this.permissions = allPermissions;
-    } else {
-      try {
-        const { Role } = await import('./Role.js');
-        const { matrixToPermissionStrings } = await import('../utils/roles.js');
-        const roleObj = await Role.findOne({ slug: this.role });
-        if (roleObj) {
-          this.permissions = matrixToPermissionStrings(roleObj.permissions);
-        }
-      } catch (err) {
-        console.error('Error populating permissions for user:', err);
+    try {
+      const { Role } = await import('./Role.js');
+      const { getPermissionStringsForRole } = await import('../utils/roles.js');
+      const roleObj = await Role.findOne({ slug: this.role, isDeleted: { $ne: true } });
+      if (roleObj) {
+        this.permissions = await getPermissionStringsForRole(roleObj._id, roleObj.slug);
+      } else if (this.role === 'super_admin') {
+        this.permissions = await getPermissionStringsForRole(null, 'super_admin');
       }
+    } catch (err) {
+      console.error('Error populating permissions for user:', err);
     }
   }
   next();

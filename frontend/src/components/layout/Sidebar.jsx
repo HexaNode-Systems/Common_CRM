@@ -24,23 +24,25 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
 
+import { hasPermission } from '../../utils/permissions.js';
+
 const links = [
-  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/users', label: 'Users', icon: Users },
-  { to: '/catalog', label: 'Projects Management', icon: FolderKanban },
-  { to: '/leads', label: 'Leads Management', icon: Target, end: true },
-  { to: '/leads/distribution', label: 'Lead Distribution', icon: GitFork, roles: ['super_admin'] },
-  { to: '/tasks', label: 'Task Management', icon: ClipboardList },
-  { to: '/vault', label: 'Vault / Credentials', icon: Lock },
-  { to: '/storage', label: 'Storage Management', icon: FolderOpen },
-  { to: '/whatsapp-inbox', label: 'WhatsApp Inbox', icon: MessageSquare },
-  { to: '/reports', label: 'Reports', icon: BarChart3 },
-  { to: '/Integrations', label: 'Integrations', icon: Link2 },
-  { to: '/theme', label: 'Theme Settings', icon: Palette },
-  { to: '/support', label: 'Support Desk', icon: Headphones },
-  { to: '/accessories', label: 'Accessories', icon: Laptop },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, module: 'dashboard' },
+  { to: '/users', label: 'Users', icon: Users, module: 'users' },
+  { to: '/catalog', label: 'Projects Management', icon: FolderKanban, module: 'catalog' },
+  { to: '/leads', label: 'Leads Management', icon: Target, end: true, module: 'leads' },
+  { to: '/leads/distribution', label: 'Lead Distribution', icon: GitFork, roles: ['super_admin'], module: 'leads' },
+  { to: '/tasks', label: 'Task Management', icon: ClipboardList, module: 'tasks' },
+  { to: '/vault', label: 'Vault / Credentials', icon: Lock, module: 'vault' },
+  { to: '/storage', label: 'Storage Management', icon: FolderOpen, module: 'storage' },
+  { to: '/whatsapp-inbox', label: 'WhatsApp Inbox', icon: MessageSquare, module: 'whatsapp' },
+  { to: '/reports', label: 'Reports', icon: BarChart3, module: 'reports' },
+  { to: '/Integrations', label: 'Integrations', icon: Link2, module: 'settings' },
+  { to: '/theme', label: 'Theme Settings', icon: Palette, module: 'settings' },
+  { to: '/support', label: 'Support Desk', icon: Headphones, module: 'support' },
+  { to: '/accessories', label: 'Accessories', icon: Laptop, module: 'accessories' },
   { to: '/super-admin', label: 'SaaS Platform Admin', icon: Building, globalSuperAdminOnly: true },
-  { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck }
+  { to: '/roles', label: 'Roles & Permissions', icon: ShieldCheck, module: 'roles' }
 ];
 
 export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle }) {
@@ -99,8 +101,14 @@ export default function Sidebar({ collapsed, mobileOpen, onCloseMobile, onToggle
             if (link.globalSuperAdminOnly) {
               return user?.role === 'super_admin' && !user?.tenantId;
             }
-            if (link.roles) {
-              return link.roles.includes(user?.role);
+            if (user?.role === 'super_admin') {
+              return true;
+            }
+            if (link.roles && !link.roles.includes(user?.role)) {
+              return false;
+            }
+            if (link.module) {
+              return hasPermission(user, link.module, 'read');
             }
             return true;
           }).map((link) => {

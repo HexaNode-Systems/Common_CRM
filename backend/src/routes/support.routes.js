@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { protect } from '../middleware/auth.middleware.js';
+import { protect, authorize } from '../middleware/auth.middleware.js';
 import {
   createTicket,
   listTickets,
@@ -13,11 +13,11 @@ const router = Router();
 
 router.use(protect);
 
-router.post('/', createTicket);
-router.get('/', listTickets);
-router.get('/:id', getTicket);
-router.patch('/:id/status', updateTicketStatus);
-router.patch('/:id/assign', assignTicket);
-router.post('/:id/messages', addTicketMessage);
+router.post('/', authorize('support:create'), createTicket);
+router.get('/', authorize('support:read'), listTickets);
+router.get('/:id', authorize('support:read'), getTicket);
+router.patch('/:id/status', authorize('support:update'), updateTicketStatus);
+router.patch('/:id/assign', authorize('support:update'), assignTicket);
+router.post('/:id/messages', authorize('support:update'), addTicketMessage);
 
 export default router;

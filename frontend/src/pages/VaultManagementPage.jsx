@@ -3,6 +3,7 @@ import { Eye, EyeOff, Plus, RefreshCw, Copy, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const emptyForm = {
   title: '',
@@ -105,7 +106,16 @@ export default function VaultManagementPage() {
   const [editing, setEditing] = useState(null);
   const [revealedSecrets, setRevealedSecrets] = useState({});
 
+  const { user: currentUser } = useAuth();
   const activeRoles = useMemo(() => roles.filter((role) => role.slug), [roles]);
+
+  const canCreate = useMemo(() => {
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('vault:create');
+  }, [currentUser]);
+
+  const canUpdate = useMemo(() => {
+    return currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('vault:update');
+  }, [currentUser]);
 
   async function load() {
     setLoading(true);
@@ -195,7 +205,9 @@ export default function VaultManagementPage() {
         </div>
         <div className="flex gap-2">
           <Button onClick={load} className="inline-flex items-center gap-2 px-4 py-2"><RefreshCw size={16} />Refresh</Button>
-          <Button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2"><Plus size={16} />Add New</Button>
+          {canCreate && (
+            <Button onClick={openCreate} className="inline-flex items-center gap-2 px-4 py-2"><Plus size={16} />Add New</Button>
+          )}
         </div>
       </div>
 
@@ -225,8 +237,8 @@ export default function VaultManagementPage() {
                     <p className="mt-1 text-xs text-slate-500">{credential.username}</p>
                   </td>
                   <td className="px-4 py-4"><SecretCell credential={credential} onReveal={revealSecret} onCopy={copySecret} revealedSecret={revealedSecrets[credential._id]} /></td>
-                  <td className="px-4 py-4"><button type="button" onClick={() => toggleStatus(credential)} className={`rounded-full px-3 py-1 text-xs font-semibold ${credential.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`}>{credential.isActive ? 'Active' : 'Suspended'}</button></td>
-                  <td className="px-4 py-4 text-right"><button type="button" onClick={() => openEdit(credential)} className="font-semibold text-primary hover:underline">Edit</button></td>
+                  <td className="px-4 py-4"><button type="button" disabled={!canUpdate} onClick={() => toggleStatus(credential)} className={`rounded-full px-3 py-1 text-xs font-semibold ${credential.isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'} disabled:opacity-75 disabled:cursor-not-allowed`}>{credential.isActive ? 'Active' : 'Suspended'}</button></td>
+                  <td className="px-4 py-4 text-right">{canUpdate && <button type="button" onClick={() => openEdit(credential)} className="font-semibold text-primary hover:underline">Edit</button>}</td>
                 </tr>
               ))}
             </tbody>

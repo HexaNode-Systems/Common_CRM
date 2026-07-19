@@ -20,6 +20,7 @@ const roleSchema = new mongoose.Schema(
     slug: { type: String, required: true, unique: true, lowercase: true, trim: true },
     isActive: { type: Boolean, default: true },
     isSystem: { type: Boolean, default: false },
+    isDeleted: { type: Boolean, default: false },
     permissions: [permissionMatrixSchema],
     tokenVersion: { type: Number, default: 0 }
   },

@@ -17,15 +17,15 @@ const router = Router();
 router.use(protect);
 
 // Status & administration
-router.get('/status', getStatus);
-router.post('/connect', connect); // Relax role restrictions so counselors/sales executives can trigger connect if disconnected
-router.post('/disconnect', authorize('settings:update'), disconnect);
-router.post('/test', authorize('settings:update'), sendTestMessage);
+router.get('/status', authorize('whatsapp:read'), getStatus);
+router.post('/connect', authorize('whatsapp:update'), connect); 
+router.post('/disconnect', authorize('whatsapp:update'), disconnect);
+router.post('/test', authorize('whatsapp:update'), sendTestMessage);
 
 // Chats and messaging
-router.get('/chats', listChats);
-router.get('/chats/:chatId/messages', getMessages);
-router.post('/chats/:chatId/read', markChatAsRead);
-router.post('/send', upload.single('file'), sendMessage);
+router.get('/chats', authorize('whatsapp:read'), listChats);
+router.get('/chats/:chatId/messages', authorize('whatsapp:read'), getMessages);
+router.post('/chats/:chatId/read', authorize('whatsapp:update'), markChatAsRead);
+router.post('/send', upload.single('file'), authorize('whatsapp:update'), sendMessage);
 
 export default router;
