@@ -128,7 +128,7 @@ async function handleNewMessage(userId, msg, clientInstance) {
   try {
     const uid = userId.toString();
     const messageId = msg.id._serialized;
-    const chatId = msg.to === clientInstance.info.wid._serialized && !msg.fromMe ? msg.from : msg.to;
+    const chatId = msg.fromMe ? msg.to : msg.from;
     const phone = chatId.split('@')[0];
 
     let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
@@ -229,9 +229,12 @@ export async function initializeWhatsApp(userId) {
           '--disable-gpu',
           '--no-default-browser-check',
           '--disable-default-apps',
-          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          '--window-position=-10000,-10000',
-          '--window-size=0,0'
+          '--disable-extensions',
+          '--disable-sync',
+          '--disable-translate',
+          '--disable-background-networking',
+          '--mute-audio',
+          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
         ]
       }
     });
