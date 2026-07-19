@@ -8,12 +8,16 @@ import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
 import { Lead } from '../models/Lead.js';
 import { emitToAll } from './socket.service.js';
 
-let client = null;
-let qrCodeDataUrl = '';
-let status = 'DISCONNECTED'; // DISCONNECTED, INITIALIZING, QR_RECEIVED, CONNECTED, LOADING
+const clients = new Map(); // key: userId, value: Client instance
+const statuses = new Map(); // key: userId, value: status string
+const qrCodes = new Map(); // key: userId, value: QR string
 
-export function getWhatsAppStatus() {
-  return { status, qrCode: qrCodeDataUrl };
+export function getWhatsAppStatus(userId) {
+  const uid = userId.toString();
+  return {
+    status: statuses.get(uid) || 'DISCONNECTED',
+    qrCode: qrCodes.get(uid) || ''
+  };
 }
 
 // Map ack code to readable status string
@@ -68,8 +72,9 @@ async function saveMediaMessage(msg) {
 }
 
 // Sync single chat metadata (instant, no deep history fetch)
-async function syncChatMetadata(chat) {
+async function syncChatMetadata(userId, chat, clientInstance) {
   try {
+    const uid = userId.toString();
     const chatId = chat.id._serialized;
     const phone = chat.id.user;
     const contactName = chat.name || phone;
@@ -77,10 +82,11 @@ async function syncChatMetadata(chat) {
 
     const leadId = await syncChatWithLead(chatId);
 
-    let dbChat = await WhatsAppChat.findOne({ chatId });
+    let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
     if (!dbChat) {
       dbChat = new WhatsAppChat({
         chatId,
+        userId: uid,
         phone,
         contactName,
         isGroup,
@@ -106,12 +112,11 @@ async function syncChatMetadata(chat) {
 }
 
 // Background worker to sync all chats metadata (fast connection initialization)
-async function syncAllChats() {
-  if (!client) return;
+async function syncAllChats(userId, clientInstance) {
   try {
-    const chats = await client.getChats();
+    const chats = await clientInstance.getChats();
     for (const chat of chats) {
-      await syncChatMetadata(chat);
+      await syncChatMetadata(userId, chat, clientInstance);
     }
   } catch (error) {
     // Keep logs quiet
@@ -119,13 +124,14 @@ async function syncAllChats() {
 }
 
 // Handler for incoming or outgoing messages
-async function handleNewMessage(msg) {
+async function handleNewMessage(userId, msg, clientInstance) {
   try {
+    const uid = userId.toString();
     const messageId = msg.id._serialized;
-    const chatId = msg.to === client.info.wid._serialized && !msg.fromMe ? msg.from : msg.to;
+    const chatId = msg.to === clientInstance.info.wid._serialized && !msg.fromMe ? msg.from : msg.to;
     const phone = chatId.split('@')[0];
 
-    let dbMsg = await WhatsAppMessage.findOne({ messageId });
+    let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
     if (dbMsg) return;
 
     let mediaDetails = null;
@@ -135,6 +141,7 @@ async function handleNewMessage(msg) {
 
     dbMsg = new WhatsAppMessage({
       messageId,
+      userId: uid,
       chatId,
       fromMe: msg.fromMe,
       sender: msg.from.split('@')[0],
@@ -147,12 +154,13 @@ async function handleNewMessage(msg) {
     });
     await dbMsg.save();
 
-    let dbChat = await WhatsAppChat.findOne({ chatId });
+    let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
     if (!dbChat) {
       const chatDetails = await msg.getChat();
       const leadId = await syncChatWithLead(chatId);
       dbChat = new WhatsAppChat({
         chatId,
+        userId: uid,
         phone,
         contactName: chatDetails?.name || phone,
         isGroup: chatDetails?.isGroup || false,
@@ -176,27 +184,32 @@ async function handleNewMessage(msg) {
   }
 }
 
-export async function initializeWhatsApp() {
-  if (client && status === 'CONNECTED') {
+export async function initializeWhatsApp(userId) {
+  const uid = userId.toString();
+  const currentClient = clients.get(uid);
+  const currentStatus = statuses.get(uid) || 'DISCONNECTED';
+
+  if (currentClient && currentStatus === 'CONNECTED') {
     return;
   }
 
-  if (client) {
+  if (currentClient) {
     try {
-      await client.destroy();
+      await currentClient.destroy();
     } catch (e) {
       // Quiet
     }
-    client = null;
+    clients.delete(uid);
   }
 
-  status = 'INITIALIZING';
-  qrCodeDataUrl = '';
-  emitToAll('whatsapp:status', { status, qrCode: qrCodeDataUrl });
+  statuses.set(uid, 'INITIALIZING');
+  qrCodes.set(uid, '');
+  emitToAll('whatsapp:status', { userId: uid, status: 'INITIALIZING', qrCode: '' });
 
   try {
-    client = new Client({
+    const clientInstance = new Client({
       authStrategy: new LocalAuth({
+        clientId: uid,
         dataPath: './.wwebjs_auth'
       }),
       webVersionCache: {
@@ -223,88 +236,97 @@ export async function initializeWhatsApp() {
       }
     });
 
-    client.on('qr', async (qr) => {
-      status = 'QR_RECEIVED';
+    clients.set(uid, clientInstance);
+
+    clientInstance.on('qr', async (qr) => {
+      statuses.set(uid, 'QR_RECEIVED');
       try {
-        qrCodeDataUrl = await qrcode.toDataURL(qr);
-        emitToAll('whatsapp:status', { status, qrCode: qrCodeDataUrl });
+        const qrCodeUrl = await qrcode.toDataURL(qr);
+        qrCodes.set(uid, qrCodeUrl);
+        emitToAll('whatsapp:status', { userId: uid, status: 'QR_RECEIVED', qrCode: qrCodeUrl });
       } catch (err) {
         // Quiet
       }
     });
 
-    client.on('ready', async () => {
-      status = 'CONNECTED';
-      qrCodeDataUrl = '';
-      emitToAll('whatsapp:status', { status, qrCode: qrCodeDataUrl });
-      void syncAllChats();
+    clientInstance.on('ready', async () => {
+      statuses.set(uid, 'CONNECTED');
+      qrCodes.set(uid, '');
+      emitToAll('whatsapp:status', { userId: uid, status: 'CONNECTED', qrCode: '' });
+      void syncAllChats(userId, clientInstance);
     });
 
-    client.on('authenticated', () => {
-      status = 'LOADING';
-      emitToAll('whatsapp:status', { status, qrCode: '' });
+    clientInstance.on('authenticated', () => {
+      statuses.set(uid, 'LOADING');
+      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '' });
     });
 
-    client.on('auth_failure', () => {
-      status = 'DISCONNECTED';
-      qrCodeDataUrl = '';
-      client = null;
-      emitToAll('whatsapp:status', { status, qrCode: '' });
+    clientInstance.on('auth_failure', () => {
+      statuses.set(uid, 'DISCONNECTED');
+      qrCodes.set(uid, '');
+      clients.delete(uid);
+      emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
     });
 
-    client.on('disconnected', () => {
-      status = 'DISCONNECTED';
-      qrCodeDataUrl = '';
-      client = null;
-      emitToAll('whatsapp:status', { status, qrCode: '' });
+    clientInstance.on('disconnected', () => {
+      statuses.set(uid, 'DISCONNECTED');
+      qrCodes.set(uid, '');
+      clients.delete(uid);
+      emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
     });
 
-    client.on('message', handleNewMessage);
-    client.on('message_create', handleNewMessage);
+    clientInstance.on('message', (msg) => handleNewMessage(userId, msg, clientInstance));
+    clientInstance.on('message_create', (msg) => handleNewMessage(userId, msg, clientInstance));
 
-    client.on('message_ack', async (msg, ack) => {
+    clientInstance.on('message_ack', async (msg, ack) => {
       try {
         const messageId = msg.id._serialized;
         const mappedAck = mapAckStatus(ack);
         const dbMsg = await WhatsAppMessage.findOneAndUpdate(
-          { messageId },
+          { userId: uid, messageId },
           { status: mappedAck },
           { new: true }
         );
         if (dbMsg) {
-          emitToAll('whatsapp:message_ack', { messageId, status: mappedAck, chatId: dbMsg.chatId });
+          emitToAll('whatsapp:message_ack', { userId: uid, messageId, status: mappedAck, chatId: dbMsg.chatId });
         }
       } catch (error) {
         // Quiet
       }
     });
 
-    await client.initialize();
+    await clientInstance.initialize();
   } catch (error) {
-    status = 'DISCONNECTED';
-    client = null;
-    emitToAll('whatsapp:status', { status, qrCode: '' });
+    statuses.set(uid, 'DISCONNECTED');
+    clients.delete(uid);
+    emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
   }
 }
 
-export async function disconnectWhatsApp() {
-  if (client) {
+export async function disconnectWhatsApp(userId) {
+  const uid = userId.toString();
+  const clientInstance = clients.get(uid);
+  if (clientInstance) {
     try {
-      await client.logout();
-      await client.destroy();
+      await clientInstance.logout();
+      await clientInstance.destroy();
     } catch (err) {
       // Quiet
     }
-    client = null;
-    status = 'DISCONNECTED';
-    qrCodeDataUrl = '';
-    emitToAll('whatsapp:status', { status, qrCode: '' });
+    clients.delete(uid);
+    statuses.set(uid, 'DISCONNECTED');
+    qrCodes.set(uid, '');
+    emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
   }
 }
 
 // Function to send message from backend
-export async function sendWhatsAppMessage(to, message, mediaFile = null) {
-  if (status !== 'CONNECTED' || !client) {
+export async function sendWhatsAppMessage(userId, to, message, mediaFile = null) {
+  const uid = userId.toString();
+  const clientInstance = clients.get(uid);
+  const currentStatus = statuses.get(uid) || 'DISCONNECTED';
+
+  if (currentStatus !== 'CONNECTED' || !clientInstance) {
     return null;
   }
 
@@ -323,9 +345,9 @@ export async function sendWhatsAppMessage(to, message, mediaFile = null) {
     if (mediaFile) {
       const base64Data = mediaFile.buffer.toString('base64');
       const media = new MessageMedia(mediaFile.mimetype, base64Data, mediaFile.originalname);
-      sentMsg = await client.sendMessage(chatId, media, { caption: message });
+      sentMsg = await clientInstance.sendMessage(chatId, media, { caption: message });
     } else {
-      sentMsg = await client.sendMessage(chatId, message);
+      sentMsg = await clientInstance.sendMessage(chatId, message);
     }
 
     return sentMsg;
@@ -335,14 +357,18 @@ export async function sendWhatsAppMessage(to, message, mediaFile = null) {
 }
 
 // Fetch and sync chat history on-demand (when chat is opened)
-export async function fetchChatMessagesOnDemand(chatId, limit = 50) {
-  if (status !== 'CONNECTED' || !client) return;
+export async function fetchChatMessagesOnDemand(userId, chatId, limit = 50) {
+  const uid = userId.toString();
+  const clientInstance = clients.get(uid);
+  const currentStatus = statuses.get(uid) || 'DISCONNECTED';
+
+  if (currentStatus !== 'CONNECTED' || !clientInstance) return;
   try {
-    const chat = await client.getChatById(chatId);
+    const chat = await clientInstance.getChatById(chatId);
     const messages = await chat.fetchMessages({ limit: Number(limit) });
     for (const msg of messages) {
       const messageId = msg.id._serialized;
-      let dbMsg = await WhatsAppMessage.findOne({ messageId });
+      let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
       if (!dbMsg) {
         let mediaDetails = null;
         if (msg.hasMedia) {
@@ -353,6 +379,7 @@ export async function fetchChatMessagesOnDemand(chatId, limit = 50) {
         }
         dbMsg = new WhatsAppMessage({
           messageId,
+          userId: uid,
           chatId,
           fromMe: msg.fromMe,
           sender: msg.from.split('@')[0],
@@ -370,4 +397,3 @@ export async function fetchChatMessagesOnDemand(chatId, limit = 50) {
     // Quiet
   }
 }
-

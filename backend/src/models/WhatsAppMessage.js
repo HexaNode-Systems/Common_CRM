@@ -3,7 +3,8 @@ import mongoose from 'mongoose';
 
 const whatsappMessageSchema = new mongoose.Schema(
   {
-    messageId: { type: String, required: true, unique: true, index: true },
+    messageId: { type: String, required: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     chatId: { type: String, required: true, index: true },
     fromMe: { type: Boolean, required: true },
     sender: { type: String, required: true },
@@ -20,5 +21,8 @@ const whatsappMessageSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// Ensure messageId is unique per user
+whatsappMessageSchema.index({ userId: 1, messageId: 1 }, { unique: true });
 
 export const WhatsAppMessage = makeTenantModel('WhatsAppMessage', whatsappMessageSchema);

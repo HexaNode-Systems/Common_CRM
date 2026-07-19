@@ -47,6 +47,7 @@ export default function IntegrationsPage() {
     socket.connect();
     
     socket.on('whatsapp:status', (data) => {
+      if (data.userId && data.userId !== user?._id) return;
       setWaStatus(data.status);
       setWaQrCode(data.qrCode);
       if (data.status === 'CONNECTED') {

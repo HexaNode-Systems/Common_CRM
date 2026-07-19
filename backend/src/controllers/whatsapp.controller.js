@@ -12,7 +12,7 @@ import { emitToAll } from '../services/socket.service.js';
 
 export async function getStatus(req, res) {
   try {
-    const data = getWhatsAppStatus();
+    const data = getWhatsAppStatus(req.user._id);
     return res.json(data);
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -21,7 +21,7 @@ export async function getStatus(req, res) {
 
 export async function connect(req, res) {
   try {
-    void initializeWhatsApp();
+    void initializeWhatsApp(req.user._id);
     return res.json({ success: true, message: 'WhatsApp initialization started.' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -30,7 +30,7 @@ export async function connect(req, res) {
 
 export async function disconnect(req, res) {
   try {
-    await disconnectWhatsApp();
+    await disconnectWhatsApp(req.user._id);
     return res.json({ success: true, message: 'WhatsApp disconnected successfully.' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -44,7 +44,7 @@ export async function sendTestMessage(req, res) {
   }
 
   try {
-    const success = await sendWhatsAppMessage(phone, message);
+    const success = await sendWhatsAppMessage(req.user._id, phone, message);
     if (success) {
       return res.json({ success: true, message: 'Test message sent successfully.' });
     } else {
@@ -60,6 +60,11 @@ export async function listChats(req, res) {
   try {
     const { filter = 'all', search = '', limit = 50, page = 1 } = req.query;
     const query = {};
+
+    // If not super_admin, restrict to user's own chats
+    if (req.user.role !== 'super_admin') {
+      query.userId = req.user._id;
+    }
 
     if (filter === 'unread') {
       query.unreadCount = { $gt: 0 };
@@ -81,6 +86,7 @@ export async function listChats(req, res) {
 
     const chats = await WhatsAppChat.find(query)
       .populate('lead', 'companyName contactName status phone')
+      .populate('userId', 'name email')
       .sort({ lastMessageTime: -1 })
       .skip(skip)
       .limit(Number(limit));
@@ -102,20 +108,22 @@ export async function listChats(req, res) {
 export async function getMessages(req, res) {
   try {
     const { chatId } = req.params;
-    const { limit = 50, page = 1 } = req.query;
+    const { limit = 50, page = 1, ownerId } = req.query;
+
+    const targetUserId = ownerId || req.user._id;
 
     // Fetch and sync chat history on-demand from Puppeteer
-    await fetchChatMessagesOnDemand(chatId, limit);
+    await fetchChatMessagesOnDemand(targetUserId, chatId, limit);
 
     const skip = (Number(page) - 1) * Number(limit);
 
-    const messages = await WhatsAppMessage.find({ chatId })
+    const messages = await WhatsAppMessage.find({ userId: targetUserId, chatId })
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(Number(limit));
 
     const chronological = messages.reverse();
-    const total = await WhatsAppMessage.countDocuments({ chatId });
+    const total = await WhatsAppMessage.countDocuments({ userId: targetUserId, chatId });
 
     return res.json({
       items: chronological,
@@ -137,16 +145,27 @@ export async function sendMessage(req, res) {
 
   try {
     const phone = chatId.split('@')[0];
-    const sentMsg = await sendWhatsAppMessage(chatId, message || '', req.file);
+    
+    // Find who owns the chat session. If admin, use the chat's actual owner. Otherwise use logged-in user.
+    let targetUserId = req.user._id;
+    if (req.user.role === 'super_admin') {
+      const chat = await WhatsAppChat.findOne({ chatId });
+      if (chat) {
+        targetUserId = chat.userId;
+      }
+    }
+
+    const sentMsg = await sendWhatsAppMessage(targetUserId, chatId, message || '', req.file);
     if (!sentMsg) {
       return res.status(400).json({ message: 'Failed to send WhatsApp message. Is WhatsApp connected?' });
     }
 
     const messageId = sentMsg.id._serialized;
-    let dbMsg = await WhatsAppMessage.findOne({ messageId });
+    let dbMsg = await WhatsAppMessage.findOne({ userId: targetUserId, messageId });
     if (!dbMsg) {
       dbMsg = new WhatsAppMessage({
         messageId,
+        userId: targetUserId,
         chatId,
         fromMe: true,
         sender: sentMsg.from.split('@')[0],
@@ -158,11 +177,12 @@ export async function sendMessage(req, res) {
       await dbMsg.save();
 
       // Ensure the chat is also updated
-      let dbChat = await WhatsAppChat.findOne({ chatId });
+      let dbChat = await WhatsAppChat.findOne({ userId: targetUserId, chatId });
       if (!dbChat) {
         const leadId = await syncChatWithLead(chatId);
         dbChat = new WhatsAppChat({
           chatId,
+          userId: targetUserId,
           phone,
           contactName: phone,
           isGroup: false,
@@ -187,8 +207,17 @@ export async function sendMessage(req, res) {
 export async function markChatAsRead(req, res) {
   try {
     const { chatId } = req.params;
+    
+    let targetUserId = req.user._id;
+    if (req.user.role === 'super_admin') {
+      const chatObj = await WhatsAppChat.findOne({ chatId });
+      if (chatObj) {
+        targetUserId = chatObj.userId;
+      }
+    }
+
     const chat = await WhatsAppChat.findOneAndUpdate(
-      { chatId },
+      { userId: targetUserId, chatId },
       { unreadCount: 0 },
       { new: true }
     ).populate('lead', 'companyName contactName status phone');

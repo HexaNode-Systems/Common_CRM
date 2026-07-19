@@ -154,6 +154,7 @@ export default function WhatsAppInboxPage() {
     });
 
     socket.on('whatsapp:status', (data) => {
+      if (data.userId && data.userId !== user?._id) return;
       setStatus(data.status);
       setQrCode(data.qrCode);
       if (data.status !== 'CONNECTED') {
@@ -166,10 +167,14 @@ export default function WhatsAppInboxPage() {
     });
 
     socket.on('whatsapp:message_received', (msg) => {
+      if (msg.userId && msg.userId !== user?._id && user?.role !== 'super_admin') return;
       const currentActive = activeChatRef.current;
       
       // If message belongs to active chat, append it
       if (currentActive && msg.chatId === currentActive.chatId) {
+        const activeOwnerId = currentActive.userId?._id || currentActive.userId;
+        if (msg.userId && activeOwnerId && msg.userId !== activeOwnerId) return;
+
         setMessages(current => {
           if (current.some(m => m.messageId === msg.messageId)) return current;
           return [...current, msg];
@@ -189,8 +194,11 @@ export default function WhatsAppInboxPage() {
     });
 
     socket.on('whatsapp:chat_updated', (updatedChat) => {
+      const chatOwnerId = updatedChat.userId?._id || updatedChat.userId;
+      if (chatOwnerId && chatOwnerId !== user?._id && user?.role !== 'super_admin') return;
+
       setChats(current => {
-        const index = current.findIndex(c => c.chatId === updatedChat.chatId);
+        const index = current.findIndex(c => c.chatId === updatedChat.chatId && (c.userId?._id || c.userId) === chatOwnerId);
         if (index === -1) {
           return [updatedChat, ...current];
         }
@@ -203,14 +211,17 @@ export default function WhatsAppInboxPage() {
 
       // Update active chat details if it is the one updated (e.g. unread count or lead status linked)
       const currentActive = activeChatRef.current;
-      if (currentActive && updatedChat.chatId === currentActive.chatId) {
+      const activeOwnerId = currentActive?.userId?._id || currentActive?.userId;
+      if (currentActive && updatedChat.chatId === currentActive.chatId && chatOwnerId === activeOwnerId) {
         setActiveChat(current => ({ ...current, ...updatedChat }));
       }
     });
 
     socket.on('whatsapp:message_ack', (data) => {
+      if (data.userId && data.userId !== user?._id && user?.role !== 'super_admin') return;
       const currentActive = activeChatRef.current;
-      if (currentActive && data.chatId === currentActive.chatId) {
+      const activeOwnerId = currentActive?.userId?._id || currentActive?.userId;
+      if (currentActive && data.chatId === currentActive.chatId && (!data.userId || data.userId === activeOwnerId)) {
         setMessages(current => current.map(m => 
           m.messageId === data.messageId ? { ...m, status: data.status } : m
         ));
@@ -292,11 +303,14 @@ export default function WhatsAppInboxPage() {
   }, [filter, searchQuery]);
 
   // Load message history for a conversation
-  const loadMessages = async (chatId, page = 1, appendTop = false) => {
+  const loadMessages = async (chat, page = 1, appendTop = false) => {
+    if (!chat) return;
     setLoadingMessages(true);
+    const chatId = typeof chat === 'string' ? chat : chat.chatId;
+    const ownerId = typeof chat === 'object' ? (chat.userId?._id || chat.userId) : undefined;
     try {
       const { data } = await api.get(`/v1/whatsapp/chats/${chatId}/messages`, {
-        params: { page, limit: 40 }
+        params: { page, limit: 40, ownerId }
       });
       
       const newMessages = data.items || [];
@@ -321,7 +335,7 @@ export default function WhatsAppInboxPage() {
     if (e.target.scrollTop === 0 && hasMoreMessages && !loadingMessages && activeChat) {
       // Save scroll height to adjust after loading
       const prevScrollHeight = e.target.scrollHeight;
-      loadMessages(activeChat.chatId, messagesPage + 1, true).then(() => {
+      loadMessages(activeChat, messagesPage + 1, true).then(() => {
         // Adjust scroll position to prevent jumping
         setTimeout(() => {
           if (messageBodyRef.current) {
@@ -343,7 +357,7 @@ export default function WhatsAppInboxPage() {
   const handleSelectChat = (chat) => {
     setActiveChat(chat);
     setMessages([]);
-    loadMessages(chat.chatId, 1, false);
+    loadMessages(chat, 1, false);
     // Mark as read in backend
     api.post(`/v1/whatsapp/chats/${chat.chatId}/read`).catch(console.error);
     // Reset unread count locally
@@ -671,8 +685,13 @@ export default function WhatsAppInboxPage() {
                         {formatTime(chat.lastMessageTime)}
                       </span>
                     </div>
-                    <p className="text-[10px] text-slate-500 mt-0.5 truncate">
-                      {chat.phone}
+                    <p className="text-[10px] text-slate-500 mt-0.5 truncate flex items-center justify-between">
+                      <span>{chat.phone}</span>
+                      {user?.role === 'super_admin' && chat.userId && (
+                        <span className="rounded bg-blue-50 px-1.5 py-0.5 text-[9px] font-semibold text-blue-700">
+                          {chat.userId.name || chat.userId.email}
+                        </span>
+                      )}
                     </p>
                     <p className={`text-xs text-slate-500 mt-1 truncate ${hasUnread ? 'text-slate-900 font-medium' : ''}`}>
                       {chat.lastMessage || 'No messages'}
