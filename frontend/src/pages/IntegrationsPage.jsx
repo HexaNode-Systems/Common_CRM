@@ -211,205 +211,212 @@ export default function IntegrationsPage() {
       )}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* Justdial Integration */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-orange-50 p-2.5 text-orange-600 border border-orange-100">
-                  <Phone size={24} />
+        {hasPermission(user, 'settings', 'update') && (
+          /* Justdial Integration */
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-orange-50 p-2.5 text-orange-600 border border-orange-100">
+                    <Globe size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">Justdial Integration</h3>
+                    <p className="text-xs text-slate-500">Poll or push real-time Justdial campaign leads</p>
+                  </div>
                 </div>
+                <span
+                  onClick={() => handleToggle('justdial')}
+                  className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
+                    integrations.justdial?.isActive
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}
+                >
+                  {integrations.justdial?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                  {integrations.justdial?.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <div className="mt-6 space-y-4">
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Justdial Integration</h3>
-                  <p className="text-xs text-slate-500">Automatic polling or webhook lead ingestion</p>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook Target URL</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
+                    <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/justdial`}</span>
+                    <button
+                      onClick={() => copyToClipboard(`${webhookBaseUrl}/justdial`, 'jd_webhook')}
+                      className="p-1 text-slate-500 hover:text-slate-800 transition"
+                    >
+                      <Copy size={14} className={copiedText.jd_webhook ? 'text-emerald-600' : ''} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <label className="block">
+                    <span className="mb-1 block text-xs font-medium text-slate-600">Polling Endpoint API URL</span>
+                    <input
+                      className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
+                      placeholder="https://api.justdial.com/leads..."
+                      value={integrations.justdial?.pollUrl || ''}
+                      onChange={(e) => handleChange('justdial', 'pollUrl', e.target.value)}
+                    />
+                  </label>
+                  <div className="grid grid-cols-2 gap-4">
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-slate-600">Client / API Token</span>
+                      <input
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
+                        type="password"
+                        value={integrations.justdial?.apiToken || ''}
+                        onChange={(e) => handleChange('justdial', 'apiToken', e.target.value)}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-1 block text-xs font-medium text-slate-600">Interval (Minutes)</span>
+                      <select
+                        className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
+                        value={integrations.justdial?.pollIntervalMs || 300000}
+                        onChange={(e) => handleChange('justdial', 'pollIntervalMs', Number(e.target.value))}
+                      >
+                        <option value={60000}>1 Min</option>
+                        <option value={300000}>5 Min</option>
+                        <option value={900000}>15 Min</option>
+                      </select>
+                    </label>
+                  </div>
                 </div>
               </div>
-              <span
-                onClick={() => handleToggle('justdial')}
-                className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
-                  integrations.justdial?.isActive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-500 border border-slate-200'
-                }`}
-              >
-                {integrations.justdial?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                {integrations.justdial?.isActive ? 'Active' : 'Inactive'}
-              </span>
             </div>
 
-            <div className="mt-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook URL</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
-                  <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/justdial`}</span>
-                  <button
-                    onClick={() => copyToClipboard(`${webhookBaseUrl}/justdial`, 'jd_webhook')}
-                    className="p-1 text-slate-500 hover:text-slate-800 transition"
-                  >
-                    <Copy size={14} className={copiedText.jd_webhook ? 'text-emerald-600' : ''} />
-                  </button>
+            <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
+              <Info size={14} className="shrink-0 text-primary mt-0.5" />
+              <span>Copy the Webhook URL and paste it into your Justdial campaign dashboard to receive leads in real-time.</span>
+            </div>
+          </div>
+        )}
+
+        {hasPermission(user, 'settings', 'update') && (
+          /* IndiaMart Integration */
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-teal-50 p-2.5 text-teal-600 border border-teal-100">
+                    <ShoppingBag size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">IndiaMart Integration</h3>
+                    <p className="text-xs text-slate-500">Capture IndiaMart leads automatically via webhook</p>
+                  </div>
                 </div>
+                <span
+                  onClick={() => handleToggle('indiamart')}
+                  className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
+                    integrations.indiamart?.isActive
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}
+                >
+                  {integrations.indiamart?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                  {integrations.indiamart?.isActive ? 'Active' : 'Inactive'}
+                </span>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">JD API Polling URL (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="https://api.justdial.com/leads..."
-                  value={integrations.justdial?.pollUrl || ''}
-                  onChange={(e) => handleChange('justdial', 'pollUrl', e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+              <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">API Token</label>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook URL</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
+                    <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/indiamart`}</span>
+                    <button
+                      onClick={() => copyToClipboard(`${webhookBaseUrl}/indiamart`, 'im_webhook')}
+                      className="p-1 text-slate-500 hover:text-slate-800 transition"
+                    >
+                      <Copy size={14} className={copiedText.im_webhook ? 'text-emerald-600' : ''} />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">IndiaMart CRM API Key (Optional)</label>
                   <input
                     type="password"
-                    placeholder="JD Token"
-                    value={integrations.justdial?.apiToken || ''}
-                    onChange={(e) => handleChange('justdial', 'apiToken', e.target.value)}
+                    placeholder="Enter IndiaMart API Key"
+                    value={integrations.indiamart?.apiKey || ''}
+                    onChange={(e) => handleChange('indiamart', 'apiKey', e.target.value)}
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
                   />
                 </div>
+              </div>
+            </div>
+
+            <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
+              <Info size={14} className="shrink-0 text-primary mt-0.5" />
+              <span>Provides direct webhook integration for IndiaMart inquiries. IndiaMart fields (`SENDER_NAME`, `SENDER_MOBILE`) are auto-mapped.</span>
+            </div>
+          </div>
+        )}
+
+        {hasPermission(user, 'settings', 'update') && (
+          /* Website Integration */
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
+            <div>
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-xl bg-purple-50 p-2.5 text-purple-600 border border-purple-100">
+                    <Code size={24} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-base">Website Form Integration</h3>
+                    <p className="text-xs text-slate-500">Ingest contact forms directly into CRM</p>
+                  </div>
+                </div>
+                <span
+                  onClick={() => handleToggle('website')}
+                  className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
+                    integrations.website?.isActive
+                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                      : 'bg-slate-100 text-slate-500 border border-slate-200'
+                  }`}
+                >
+                  {integrations.website?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                  {integrations.website?.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Interval (ms)</label>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook POST Endpoint</label>
+                  <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
+                    <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/website`}</span>
+                    <button
+                      onClick={() => copyToClipboard(`${webhookBaseUrl}/website`, 'web_webhook')}
+                      className="p-1 text-slate-500 hover:text-slate-800 transition"
+                    >
+                      <Copy size={14} className={copiedText.web_webhook ? 'text-emerald-600' : ''} />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Secure Request Secret (Optional)</label>
                   <input
-                    type="number"
-                    placeholder="300000"
-                    value={integrations.justdial?.pollIntervalMs || 300000}
-                    onChange={(e) => handleChange('justdial', 'pollIntervalMs', Number(e.target.value))}
+                    type="password"
+                    placeholder="Enter Secret Key Header"
+                    value={integrations.website?.webhookSecret || ''}
+                    onChange={(e) => handleChange('website', 'webhookSecret', e.target.value)}
                     className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
                   />
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
-            <Info size={14} className="shrink-0 text-primary mt-0.5" />
-            <span>Copy the Webhook URL and paste it into your Justdial campaign dashboard to receive leads in real-time.</span>
-          </div>
-        </div>
-
-        {/* IndiaMart Integration */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-teal-50 p-2.5 text-teal-600 border border-teal-100">
-                  <ShoppingBag size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">IndiaMart Integration</h3>
-                  <p className="text-xs text-slate-500">Real-time webhook ingestion</p>
-                </div>
-              </div>
-              <span
-                onClick={() => handleToggle('indiamart')}
-                className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
-                  integrations.indiamart?.isActive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-500 border border-slate-200'
-                }`}
-              >
-                {integrations.indiamart?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                {integrations.indiamart?.isActive ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook URL</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
-                  <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/indiamart`}</span>
-                  <button
-                    onClick={() => copyToClipboard(`${webhookBaseUrl}/indiamart`, 'im_webhook')}
-                    className="p-1 text-slate-500 hover:text-slate-800 transition"
-                  >
-                    <Copy size={14} className={copiedText.im_webhook ? 'text-emerald-600' : ''} />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">IndiaMart CRM API Key (Optional)</label>
-                <input
-                  type="password"
-                  placeholder="Enter IndiaMart API Key"
-                  value={integrations.indiamart?.apiKey || ''}
-                  onChange={(e) => handleChange('indiamart', 'apiKey', e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
+            <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
+              <Info size={14} className="shrink-0 text-primary mt-0.5" />
+              <span>Connect landing pages or business websites. Submit forms directly via JSON POST request payloads.</span>
             </div>
           </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
-            <Info size={14} className="shrink-0 text-primary mt-0.5" />
-            <span>Provides direct webhook integration for IndiaMart inquiries. IndiaMart fields (`SENDER_NAME`, `SENDER_MOBILE`) are auto-mapped.</span>
-          </div>
-        </div>
-
-        {/* Website Integration */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between">
-          <div>
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <div className="rounded-xl bg-purple-50 p-2.5 text-purple-600 border border-purple-100">
-                  <Code size={24} />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Website Form Integration</h3>
-                  <p className="text-xs text-slate-500">Ingest contact forms directly into CRM</p>
-                </div>
-              </div>
-              <span
-                onClick={() => handleToggle('website')}
-                className={`cursor-pointer rounded-full px-2.5 py-0.5 text-xs font-semibold select-none flex items-center gap-1 transition ${
-                  integrations.website?.isActive
-                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                    : 'bg-slate-100 text-slate-500 border border-slate-200'
-                }`}
-              >
-                {integrations.website?.isActive ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                {integrations.website?.isActive ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-
-            <div className="mt-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Webhook URL</label>
-                <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 p-2">
-                  <span className="flex-1 font-mono text-2xs truncate select-all">{`${webhookBaseUrl}/website`}</span>
-                  <button
-                    onClick={() => copyToClipboard(`${webhookBaseUrl}/website`, 'web_webhook')}
-                    className="p-1 text-slate-500 hover:text-slate-800 transition"
-                  >
-                    <Copy size={14} className={copiedText.web_webhook ? 'text-emerald-600' : ''} />
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-500 uppercase mb-1">Security Webhook Secret</label>
-                <input
-                  type="text"
-                  placeholder="Webhook Secret"
-                  value={integrations.website?.webhookSecret || ''}
-                  onChange={(e) => handleChange('website', 'webhookSecret', e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 border-t border-slate-100 pt-4 text-xs text-slate-500 flex items-start gap-2 bg-slate-50 p-3 rounded-xl">
-            <Info size={14} className="shrink-0 text-primary mt-0.5" />
-            <span>Connect landing pages or business websites. Submit forms directly via JSON POST request payloads.</span>
-          </div>
-        </div>
+        )}
 
         {hasPermission(user, 'settings', 'update') && (
           /* Zoho CRM Integration */
