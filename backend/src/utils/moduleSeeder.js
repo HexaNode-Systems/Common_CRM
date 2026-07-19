@@ -21,7 +21,8 @@ export const defaultModulesList = [
   { name: 'crm', displayName: 'CRM', route: '/crm', icon: 'Building', displayOrder: 16 },
   { name: 'support', displayName: 'Support Desk', route: '/support', icon: 'Headphones', displayOrder: 17 },
   { name: 'inventory', displayName: 'Inventory', route: '/inventory', icon: 'FolderOpen', displayOrder: 18 },
-  { name: 'whatsapp', displayName: 'WhatsApp Inbox', route: '/whatsapp-inbox', icon: 'MessageSquare', displayOrder: 19 }
+  { name: 'whatsapp', displayName: 'WhatsApp Inbox', route: '/whatsapp-inbox', icon: 'MessageSquare', displayOrder: 19 },
+  { name: 'whatsapp_integration', displayName: 'WhatsApp Integration', route: '/Integrations', icon: 'QrCode', displayOrder: 20 }
 ];
 
 export async function seedModulesAndPermissions() {

@@ -482,7 +482,7 @@ export default function IntegrationsPage() {
           </div>
         </div>
 
-        {hasPermission(user, 'whatsapp', 'read') && (
+        {hasPermission(user, 'whatsapp_integration', 'read') && (
           /* WhatsApp Integration Card */
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xs flex flex-col justify-between md:col-span-2">
             <div>
@@ -546,7 +546,7 @@ export default function IntegrationsPage() {
                       <button 
                         type="button" 
                         onClick={handleWaDisconnect} 
-                        disabled={waLoading || !hasPermission(user, 'whatsapp', 'update')}
+                        disabled={waLoading || !hasPermission(user, 'whatsapp_integration', 'update')}
                         className="rounded-theme bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50"
                       >
                         Disconnect WhatsApp Session
@@ -577,7 +577,7 @@ export default function IntegrationsPage() {
                       <button 
                         type="button" 
                         onClick={handleWaDisconnect} 
-                        disabled={waLoading || !hasPermission(user, 'whatsapp', 'update')}
+                        disabled={waLoading || !hasPermission(user, 'whatsapp_integration', 'update')}
                         className="rounded-theme border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 transition"
                       >
                         Cancel Connection
@@ -589,7 +589,7 @@ export default function IntegrationsPage() {
                       <button 
                         type="button" 
                         onClick={handleWaConnect} 
-                        disabled={waLoading || !hasPermission(user, 'whatsapp', 'update')}
+                        disabled={waLoading || !hasPermission(user, 'whatsapp_integration', 'update')}
                         className="rounded-theme bg-[#25D366] hover:bg-[#20ba59] px-5 py-2.5 text-xs font-bold text-white transition flex items-center gap-1.5 mx-auto disabled:opacity-50"
                       >
                         <QrCode size={14} /> Connect WhatsApp Client
@@ -631,7 +631,7 @@ export default function IntegrationsPage() {
                   <button 
                     type="button" 
                     onClick={handleSendTest}
-                    disabled={waStatus !== 'CONNECTED' || waSendingTest || !waTestPhone || !hasPermission(user, 'whatsapp', 'update')}
+                    disabled={waStatus !== 'CONNECTED' || waSendingTest || !waTestPhone || !hasPermission(user, 'whatsapp_integration', 'update')}
                     className="w-full rounded-theme bg-primary hover:bg-primary/95 text-white px-3 py-2 text-xs font-bold transition flex items-center justify-center gap-1.5 mt-4 disabled:bg-slate-100 disabled:text-slate-400"
                   >
                     {waSendingTest ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
