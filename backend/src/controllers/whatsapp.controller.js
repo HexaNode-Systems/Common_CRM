@@ -356,18 +356,18 @@ export async function sendBulkCampaign(req, res) {
 
         const chatId = cleanNumber + '@c.us';
 
-        // Build complete message text (with template tag replacement & CTA button styling)
+        // Build complete message text (with template tag replacement & CTA button formatting)
         let fullMessage = body;
         if (item.name) {
           fullMessage = fullMessage.replace(/\{name\}/gi, item.name);
         }
         if (ctaType !== 'none' && ctaText) {
           if (ctaType === 'url') {
-            fullMessage += `\n\n📌 *${ctaText}*\n👉 ${ctaValue}`;
+            fullMessage += `\n\n*${ctaText}*\nLink: ${ctaValue}`;
           } else if (ctaType === 'call') {
-            fullMessage += `\n\n📞 *${ctaText}*: ${ctaValue}`;
+            fullMessage += `\n\n*${ctaText}*: ${ctaValue}`;
           } else {
-            fullMessage += `\n\n🔘 *${ctaText}*${ctaValue ? `\n👉 ${ctaValue}` : ''}`;
+            fullMessage += `\n\n*${ctaText}*${ctaValue ? `\nLink: ${ctaValue}` : ''}`;
           }
         }
 
@@ -435,7 +435,7 @@ export async function sendBulkCampaign(req, res) {
           sentCount: campaign.sentCount,
           failedCount: campaign.failedCount,
           totalContacts: campaign.totalContacts,
-          status: i === campaign.contacts.length - 1 ? 'completed' : 'sending',
+          status: i === campaign.contacts.length - 1 ? (campaign.sentCount > 0 ? 'completed' : 'failed') : 'sending',
           latestContact: item
         });
 
@@ -445,7 +445,7 @@ export async function sendBulkCampaign(req, res) {
         }
       }
 
-      campaign.status = campaign.failedCount === campaign.totalContacts ? 'failed' : 'completed';
+      campaign.status = campaign.sentCount > 0 ? 'completed' : 'failed';
       await campaign.save();
     })();
 
