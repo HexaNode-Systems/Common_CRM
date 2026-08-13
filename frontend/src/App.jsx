@@ -18,6 +18,7 @@ import VaultManagementPage from './pages/VaultManagementPage.jsx';
 import StorageManagementPage from './pages/StorageManagementPage.jsx';
 import LeadsManagementPage from './pages/LeadsManagementPage.jsx';
 import WhatsAppInboxPage from './pages/WhatsAppInboxPage.jsx';
+import WhatsAppCampaignPage from './pages/WhatsAppCampaignPage.jsx';
 import SupportTicketsPage from './pages/SupportTicketsPage.jsx';
 import LeadDistributionPage from './pages/LeadDistributionPage.jsx';
 import IntegrationsPage from './pages/IntegrationsPage.jsx';
@@ -159,6 +160,7 @@ export default function App() {
           <Route path="support" element={<ProtectedRoute permission="support:read"><SupportTicketsPage /></ProtectedRoute>} />
           <Route path="roles" element={<ProtectedRoute permission="roles:read"><RolePermissionsPage /></ProtectedRoute>} />
           <Route path="whatsapp-inbox" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppInboxPage /></ProtectedRoute>} />
+          <Route path="whatsapp-campaign" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppCampaignPage /></ProtectedRoute>} />
           <Route path="accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
           <Route path="super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
           <Route path="forbidden" element={<ForbiddenPage />} />

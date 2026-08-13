@@ -2,6 +2,7 @@ import pkg from 'whatsapp-web.js';
 const { Client, LocalAuth, MessageMedia } = pkg;
 import qrcode from 'qrcode';
 import fs from 'fs/promises';
+import fsSync from 'fs';
 import path from 'path';
 import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
@@ -18,6 +19,15 @@ export function getWhatsAppStatus(userId) {
     status: statuses.get(uid) || 'DISCONNECTED',
     qrCode: qrCodes.get(uid) || ''
   };
+}
+
+// Detect Chrome executable dynamically on system
+function getChromeExecutablePath() {
+  const defaultPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+  const x86Path = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
+  if (fsSync.existsSync(defaultPath)) return defaultPath;
+  if (fsSync.existsSync(x86Path)) return x86Path;
+  return undefined; // Fallback to Puppeteer default Chromium
 }
 
 // Map ack code to readable status string
@@ -207,18 +217,16 @@ export async function initializeWhatsApp(userId) {
   emitToAll('whatsapp:status', { userId: uid, status: 'INITIALIZING', qrCode: '' });
 
   try {
+    const puppeteerExecPath = getChromeExecutablePath();
+
     const clientInstance = new Client({
       authStrategy: new LocalAuth({
         clientId: uid,
         dataPath: './.wwebjs_auth'
       }),
-      webVersionCache: {
-        type: 'remote',
-        remotePath: 'https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/2.3000.1039435889-alpha.html'
-      },
       puppeteer: {
         headless: true,
-        executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+        executablePath: puppeteerExecPath,
         args: [
           '--no-sandbox', 
           '--disable-setuid-sandbox',
@@ -229,12 +237,7 @@ export async function initializeWhatsApp(userId) {
           '--disable-gpu',
           '--no-default-browser-check',
           '--disable-default-apps',
-          '--disable-extensions',
-          '--disable-sync',
-          '--disable-translate',
-          '--disable-background-networking',
-          '--mute-audio',
-          '--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+          '--disable-extensions'
         ]
       }
     });
@@ -248,8 +251,18 @@ export async function initializeWhatsApp(userId) {
         qrCodes.set(uid, qrCodeUrl);
         emitToAll('whatsapp:status', { userId: uid, status: 'QR_RECEIVED', qrCode: qrCodeUrl });
       } catch (err) {
-        // Quiet
+        console.error('QR code generation error:', err);
       }
+    });
+
+    clientInstance.on('loading_screen', (percent, message) => {
+      statuses.set(uid, 'LOADING');
+      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '', loadingPercent: percent, loadingMessage: message });
+    });
+
+    clientInstance.on('authenticated', () => {
+      statuses.set(uid, 'LOADING');
+      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '' });
     });
 
     clientInstance.on('ready', async () => {
@@ -259,23 +272,35 @@ export async function initializeWhatsApp(userId) {
       void syncAllChats(userId, clientInstance);
     });
 
-    clientInstance.on('authenticated', () => {
-      statuses.set(uid, 'LOADING');
-      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '' });
-    });
-
-    clientInstance.on('auth_failure', () => {
+    clientInstance.on('auth_failure', async (msg) => {
+      console.error('WhatsApp Auth failure for user:', uid, msg);
       statuses.set(uid, 'DISCONNECTED');
       qrCodes.set(uid, '');
       clients.delete(uid);
       emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+      
+      // Clean up session cache on auth failure
+      try {
+        const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+        await fs.rm(sessionPath, { recursive: true, force: true });
+      } catch (e) {
+        // Quiet
+      }
     });
 
-    clientInstance.on('disconnected', () => {
+    clientInstance.on('disconnected', async (reason) => {
+      console.log('WhatsApp disconnected for user:', uid, reason);
       statuses.set(uid, 'DISCONNECTED');
       qrCodes.set(uid, '');
       clients.delete(uid);
       emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+
+      try {
+        const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+        await fs.rm(sessionPath, { recursive: true, force: true });
+      } catch (e) {
+        // Quiet
+      }
     });
 
     clientInstance.on('message', (msg) => handleNewMessage(userId, msg, clientInstance));
@@ -318,9 +343,17 @@ export async function disconnectWhatsApp(userId) {
       // Quiet
     }
     clients.delete(uid);
-    statuses.set(uid, 'DISCONNECTED');
-    qrCodes.set(uid, '');
-    emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+  }
+  statuses.set(uid, 'DISCONNECTED');
+  qrCodes.set(uid, '');
+  emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+
+  // Clear session folder for fresh connection
+  try {
+    const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+    await fs.rm(sessionPath, { recursive: true, force: true });
+  } catch (e) {
+    // Quiet
   }
 }
 
@@ -418,3 +451,4 @@ export async function fetchChatMessagesOnDemand(userId, chatId, limit = 50) {
     // Quiet
   }
 }
+

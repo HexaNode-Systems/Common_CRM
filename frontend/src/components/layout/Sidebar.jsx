@@ -18,7 +18,8 @@ import {
   X,
   MessageSquare,
   Laptop,
-  Building
+  Building,
+  Send
 } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
@@ -36,6 +37,7 @@ const links = [
   { to: '/vault', label: 'Vault / Credentials', icon: Lock, module: 'vault' },
   { to: '/storage', label: 'Storage Management', icon: FolderOpen, module: 'storage' },
   { to: '/whatsapp-inbox', label: 'WhatsApp Inbox', icon: MessageSquare, module: 'whatsapp' },
+  { to: '/whatsapp-campaign', label: 'WhatsApp Campaign', icon: Send, module: 'whatsapp' },
   { to: '/reports', label: 'Reports', icon: BarChart3, module: 'reports' },
   { to: '/Integrations', label: 'Integrations', icon: Link2, module: 'settings|whatsapp_integration' },
   { to: '/theme', label: 'Theme Settings', icon: Palette, module: 'settings' },

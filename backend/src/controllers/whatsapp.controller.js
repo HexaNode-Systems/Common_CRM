@@ -1,3 +1,5 @@
+import fs from 'fs/promises';
+import path from 'path';
 import { 
   getWhatsAppStatus, 
   initializeWhatsApp, 
@@ -8,6 +10,7 @@ import {
 } from '../services/whatsapp.service.js';
 import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
+import { WhatsAppCampaign } from '../models/WhatsAppCampaign.js';
 import { emitToAll } from '../services/socket.service.js';
 
 export async function getStatus(req, res) {
@@ -110,7 +113,7 @@ export async function getMessages(req, res) {
     const { chatId } = req.params;
     const { limit = 50, page = 1, ownerId } = req.query;
 
-    const targetUserId = ownerId || req.user._id;
+    const targetUserId = (req.user.role === 'super_admin' && ownerId) ? ownerId : req.user._id;
 
     // Fetch and sync chat history on-demand from Puppeteer
     await fetchChatMessagesOnDemand(targetUserId, chatId, limit);
@@ -155,6 +158,24 @@ export async function sendMessage(req, res) {
       }
     }
 
+    // Save uploaded media file persistently if present
+    let persistentMediaUrl = '';
+    let mediaMimeType = '';
+    if (req.file) {
+      try {
+        const folderPath = path.join('storage', 'whatsapp');
+        await fs.mkdir(folderPath, { recursive: true });
+        const ext = req.file.originalname.split('.').pop() || 'bin';
+        const fileName = `sent_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+        const filePath = path.join(folderPath, fileName);
+        await fs.writeFile(filePath, req.file.buffer);
+        persistentMediaUrl = `/storage/whatsapp/${fileName}`;
+        mediaMimeType = req.file.mimetype;
+      } catch (err) {
+        console.error('Failed to save sent media file:', err);
+      }
+    }
+
     const sentMsg = await sendWhatsAppMessage(targetUserId, chatId, message || '', req.file);
     if (!sentMsg) {
       return res.status(400).json({ message: 'Failed to send WhatsApp message. Is WhatsApp connected?' });
@@ -168,11 +189,13 @@ export async function sendMessage(req, res) {
         userId: targetUserId,
         chatId,
         fromMe: true,
-        sender: sentMsg.from.split('@')[0],
+        sender: sentMsg.from ? sentMsg.from.split('@')[0] : targetUserId.toString(),
         body: sentMsg.body || (req.file ? `[Media: ${req.file.mimetype}]` : ''),
         timestamp: new Date(),
         status: 'sent',
-        type: sentMsg.type
+        type: sentMsg.type || (req.file ? (req.file.mimetype.startsWith('image/') ? 'image' : req.file.mimetype.startsWith('video/') ? 'video' : 'document') : 'chat'),
+        mediaUrl: persistentMediaUrl,
+        mediaMimeType
       });
       await dbMsg.save();
 
@@ -231,3 +254,220 @@ export async function markChatAsRead(req, res) {
     return res.status(500).json({ message: error.message });
   }
 }
+
+// Launch Bulk Campaign Shoot
+export async function sendBulkCampaign(req, res) {
+  try {
+    const { name, contacts: rawContacts, body, ctaType = 'none', ctaText = '', ctaValue = '', delay = 1.5 } = req.body;
+    
+    if (!name || !body || !rawContacts) {
+      return res.status(400).json({ message: 'Campaign name, message content, and contact numbers are required.' });
+    }
+
+    // Verify WhatsApp is connected for user
+    const currentStatusData = getWhatsAppStatus(req.user._id);
+    if (currentStatusData.status !== 'CONNECTED') {
+      return res.status(400).json({ message: 'WhatsApp session is not connected. Please scan QR code in Integrations first.' });
+    }
+
+    let contactsList = [];
+    try {
+      contactsList = typeof rawContacts === 'string' ? JSON.parse(rawContacts) : rawContacts;
+    } catch (e) {
+      return res.status(400).json({ message: 'Invalid contacts list format.' });
+    }
+
+    if (!Array.isArray(contactsList) || contactsList.length === 0) {
+      return res.status(400).json({ message: 'At least one target contact is required.' });
+    }
+
+    let targetUserId = req.user._id;
+
+    // Save uploaded media file persistently if present
+    let persistentMediaUrl = '';
+    let mediaMimeType = '';
+    if (req.file) {
+      try {
+        const folderPath = path.join('storage', 'whatsapp');
+        await fs.mkdir(folderPath, { recursive: true });
+        const ext = req.file.originalname.split('.').pop() || 'bin';
+        const fileName = `campaign_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+        const filePath = path.join(folderPath, fileName);
+        await fs.writeFile(filePath, req.file.buffer);
+        persistentMediaUrl = `/storage/whatsapp/${fileName}`;
+        mediaMimeType = req.file.mimetype;
+      } catch (err) {
+        console.error('Failed to save campaign media file:', err);
+      }
+    }
+
+    // Prepare campaign record
+    const formattedContacts = contactsList.map(c => ({
+      phone: typeof c === 'string' ? c : c.phone,
+      name: typeof c === 'object' && c.name ? c.name : '',
+      status: 'pending'
+    }));
+
+    const campaign = new WhatsAppCampaign({
+      name,
+      userId: targetUserId,
+      totalContacts: formattedContacts.length,
+      sentCount: 0,
+      failedCount: 0,
+      status: 'sending',
+      body,
+      ctaType,
+      ctaText,
+      ctaValue,
+      mediaUrl: persistentMediaUrl,
+      mediaMimeType,
+      contacts: formattedContacts
+    });
+
+    await campaign.save();
+
+    // Send HTTP response back to client immediately
+    res.json({
+      success: true,
+      message: 'Campaign shooting launched successfully.',
+      campaignId: campaign._id,
+      totalContacts: campaign.totalContacts
+    });
+
+    // Process bulk send asynchronously in background thread
+    (async () => {
+      const delayMs = Math.max(Number(delay) * 1000, 500);
+
+      for (let i = 0; i < campaign.contacts.length; i++) {
+        const item = campaign.contacts[i];
+        let rawPhone = item.phone.toString().trim();
+        let cleanNumber = rawPhone.replace(/\D/g, '');
+        if (cleanNumber.length === 10) {
+          cleanNumber = '91' + cleanNumber;
+        }
+        
+        if (!cleanNumber || cleanNumber.length < 10) {
+          item.status = 'failed';
+          item.error = 'Invalid phone number format';
+          campaign.failedCount += 1;
+          await campaign.save();
+          continue;
+        }
+
+        const chatId = cleanNumber + '@c.us';
+
+        // Build complete message text (with template tag replacement & CTA button styling)
+        let fullMessage = body;
+        if (item.name) {
+          fullMessage = fullMessage.replace(/\{name\}/gi, item.name);
+        }
+        if (ctaType !== 'none' && ctaText) {
+          if (ctaType === 'url') {
+            fullMessage += `\n\n📌 *${ctaText}*\n👉 ${ctaValue}`;
+          } else if (ctaType === 'call') {
+            fullMessage += `\n\n📞 *${ctaText}*: ${ctaValue}`;
+          } else {
+            fullMessage += `\n\n🔘 *${ctaText}*${ctaValue ? `\n👉 ${ctaValue}` : ''}`;
+          }
+        }
+
+        try {
+          const sentMsg = await sendWhatsAppMessage(targetUserId, chatId, fullMessage, req.file);
+          if (sentMsg) {
+            const messageId = sentMsg.id?._serialized || `campaign_msg_${Date.now()}_${i}`;
+            
+            // Save WhatsAppMessage so it shows up in WhatsApp Inbox
+            const dbMsg = new WhatsAppMessage({
+              messageId,
+              userId: targetUserId,
+              chatId,
+              fromMe: true,
+              sender: targetUserId.toString(),
+              body: fullMessage || (req.file ? `[Media: ${req.file.mimetype}]` : ''),
+              timestamp: new Date(),
+              status: 'sent',
+              type: req.file ? (req.file.mimetype.startsWith('image/') ? 'image' : req.file.mimetype.startsWith('video/') ? 'video' : 'document') : 'chat',
+              mediaUrl: persistentMediaUrl,
+              mediaMimeType
+            });
+            await dbMsg.save();
+
+            // Update or create WhatsAppChat so contact is in WhatsApp Inbox list
+            let dbChat = await WhatsAppChat.findOne({ userId: targetUserId, chatId });
+            if (!dbChat) {
+              const leadId = await syncChatWithLead(chatId);
+              dbChat = new WhatsAppChat({
+                chatId,
+                userId: targetUserId,
+                phone: cleanNumber,
+                contactName: item.name || cleanNumber,
+                isGroup: false,
+                lead: leadId
+              });
+            }
+            dbChat.lastMessage = dbMsg.body;
+            dbChat.lastMessageTime = dbMsg.timestamp;
+            await dbChat.save();
+
+            // Emit live socket updates
+            emitToAll('whatsapp:message_received', dbMsg);
+            emitToAll('whatsapp:chat_updated', dbChat);
+
+            item.status = 'sent';
+            item.sentAt = new Date();
+            campaign.sentCount += 1;
+          } else {
+            item.status = 'failed';
+            item.error = 'WhatsApp send failed';
+            campaign.failedCount += 1;
+          }
+        } catch (err) {
+          item.status = 'failed';
+          item.error = err.message || 'Send error';
+          campaign.failedCount += 1;
+        }
+
+        await campaign.save();
+
+        // Broadcast progress over sockets
+        emitToAll('whatsapp:campaign_progress', {
+          campaignId: campaign._id,
+          sentCount: campaign.sentCount,
+          failedCount: campaign.failedCount,
+          totalContacts: campaign.totalContacts,
+          status: i === campaign.contacts.length - 1 ? 'completed' : 'sending',
+          latestContact: item
+        });
+
+        // Throttle delay between messages
+        if (i < campaign.contacts.length - 1) {
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+      }
+
+      campaign.status = campaign.failedCount === campaign.totalContacts ? 'failed' : 'completed';
+      await campaign.save();
+    })();
+
+  } catch (error) {
+    console.error('sendBulkCampaign error:', error);
+    return res.status(500).json({ message: error.message });
+  }
+}
+
+// Fetch Campaign History Logs
+export async function listCampaigns(req, res) {
+  try {
+    const query = {};
+    if (req.user.role !== 'super_admin') {
+      query.userId = req.user._id;
+    }
+    const campaigns = await WhatsAppCampaign.find(query)
+      .sort({ createdAt: -1 })
+      .limit(30);
+    return res.json(campaigns);
+  } catch (error) {
+    return res.status(500).json({ message: error.message });
+  }
+}
+

@@ -9,7 +9,9 @@ import {
   listChats,
   getMessages,
   sendMessage,
-  markChatAsRead
+  markChatAsRead,
+  sendBulkCampaign,
+  listCampaigns
 } from '../controllers/whatsapp.controller.js';
 
 const router = Router();
@@ -28,4 +30,9 @@ router.get('/chats/:chatId/messages', authorize('whatsapp:read'), getMessages);
 router.post('/chats/:chatId/read', authorize('whatsapp:update'), markChatAsRead);
 router.post('/send', upload.single('file'), authorize('whatsapp:update'), sendMessage);
 
+// Bulk Campaigns
+router.post('/campaigns/send', upload.single('file'), authorize('whatsapp:update'), sendBulkCampaign);
+router.get('/campaigns', authorize('whatsapp:read'), listCampaigns);
+
 export default router;
+

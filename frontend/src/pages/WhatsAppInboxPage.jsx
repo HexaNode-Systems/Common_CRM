@@ -1,9 +1,8 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { socket } from '../services/socket.js';
 import Button from '../components/Button.jsx';
-import Card from '../components/Card.jsx';
 import Input from '../components/Input.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { 
@@ -19,17 +18,13 @@ import {
   Clock, 
   QrCode, 
   Loader2, 
-  RefreshCw, 
   Phone,
   User,
-  Plus,
   Volume2,
   Bell,
   X,
   FileText,
-  Video,
-  Music,
-  Image as ImageIcon
+  Sparkles
 } from 'lucide-react';
 
 export default function WhatsAppInboxPage() {
@@ -73,7 +68,7 @@ export default function WhatsAppInboxPage() {
   });
   const [savingLead, setSavingLead] = useState(false);
 
-  // View Lead Modal State (Simple Quick Details)
+  // View Lead Modal State
   const [showViewLeadModal, setShowViewLeadModal] = useState(false);
 
   // Ref references
@@ -179,13 +174,10 @@ export default function WhatsAppInboxPage() {
           if (current.some(m => m.messageId === msg.messageId)) return current;
           return [...current, msg];
         });
-        // Auto scroll to bottom
         setTimeout(scrollToBottom, 50);
-        // Clear unread counts via API
         api.post(`/v1/whatsapp/chats/${currentActive.chatId}/read`).catch(console.error);
       }
 
-      // Play alert sound if incoming message
       if (!msg.fromMe) {
         playNotificationSound();
         const senderName = msg.sender || 'WhatsApp Contact';
@@ -203,13 +195,10 @@ export default function WhatsAppInboxPage() {
           return [updatedChat, ...current];
         }
         const copy = [...current];
-        // Merge matching lead populated details
         copy[index] = { ...copy[index], ...updatedChat };
-        // Sort descending by last message time
         return copy.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
       });
 
-      // Update active chat details if it is the one updated (e.g. unread count or lead status linked)
       const currentActive = activeChatRef.current;
       const activeOwnerId = currentActive?.userId?._id || currentActive?.userId;
       if (currentActive && updatedChat.chatId === currentActive.chatId && chatOwnerId === activeOwnerId) {
@@ -228,7 +217,6 @@ export default function WhatsAppInboxPage() {
       }
     });
 
-    // Check status on mount
     fetchStatus();
 
     return () => {
@@ -241,7 +229,6 @@ export default function WhatsAppInboxPage() {
     };
   }, []);
 
-  // Poll status occasionally to keep in sync
   const fetchStatus = async () => {
     try {
       const { data } = await api.get('/v1/whatsapp/status');
@@ -259,9 +246,6 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Note: Connection management moved to Integrations page
-
-  // Load synced conversations
   const loadChats = async (page = 1, clear = false) => {
     setLoadingChats(true);
     try {
@@ -297,12 +281,10 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Reload chats when filter or search changes
   useEffect(() => {
     loadChats(1, true);
   }, [filter, searchQuery]);
 
-  // Load message history for a conversation
   const loadMessages = async (chat, page = 1, appendTop = false) => {
     if (!chat) return;
     setLoadingMessages(true);
@@ -318,7 +300,6 @@ export default function WhatsAppInboxPage() {
         setMessages(current => [...newMessages, ...current]);
       } else {
         setMessages(newMessages);
-        // Scroll to bottom on initial load
         setTimeout(scrollToBottom, 50);
       }
       setMessagesPage(page);
@@ -330,13 +311,10 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Infinite Scroll Handler for Older Messages
   const handleMessagesScroll = (e) => {
     if (e.target.scrollTop === 0 && hasMoreMessages && !loadingMessages && activeChat) {
-      // Save scroll height to adjust after loading
       const prevScrollHeight = e.target.scrollHeight;
       loadMessages(activeChat, messagesPage + 1, true).then(() => {
-        // Adjust scroll position to prevent jumping
         setTimeout(() => {
           if (messageBodyRef.current) {
             messageBodyRef.current.scrollTop = messageBodyRef.current.scrollHeight - prevScrollHeight;
@@ -346,7 +324,6 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Infinite Scroll Handler for Conversations Sidebar
   const handleChatsScroll = (e) => {
     const bottom = e.target.scrollHeight - e.target.scrollTop <= e.target.clientHeight + 100;
     if (bottom && hasMoreChats && !loadingChats) {
@@ -358,9 +335,7 @@ export default function WhatsAppInboxPage() {
     setActiveChat(chat);
     setMessages([]);
     loadMessages(chat, 1, false);
-    // Mark as read in backend
     api.post(`/v1/whatsapp/chats/${chat.chatId}/read`).catch(console.error);
-    // Reset unread count locally
     setChats(current => current.map(c => 
       c.chatId === chat.chatId ? { ...c, unreadCount: 0 } : c
     ));
@@ -370,7 +345,6 @@ export default function WhatsAppInboxPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // File selection
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) setSelectedFile(file);
@@ -381,7 +355,6 @@ export default function WhatsAppInboxPage() {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // Send message submit
   const handleSendMessage = async (e) => {
     e.preventDefault();
     if (!activeChat || (!messageText.trim() && !selectedFile) || sending) return;
@@ -389,7 +362,6 @@ export default function WhatsAppInboxPage() {
     setSending(true);
     setError('');
     
-    // Create multipart form data payload
     const formData = new FormData();
     formData.append('chatId', activeChat.chatId);
     formData.append('message', messageText);
@@ -397,7 +369,6 @@ export default function WhatsAppInboxPage() {
       formData.append('file', selectedFile);
     }
 
-    // Optimistic message rendering
     const tempId = `temp-${Date.now()}`;
     const optimisticMsg = {
       messageId: tempId,
@@ -407,7 +378,7 @@ export default function WhatsAppInboxPage() {
       body: messageText || `[Media: ${selectedFile.name}]`,
       timestamp: new Date(),
       status: 'sending',
-      type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : 'document') : 'chat'
+      type: selectedFile ? (selectedFile.type.startsWith('image/') ? 'image' : selectedFile.type.startsWith('video/') ? 'video' : 'document') : 'chat'
     };
 
     setMessages(curr => [...curr, optimisticMsg]);
@@ -421,12 +392,9 @@ export default function WhatsAppInboxPage() {
       const { data } = await api.post('/v1/whatsapp/send', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      // Update optimistic message with actual DB details
       setMessages(curr => curr.map(m => m.messageId === tempId ? data : m));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to send message.');
-      // Revert states
       setMessageText(prevMessageText);
       setMessages(curr => curr.filter(m => m.messageId !== tempId));
     } finally {
@@ -434,7 +402,6 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Format timestamp helper
   const formatTime = (dateStr) => {
     if (!dateStr) return '';
     const d = new Date(dateStr);
@@ -442,13 +409,11 @@ export default function WhatsAppInboxPage() {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Format date header helper
   const formatDateHeader = (dateStr) => {
     const d = new Date(dateStr);
     return d.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
-  // Open creation modal pre-filled
   const handleOpenCreateLead = () => {
     if (!activeChat) return;
     const phone = activeChat.phone;
@@ -464,7 +429,6 @@ export default function WhatsAppInboxPage() {
     setShowLeadModal(true);
   };
 
-  // Save new lead
   const handleCreateLead = async (e) => {
     e.preventDefault();
     setSavingLead(true);
@@ -473,7 +437,6 @@ export default function WhatsAppInboxPage() {
       const { data } = await api.post('/v1/leads', leadForm);
       setShowLeadModal(false);
       
-      // Update linked lead state on activeChat
       const updatedChat = { 
         ...activeChat, 
         lead: {
@@ -494,11 +457,8 @@ export default function WhatsAppInboxPage() {
     }
   };
 
-  // Render attachment icon based on mime type
   const renderAttachmentPreview = (url, mime) => {
     if (!url) return null;
-
-    // Relative URLs should point to server base
     const base = import.meta.env.VITE_API_URL 
       ? import.meta.env.VITE_API_URL.replace('/api', '') 
       : 'http://localhost:5000';
@@ -533,7 +493,6 @@ export default function WhatsAppInboxPage() {
       );
     }
 
-    // Default document/PDF preview
     return (
       <a 
         href={fullUrl} 
@@ -542,7 +501,7 @@ export default function WhatsAppInboxPage() {
         className="inline-flex items-center gap-2 rounded-lg bg-slate-50 border border-slate-200 p-2.5 text-xs text-primary font-medium hover:bg-slate-100 transition mt-1"
       >
         <FileText size={16} />
-        <span>Download Document</span>
+        <span>Download Attachment</span>
         <ExternalLink size={12} className="text-slate-400" />
       </a>
     );
@@ -551,11 +510,11 @@ export default function WhatsAppInboxPage() {
   return (
     <div className="flex h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-slate-200 bg-slate-50 shadow-sm relative">
       
-      {/* 1. Left Sidebar: Chats and Status */}
+      {/* Left Sidebar: Chats and Status */}
       <div className="flex w-80 shrink-0 flex-col border-r border-slate-200 bg-white">
         
-        {/* Connection Status block */}
-        <div className="border-b border-slate-100 bg-slate-50/50 p-4">
+        {/* Connection Status block & Launch Campaign shortcut */}
+        <div className="border-b border-slate-100 bg-slate-50/50 p-4 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className={`h-2.5 w-2.5 rounded-full ${
@@ -565,7 +524,7 @@ export default function WhatsAppInboxPage() {
               }`} />
               <span className="text-xs font-bold text-slate-700">
                 {status === 'CONNECTED' ? 'WhatsApp Connected' :
-                 status === 'QR_RECEIVED' ? 'WhatsApp Link Required' :
+                 status === 'QR_RECEIVED' ? 'Scan QR Code' :
                  status === 'DISCONNECTED' ? 'WhatsApp Disconnected' :
                  status === 'INITIALIZING' ? 'WhatsApp Connecting...' : 'Loading Session...'}
               </span>
@@ -579,9 +538,17 @@ export default function WhatsAppInboxPage() {
               </Link>
             )}
           </div>
+
+          {/* Dedicated Bulk Campaign Link button */}
+          <Link
+            to="/whatsapp-campaign"
+            className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary/10 hover:bg-primary/15 text-primary py-1.5 text-xs font-extrabold transition border border-primary/20"
+          >
+            <Sparkles size={14} /> WhatsApp Bulk Campaign Studio →
+          </Link>
         </div>
 
-        {/* Sidebar Preferences controls */}
+        {/* Preferences controls */}
         <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-2 bg-slate-50/20 text-slate-500">
           <button 
             type="button" 
@@ -668,14 +635,12 @@ export default function WhatsAppInboxPage() {
                     isActive ? 'bg-primary/5 hover:bg-primary/5' : ''
                   }`}
                 >
-                  {/* Contact Avatar */}
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                     chat.lead ? 'bg-primary/10 text-primary' : 'bg-slate-100 text-slate-600'
                   }`}>
                     {initials}
                   </div>
 
-                  {/* Message Info preview */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <p className={`truncate text-xs font-bold text-slate-900 ${hasUnread ? 'font-extrabold' : ''}`}>
@@ -698,7 +663,6 @@ export default function WhatsAppInboxPage() {
                     </p>
                   </div>
 
-                  {/* Unread badge & Lead badge */}
                   <div className="flex flex-col items-end justify-between self-stretch shrink-0">
                     {chat.lead && (
                       <span className="rounded bg-primary/10 px-1 py-0.5 text-[9px] font-bold text-primary">
@@ -723,7 +687,7 @@ export default function WhatsAppInboxPage() {
         </div>
       </div>
 
-      {/* 2. Main Chat Window */}
+      {/* Main Chat Window */}
       <div className="flex flex-1 flex-col bg-slate-50">
         {activeChat ? (
           <>
@@ -743,7 +707,7 @@ export default function WhatsAppInboxPage() {
                 </p>
               </div>
 
-              {/* Lead Link / Linking controls */}
+              {/* Lead Link controls */}
               <div className="flex items-center gap-2">
                 {activeChat.lead ? (
                   <div className="flex items-center gap-2 rounded-theme border border-primary/20 bg-primary/5 px-3 py-1.5 text-xs text-primary">
@@ -825,13 +789,10 @@ export default function WhatsAppInboxPage() {
                               ? 'bg-primary text-white rounded-tr-none' 
                               : 'bg-white text-slate-900 rounded-tl-none border border-slate-200/50'
                           }`}>
-                            {/* Message text content */}
                             <p className="whitespace-pre-wrap leading-relaxed break-words">{msg.body}</p>
 
-                            {/* Media Attachment Preview */}
                             {msg.mediaUrl && renderAttachmentPreview(msg.mediaUrl, msg.mediaMimeType)}
 
-                            {/* Time & Status footer */}
                             <div className={`flex items-center justify-end gap-1 text-[9px] mt-1.5 ${
                               fromMe ? 'text-primary-foreground/75' : 'text-slate-400'
                             }`}>
@@ -855,7 +816,7 @@ export default function WhatsAppInboxPage() {
               )}
             </div>
 
-            {/* Selected File Attachment bar */}
+            {/* Selected Attachment bar */}
             {selectedFile && (
               <div className="mx-5 bg-white border border-slate-200 rounded-xl p-3 flex items-center justify-between shadow-sm">
                 <div className="flex items-center gap-3">
@@ -876,7 +837,6 @@ export default function WhatsAppInboxPage() {
             {/* Input typing footer */}
             <form onSubmit={handleSendMessage} className="border-t border-slate-200 bg-white p-4">
               <div className="flex items-end gap-3">
-                {/* File picker button */}
                 <input 
                   type="file" 
                   ref={fileInputRef} 
@@ -892,7 +852,6 @@ export default function WhatsAppInboxPage() {
                   <Paperclip size={18} />
                 </button>
 
-                {/* Main typing area */}
                 <div className="flex-1">
                   <textarea
                     rows="1"
@@ -909,7 +868,6 @@ export default function WhatsAppInboxPage() {
                   />
                 </div>
 
-                {/* Send action button */}
                 <button
                   type="submit"
                   disabled={sending || (!messageText.trim() && !selectedFile)}
@@ -921,7 +879,6 @@ export default function WhatsAppInboxPage() {
             </form>
           </>
         ) : (
-          /* Blank state details window */
           <div className="flex flex-1 flex-col items-center justify-center text-center p-8">
             <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 text-primary mb-4 animate-bounce">
               <MessageSquare size={48} />
@@ -942,7 +899,7 @@ export default function WhatsAppInboxPage() {
         )}
       </div>
 
-      {/* 3. Modal Dialog: Create Lead Prefilled */}
+      {/* Modal: Create Lead Prefilled */}
       {showLeadModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
           <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
@@ -1014,7 +971,7 @@ export default function WhatsAppInboxPage() {
         </div>
       )}
 
-      {/* 4. Modal Dialog: View Lead Quick Info */}
+      {/* Modal: View Lead Quick Info */}
       {showViewLeadModal && activeChat?.lead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
           <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl border border-slate-100">
