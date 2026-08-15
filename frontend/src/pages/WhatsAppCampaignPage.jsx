@@ -29,7 +29,8 @@ import {
   Link2,
   Sliders,
   Users,
-  MessageSquare
+  MessageSquare,
+  Eye
 } from 'lucide-react';
 
 export default function WhatsAppCampaignPage() {
@@ -60,6 +61,7 @@ export default function WhatsAppCampaignPage() {
   // History States
   const [campaignsHistory, setCampaignsHistory] = useState([]);
   const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  const [selectedCampaignReport, setSelectedCampaignReport] = useState(null);
 
   // File Inputs Refs
   const csvFileInputRef = useRef(null);
@@ -762,6 +764,7 @@ export default function WhatsAppCampaignPage() {
                   <th className="p-3">CTA Button</th>
                   <th className="p-3">Date</th>
                   <th className="p-3">Status</th>
+                  <th className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
@@ -787,6 +790,15 @@ export default function WhatsAppCampaignPage() {
                       }`}>
                         {cmp.status}
                       </span>
+                    </td>
+                    <td className="p-3 text-right">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedCampaignReport(cmp)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-primary/10 hover:text-primary transition-colors"
+                      >
+                        <Eye size={13} /> View Report
+                      </button>
                     </td>
                   </tr>
                 ))}
@@ -845,6 +857,119 @@ export default function WhatsAppCampaignPage() {
                 onClick={() => setShowManageContactsModal(false)}
               >
                 Done ({bulkContacts.length} Ready)
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Campaign Details & Delivery Report */}
+      {selectedCampaignReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4">
+          <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl border border-slate-100 flex flex-col max-h-[90vh]">
+            <button 
+              type="button" 
+              onClick={() => setSelectedCampaignReport(null)}
+              className="absolute right-4 top-4 h-8 w-8 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 flex items-center justify-center"
+            >
+              <X size={16} />
+            </button>
+
+            <div className="flex items-center gap-2 mb-1">
+              <span className="p-2 rounded-lg bg-primary/10 text-primary">
+                <Send size={18} />
+              </span>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">{selectedCampaignReport.name}</h3>
+                <p className="text-xs text-slate-400">
+                  Launched on {new Date(selectedCampaignReport.createdAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+
+            {/* Campaign Summary Cards */}
+            <div className="grid grid-cols-4 gap-3 my-4">
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase">Total</span>
+                <p className="text-lg font-bold text-slate-900">{selectedCampaignReport.totalContacts}</p>
+              </div>
+              <div className="rounded-xl border border-emerald-100 bg-emerald-50/50 p-3 text-center">
+                <span className="text-[11px] font-semibold text-emerald-600 uppercase">Sent</span>
+                <p className="text-lg font-bold text-emerald-600">{selectedCampaignReport.sentCount}</p>
+              </div>
+              <div className="rounded-xl border border-rose-100 bg-rose-50/50 p-3 text-center">
+                <span className="text-[11px] font-semibold text-rose-600 uppercase">Failed</span>
+                <p className="text-lg font-bold text-rose-600">{selectedCampaignReport.failedCount}</p>
+              </div>
+              <div className="rounded-xl border border-slate-100 bg-slate-50 p-3 text-center">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase">Status</span>
+                <p className={`text-xs font-bold uppercase mt-1 ${
+                  selectedCampaignReport.status === 'completed' ? 'text-emerald-600' :
+                  selectedCampaignReport.status === 'sending' ? 'text-blue-600' : 'text-rose-600'
+                }`}>
+                  {selectedCampaignReport.status}
+                </p>
+              </div>
+            </div>
+
+            {/* Message Preview */}
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs mb-4">
+              <span className="text-[10px] font-bold uppercase text-slate-400 block mb-1">Message Content</span>
+              <p className="text-slate-800 whitespace-pre-wrap font-sans">{selectedCampaignReport.body}</p>
+              {selectedCampaignReport.ctaType !== 'none' && selectedCampaignReport.ctaText && (
+                <div className="mt-2 pt-2 border-t border-slate-200 text-slate-600 font-medium">
+                  CTA Button: <strong>{selectedCampaignReport.ctaText}</strong> ({selectedCampaignReport.ctaValue || 'none'})
+                </div>
+              )}
+            </div>
+
+            {/* Detailed Contacts List */}
+            <div className="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] uppercase font-bold text-slate-600 sticky top-0">
+                  <tr>
+                    <th className="p-2.5">#</th>
+                    <th className="p-2.5">Phone Number</th>
+                    <th className="p-2.5">Name</th>
+                    <th className="p-2.5">Status</th>
+                    <th className="p-2.5">Error / Details</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-slate-700">
+                  {(selectedCampaignReport.contacts || []).map((c, idx) => (
+                    <tr key={idx} className="hover:bg-slate-50">
+                      <td className="p-2.5 text-slate-400 font-mono text-[11px]">{idx + 1}</td>
+                      <td className="p-2.5 font-mono font-bold text-slate-800">{c.phone}</td>
+                      <td className="p-2.5 text-slate-600">{c.name || '-'}</td>
+                      <td className="p-2.5">
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
+                          c.status === 'sent' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' :
+                          c.status === 'pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' :
+                          'bg-rose-50 text-rose-700 border border-rose-200'
+                        }`}>
+                          {c.status === 'sent' ? <CheckCircle2 size={10} /> : c.status === 'failed' ? <AlertCircle size={10} /> : <Clock size={10} />}
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="p-2.5 text-[11px] text-slate-500">
+                        {c.status === 'sent' && c.sentAt ? (
+                          <span className="text-emerald-600">Sent at {new Date(c.sentAt).toLocaleTimeString()}</span>
+                        ) : c.error ? (
+                          <span className="text-rose-500 font-medium">{c.error}</span>
+                        ) : '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 mt-4 flex justify-end">
+              <Button 
+                type="button" 
+                onClick={() => setSelectedCampaignReport(null)}
+              >
+                Close Report
               </Button>
             </div>
           </div>

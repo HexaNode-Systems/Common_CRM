@@ -159,7 +159,7 @@ export async function sendMessage(req, res) {
     }
 
     // Save uploaded media file persistently if present
-    let persistentMediaUrl = '';
+    // let persistentMediaUrl = '';
     let mediaMimeType = '';
     if (req.file) {
       try {
@@ -169,7 +169,7 @@ export async function sendMessage(req, res) {
         const fileName = `sent_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
         const filePath = path.join(folderPath, fileName);
         await fs.writeFile(filePath, req.file.buffer);
-        persistentMediaUrl = `/storage/whatsapp/${fileName}`;
+        // persistentMediaUrl = `/storage/whatsapp/${fileName}`;
         mediaMimeType = req.file.mimetype;
       } catch (err) {
         console.error('Failed to save sent media file:', err);
@@ -372,61 +372,66 @@ export async function sendBulkCampaign(req, res) {
         }
 
         try {
-          const sentMsg = await sendWhatsAppMessage(targetUserId, chatId, fullMessage, req.file);
+          const mediaPayload = req.file || persistentMediaUrl || null;
+          const sentMsg = await sendWhatsAppMessage(targetUserId, chatId, fullMessage, mediaPayload);
           if (sentMsg) {
-            const messageId = sentMsg.id?._serialized || `campaign_msg_${Date.now()}_${i}`;
-            
-            // Save WhatsAppMessage so it shows up in WhatsApp Inbox
-            const dbMsg = new WhatsAppMessage({
-              messageId,
-              userId: targetUserId,
-              chatId,
-              fromMe: true,
-              sender: targetUserId.toString(),
-              body: fullMessage || (req.file ? `[Media: ${req.file.mimetype}]` : ''),
-              timestamp: new Date(),
-              status: 'sent',
-              type: req.file ? (req.file.mimetype.startsWith('image/') ? 'image' : req.file.mimetype.startsWith('video/') ? 'video' : 'document') : 'chat',
-              mediaUrl: persistentMediaUrl,
-              mediaMimeType
-            });
-            await dbMsg.save();
-
-            // Update or create WhatsAppChat so contact is in WhatsApp Inbox list
-            let dbChat = await WhatsAppChat.findOne({ userId: targetUserId, chatId });
-            if (!dbChat) {
-              const leadId = await syncChatWithLead(chatId);
-              dbChat = new WhatsAppChat({
-                chatId,
-                userId: targetUserId,
-                phone: cleanNumber,
-                contactName: item.name || cleanNumber,
-                isGroup: false,
-                lead: leadId
-              });
-            }
-            dbChat.lastMessage = dbMsg.body;
-            dbChat.lastMessageTime = dbMsg.timestamp;
-            await dbChat.save();
-
-            // Emit live socket updates
-            emitToAll('whatsapp:message_received', dbMsg);
-            emitToAll('whatsapp:chat_updated', dbChat);
-
             item.status = 'sent';
             item.sentAt = new Date();
+            item.error = '';
             campaign.sentCount += 1;
+
+            // Save WhatsAppMessage and update chat in background without crashing status
+            try {
+              const messageId = sentMsg.id?._serialized || `campaign_msg_${Date.now()}_${i}`;
+              const dbMsg = new WhatsAppMessage({
+                messageId,
+                userId: targetUserId,
+                chatId,
+                fromMe: true,
+                sender: targetUserId.toString(),
+                body: fullMessage || (persistentMediaUrl ? `[Media: ${mediaMimeType}]` : ''),
+                timestamp: new Date(),
+                status: 'sent',
+                type: mediaMimeType ? (mediaMimeType.startsWith('image/') ? 'image' : mediaMimeType.startsWith('video/') ? 'video' : 'document') : 'chat',
+                mediaUrl: persistentMediaUrl,
+                mediaMimeType
+              });
+              await dbMsg.save();
+
+              let dbChat = await WhatsAppChat.findOne({ userId: targetUserId, chatId });
+              if (!dbChat) {
+                const leadId = await syncChatWithLead(chatId);
+                dbChat = new WhatsAppChat({
+                  chatId,
+                  userId: targetUserId,
+                  phone: cleanNumber,
+                  contactName: item.name || cleanNumber,
+                  isGroup: false,
+                  lead: leadId
+                });
+              }
+              dbChat.lastMessage = dbMsg.body;
+              dbChat.lastMessageTime = dbMsg.timestamp;
+              await dbChat.save();
+
+              emitToAll('whatsapp:message_received', dbMsg);
+              emitToAll('whatsapp:chat_updated', dbChat);
+            } catch (chatDbErr) {
+              console.error('Error logging campaign message to chat DB:', chatDbErr);
+            }
           } else {
             item.status = 'failed';
-            item.error = 'WhatsApp send failed';
+            item.error = 'WhatsApp send failed (Service unavailable or disconnected)';
             campaign.failedCount += 1;
           }
         } catch (err) {
+          console.error('Campaign contact send error:', err);
           item.status = 'failed';
           item.error = err.message || 'Send error';
           campaign.failedCount += 1;
         }
 
+        campaign.markModified('contacts');
         await campaign.save();
 
         // Broadcast progress over sockets
@@ -446,7 +451,17 @@ export async function sendBulkCampaign(req, res) {
       }
 
       campaign.status = campaign.sentCount > 0 ? 'completed' : 'failed';
+      campaign.markModified('contacts');
       await campaign.save();
+
+      // Final progress broadcast
+      emitToAll('whatsapp:campaign_progress', {
+        campaignId: campaign._id,
+        sentCount: campaign.sentCount,
+        failedCount: campaign.failedCount,
+        totalContacts: campaign.totalContacts,
+        status: campaign.status
+      });
     })();
 
   } catch (error) {
