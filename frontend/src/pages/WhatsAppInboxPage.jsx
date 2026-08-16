@@ -23,8 +23,7 @@ import {
   Volume2,
   Bell,
   X,
-  FileText,
-  Sparkles
+  FileText
 } from 'lucide-react';
 
 export default function WhatsAppInboxPage() {
@@ -558,7 +557,7 @@ export default function WhatsAppInboxPage() {
             to="/whatsapp-campaign"
             className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-primary/10 hover:bg-primary/15 text-primary py-1.5 text-xs font-extrabold transition border border-primary/20"
           >
-            <Sparkles size={14} /> WhatsApp Bulk Campaign Studio →
+            WhatsApp Bulk Campaign Studio →
           </Link>
         </div>
 

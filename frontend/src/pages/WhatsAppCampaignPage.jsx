@@ -277,7 +277,7 @@ export default function WhatsAppCampaignPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#25D366]/10 text-[#20ba59]">
-              <Sparkles size={22} />
+              <Send size={20} />
             </span>
             <div>
               <h1 className="text-xl font-extrabold text-slate-900 tracking-tight">
