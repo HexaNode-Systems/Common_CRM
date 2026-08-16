@@ -24,7 +24,10 @@ export async function getStatus(req, res) {
 
 export async function connect(req, res) {
   try {
-    void initializeWhatsApp(req.user._id);
+    void initializeWhatsApp(req.user._id, {
+      tenantId: req.tenantId,
+      dbName: req.tenantDbName
+    });
     return res.json({ success: true, message: 'WhatsApp initialization started.' });
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -64,9 +67,8 @@ export async function listChats(req, res) {
     const { filter = 'all', search = '', limit = 50, page = 1 } = req.query;
     const query = {};
 
-    // If not super_admin, restrict to user's own chats
-    if (req.user.role !== 'super_admin') {
-      query.userId = req.user._id;
+    if (req.query.userId) {
+      query.userId = req.query.userId;
     }
 
     if (filter === 'unread') {
@@ -113,20 +115,24 @@ export async function getMessages(req, res) {
     const { chatId } = req.params;
     const { limit = 50, page = 1, ownerId } = req.query;
 
-    const targetUserId = (req.user.role === 'super_admin' && ownerId) ? ownerId : req.user._id;
+    const targetUserId = ownerId || req.user._id;
 
     // Fetch and sync chat history on-demand from Puppeteer
     await fetchChatMessagesOnDemand(targetUserId, chatId, limit);
 
     const skip = (Number(page) - 1) * Number(limit);
+    const query = { chatId };
+    if (ownerId) {
+      query.userId = ownerId;
+    }
 
-    const messages = await WhatsAppMessage.find({ userId: targetUserId, chatId })
+    const messages = await WhatsAppMessage.find(query)
       .sort({ timestamp: -1 })
       .skip(skip)
       .limit(Number(limit));
 
     const chronological = messages.reverse();
-    const total = await WhatsAppMessage.countDocuments({ userId: targetUserId, chatId });
+    const total = await WhatsAppMessage.countDocuments(query);
 
     return res.json({
       items: chronological,
@@ -159,7 +165,7 @@ export async function sendMessage(req, res) {
     }
 
     // Save uploaded media file persistently if present
-    // let persistentMediaUrl = '';
+    let persistentMediaUrl = '';
     let mediaMimeType = '';
     if (req.file) {
       try {
@@ -169,7 +175,7 @@ export async function sendMessage(req, res) {
         const fileName = `sent_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
         const filePath = path.join(folderPath, fileName);
         await fs.writeFile(filePath, req.file.buffer);
-        // persistentMediaUrl = `/storage/whatsapp/${fileName}`;
+        persistentMediaUrl = `/storage/whatsapp/${fileName}`;
         mediaMimeType = req.file.mimetype;
       } catch (err) {
         console.error('Failed to save sent media file:', err);
@@ -216,8 +222,12 @@ export async function sendMessage(req, res) {
       dbChat.lastMessageTime = dbMsg.timestamp;
       await dbChat.save();
 
-      emitToAll('whatsapp:chat_updated', dbChat);
-      emitToAll('whatsapp:message_received', dbMsg);
+      const populatedChat = await WhatsAppChat.findById(dbChat._id)
+        .populate('lead', 'companyName contactName status phone')
+        .populate('userId', 'name email');
+
+      emitToAll('whatsapp:chat_updated', populatedChat?.toObject ? populatedChat.toObject() : (dbChat.toObject ? dbChat.toObject() : dbChat));
+      emitToAll('whatsapp:message_received', dbMsg?.toObject ? dbMsg.toObject() : dbMsg);
     }
 
     return res.json(dbMsg);
@@ -231,22 +241,15 @@ export async function markChatAsRead(req, res) {
   try {
     const { chatId } = req.params;
     
-    let targetUserId = req.user._id;
-    if (req.user.role === 'super_admin') {
-      const chatObj = await WhatsAppChat.findOne({ chatId });
-      if (chatObj) {
-        targetUserId = chatObj.userId;
-      }
-    }
-
     const chat = await WhatsAppChat.findOneAndUpdate(
-      { userId: targetUserId, chatId },
+      { chatId },
       { unreadCount: 0 },
       { new: true }
-    ).populate('lead', 'companyName contactName status phone');
+    ).populate('lead', 'companyName contactName status phone')
+     .populate('userId', 'name email');
 
     if (chat) {
-      emitToAll('whatsapp:chat_updated', chat);
+      emitToAll('whatsapp:chat_updated', chat?.toObject ? chat.toObject() : chat);
     }
 
     return res.json({ success: true });
@@ -266,19 +269,74 @@ export async function sendBulkCampaign(req, res) {
 
     // Verify WhatsApp is connected for user
     const currentStatusData = getWhatsAppStatus(req.user._id);
-    if (currentStatusData.status !== 'CONNECTED') {
+    if (currentStatusData.status !== 'CONNECTED' && currentStatusData.status !== 'LOADING') {
       return res.status(400).json({ message: 'WhatsApp session is not connected. Please scan QR code in Integrations first.' });
     }
 
     let contactsList = [];
-    try {
-      contactsList = typeof rawContacts === 'string' ? JSON.parse(rawContacts) : rawContacts;
-    } catch (e) {
-      return res.status(400).json({ message: 'Invalid contacts list format.' });
+    if (typeof rawContacts === 'string') {
+      let trimmed = rawContacts.trim();
+      try {
+        contactsList = JSON.parse(trimmed);
+      } catch (e1) {
+        try {
+          const unescaped = trimmed.replace(/\\"/g, '"').replace(/^"|"$/g, '');
+          contactsList = JSON.parse(unescaped);
+        } catch (e2) {
+          const matches = trimmed.match(/(?:\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}|\d{10,13}/g);
+          if (matches && matches.length > 0) {
+            contactsList = matches.map(m => ({ phone: m.replace(/\D/g, ''), name: '' }));
+          } else {
+            contactsList = trimmed
+              .split(/[\r\n,;]+/)
+              .map(p => p.trim())
+              .filter(Boolean)
+              .map(p => ({ phone: p, name: '' }));
+          }
+        }
+      }
+    } else if (Array.isArray(rawContacts)) {
+      contactsList = rawContacts;
+    } else if (typeof rawContacts === 'object' && rawContacts !== null) {
+      contactsList = [rawContacts];
     }
 
-    if (!Array.isArray(contactsList) || contactsList.length === 0) {
-      return res.status(400).json({ message: 'At least one target contact is required.' });
+    // Clean and validate all contacts
+    const formattedContacts = [];
+    for (const c of contactsList) {
+      let phone = '';
+      let name = '';
+      if (typeof c === 'object' && c !== null) {
+        phone = c.phone || c.number || c.mobile || '';
+        name = c.name || '';
+      } else if (typeof c === 'string') {
+        let str = c.trim();
+        if (str.startsWith('{') && str.endsWith('}')) {
+          try {
+            const parsed = JSON.parse(str);
+            phone = parsed.phone || parsed.number || '';
+            name = parsed.name || '';
+          } catch (_) {
+            phone = str;
+          }
+        } else {
+          phone = str;
+        }
+      }
+
+      phone = phone ? phone.toString().trim() : '';
+      let clean = phone.replace(/\D/g, '');
+      if (clean.length >= 10) {
+        formattedContacts.push({
+          phone: clean,
+          name: name ? name.toString().trim() : '',
+          status: 'pending'
+        });
+      }
+    }
+
+    if (formattedContacts.length === 0) {
+      return res.status(400).json({ message: 'At least one valid 10-digit phone number is required.' });
     }
 
     let targetUserId = req.user._id;
@@ -290,7 +348,7 @@ export async function sendBulkCampaign(req, res) {
       try {
         const folderPath = path.join('storage', 'whatsapp');
         await fs.mkdir(folderPath, { recursive: true });
-        const ext = req.file.originalname.split('.').pop() || 'bin';
+        const ext = req.file.originalname?.split('.').pop() || 'bin';
         const fileName = `campaign_${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
         const filePath = path.join(folderPath, fileName);
         await fs.writeFile(filePath, req.file.buffer);
@@ -300,13 +358,6 @@ export async function sendBulkCampaign(req, res) {
         console.error('Failed to save campaign media file:', err);
       }
     }
-
-    // Prepare campaign record
-    const formattedContacts = contactsList.map(c => ({
-      phone: typeof c === 'string' ? c : c.phone,
-      name: typeof c === 'object' && c.name ? c.name : '',
-      status: 'pending'
-    }));
 
     const campaign = new WhatsAppCampaign({
       name,

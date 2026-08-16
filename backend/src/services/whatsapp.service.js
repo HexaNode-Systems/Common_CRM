@@ -4,14 +4,72 @@ import qrcode from 'qrcode';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
 import { Lead } from '../models/Lead.js';
 import { emitToAll } from './socket.service.js';
+import { tenantStorage } from '../utils/tenantStorage.js';
+import { getTenantDbConnection } from '../utils/connectionManager.js';
 
 const clients = new Map(); // key: userId, value: Client instance
 const statuses = new Map(); // key: userId, value: status string
 const qrCodes = new Map(); // key: userId, value: QR string
+const userTenantContexts = new Map(); // key: userId, value: { tenantId, dbName }
+const recentMessageIds = new Set(); // deduplication lock for incoming messages
+
+// Helper to run database operations inside user's tenant context if applicable
+export async function runWithUserTenantContext(userId, callback) {
+  const uid = userId ? userId.toString() : '';
+  let context = userTenantContexts.get(uid);
+
+  // If not in memory, try reading persisted tenant_info.json from session
+  if (!context && uid) {
+    try {
+      const infoPath = path.join('.wwebjs_auth', `session-${uid}`, 'tenant_info.json');
+      if (fsSync.existsSync(infoPath)) {
+        const raw = await fs.readFile(infoPath, 'utf-8');
+        const parsed = JSON.parse(raw);
+        if (parsed.dbName) {
+          context = parsed;
+          userTenantContexts.set(uid, context);
+        }
+      }
+    } catch (_) {}
+  }
+
+  // If still not found, check if this user belongs to any active tenant
+  if (!context && uid && mongoose.Types.ObjectId.isValid(uid)) {
+    try {
+      const { Tenant } = await import('../models/master/Tenant.js');
+      const tenants = await Tenant.find({ status: 'active' });
+      for (const t of tenants) {
+        try {
+          const conn = getTenantDbConnection(t.dbName);
+          const userSchema = mongoose.model('User').schema;
+          const TenantUser = conn.models['User'] || conn.model('User', userSchema);
+          const found = await TenantUser.findById(uid).select('_id');
+          if (found) {
+            context = { tenantId: t.tenantId, dbName: t.dbName };
+            userTenantContexts.set(uid, context);
+            break;
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  if (context && context.dbName) {
+    try {
+      const connection = getTenantDbConnection(context.dbName);
+      return await tenantStorage.run({ connection, tenantId: context.tenantId, dbName: context.dbName }, callback);
+    } catch (err) {
+      console.error(`Error running in tenant context (${context.dbName}):`, err);
+    }
+  }
+
+  return await callback();
+}
 
 export function getWhatsAppStatus(userId) {
   const uid = userId ? userId.toString() : '';
@@ -50,10 +108,42 @@ export function getWhatsAppStatus(userId) {
     }
   }
 
+  // Auto-restore from disk if session folder exists
+  if (uid) {
+    const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+    if (fsSync.existsSync(sessionPath) && !clients.has(uid)) {
+      void initializeWhatsApp(uid);
+      return {
+        status: 'INITIALIZING',
+        qrCode: ''
+      };
+    }
+  }
+
   return {
     status: 'DISCONNECTED',
     qrCode: ''
   };
+}
+
+// Auto-restore all saved sessions from disk on server startup
+export async function restoreAllWhatsAppSessions() {
+  try {
+    const authDir = './.wwebjs_auth';
+    if (!fsSync.existsSync(authDir)) return;
+    const entries = await fs.readdir(authDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.isDirectory() && entry.name.startsWith('session-')) {
+        const uid = entry.name.replace('session-', '');
+        if (uid && !clients.has(uid)) {
+          console.log(`Auto-restoring WhatsApp session for user: ${uid}`);
+          void initializeWhatsApp(uid);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error auto-restoring WhatsApp sessions:', err);
+  }
 }
 
 // Detect Chrome executable dynamically on system
@@ -118,42 +208,55 @@ async function saveMediaMessage(msg) {
 
 // Sync single chat metadata (instant, no deep history fetch)
 async function syncChatMetadata(userId, chat, clientInstance) {
-  try {
-    const uid = userId.toString();
-    const chatId = chat.id._serialized;
-    const phone = chat.id.user;
-    const contactName = chat.name || phone;
-    const isGroup = chat.isGroup;
+  return runWithUserTenantContext(userId, async () => {
+    try {
+      const uid = userId.toString();
+      const chatId = chat.id._serialized;
+      const phone = chat.id.user;
+      const contactName = chat.name || phone;
+      const isGroup = !!chat.isGroup;
 
-    const leadId = await syncChatWithLead(chatId);
+      let leadId = null;
+      try {
+        leadId = await syncChatWithLead(chatId);
+      } catch (_) {}
 
-    let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
-    if (!dbChat) {
-      dbChat = new WhatsAppChat({
-        chatId,
-        userId: uid,
-        phone,
-        contactName,
-        isGroup,
-        lead: leadId
-      });
-    } else {
-      dbChat.contactName = contactName;
-      dbChat.lead = leadId;
+      let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
+      if (!dbChat) {
+        dbChat = new WhatsAppChat({
+          chatId,
+          userId: uid,
+          phone,
+          contactName,
+          isGroup,
+          lead: leadId,
+          unreadCount: Number(chat.unreadCount) || 0
+        });
+      } else {
+        dbChat.contactName = contactName;
+        if (leadId) dbChat.lead = leadId;
+      }
+
+      dbChat.unreadCount = Number(chat.unreadCount) || 0;
+
+      if (chat.lastMessage) {
+        dbChat.lastMessage = chat.lastMessage.body || (chat.lastMessage.hasMedia ? `[Media: ${chat.lastMessage.type || 'media'}]` : '');
+        const rawTs = chat.lastMessage.timestamp ? Number(chat.lastMessage.timestamp) : Date.now();
+        const msgDate = rawTs > 1e11 ? new Date(rawTs) : new Date(rawTs * 1000);
+        dbChat.lastMessageTime = isNaN(msgDate.getTime()) ? new Date() : msgDate;
+      }
+
+      await dbChat.save();
+
+      const populatedChat = await WhatsAppChat.findById(dbChat._id)
+        .populate('lead', 'companyName contactName status phone')
+        .populate('userId', 'name email');
+
+      emitToAll('whatsapp:chat_updated', populatedChat?.toObject ? populatedChat.toObject() : (dbChat.toObject ? dbChat.toObject() : dbChat));
+    } catch (error) {
+      console.error('Error syncing chat metadata:', error);
     }
-
-    dbChat.unreadCount = chat.unreadCount;
-
-    if (chat.lastMessage) {
-      dbChat.lastMessage = chat.lastMessage.body || (chat.lastMessage.hasMedia ? `[Media: ${chat.lastMessage.type}]` : '');
-      dbChat.lastMessageTime = new Date(chat.lastMessage.timestamp * 1000);
-    }
-
-    await dbChat.save();
-    emitToAll('whatsapp:chat_updated', dbChat);
-  } catch (error) {
-    // Keep logs quiet
-  }
+  });
 }
 
 // Background worker to sync all chats metadata (fast connection initialization)
@@ -164,73 +267,136 @@ async function syncAllChats(userId, clientInstance) {
       await syncChatMetadata(userId, chat, clientInstance);
     }
   } catch (error) {
-    // Keep logs quiet
+    console.error('Error in syncAllChats:', error);
   }
 }
 
 // Handler for incoming or outgoing messages
 async function handleNewMessage(userId, msg, clientInstance) {
-  try {
-    const uid = userId.toString();
-    const messageId = msg.id._serialized;
-    const chatId = msg.fromMe ? msg.to : msg.from;
-    const phone = chatId.split('@')[0];
+  return runWithUserTenantContext(userId, async () => {
+    try {
+      const uid = userId ? userId.toString() : '';
+      if (!uid || !msg || !msg.id) return;
 
-    let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
-    if (dbMsg) return;
+      const messageId = msg.id._serialized;
+      if (recentMessageIds.has(messageId)) {
+        return;
+      }
+      recentMessageIds.add(messageId);
+      setTimeout(() => recentMessageIds.delete(messageId), 60000);
 
-    let mediaDetails = null;
-    if (msg.hasMedia) {
-      mediaDetails = await saveMediaMessage(msg);
-    }
+      const chatId = msg.fromMe ? msg.to : msg.from;
+      if (!chatId) return;
+      const phone = chatId.split('@')[0];
 
-    dbMsg = new WhatsAppMessage({
-      messageId,
-      userId: uid,
-      chatId,
-      fromMe: msg.fromMe,
-      sender: msg.from.split('@')[0],
-      body: msg.body || (mediaDetails ? `[Media: ${msg.type}]` : ''),
-      timestamp: new Date(msg.timestamp * 1000),
-      status: mapAckStatus(msg.ack),
-      type: msg.type,
-      mediaUrl: mediaDetails?.mediaUrl || '',
-      mediaMimeType: mediaDetails?.mediaMimeType || ''
-    });
-    await dbMsg.save();
+      let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
+      if (dbMsg) {
+        let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
+        if (dbChat) {
+          dbChat.lastMessage = dbMsg.body || (dbMsg.mediaUrl ? '[Media]' : '');
+          dbChat.lastMessageTime = dbMsg.timestamp;
+          await dbChat.save();
+          const populatedChat = await WhatsAppChat.findById(dbChat._id)
+            .populate('lead', 'companyName contactName status phone')
+            .populate('userId', 'name email');
+          emitToAll('whatsapp:chat_updated', populatedChat?.toObject ? populatedChat.toObject() : (dbChat.toObject ? dbChat.toObject() : dbChat));
+        }
+        return;
+      }
 
-    let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
-    if (!dbChat) {
-      const chatDetails = await msg.getChat();
-      const leadId = await syncChatWithLead(chatId);
-      dbChat = new WhatsAppChat({
-        chatId,
+      let mediaDetails = null;
+      if (msg.hasMedia) {
+        try {
+          mediaDetails = await saveMediaMessage(msg);
+        } catch (mediaErr) {
+          console.error('Failed to download media for message:', mediaErr);
+        }
+      }
+
+      const rawTs = msg.timestamp ? Number(msg.timestamp) : Date.now();
+      const msgDate = rawTs > 1e11 ? new Date(rawTs) : new Date(rawTs * 1000);
+      const validDate = isNaN(msgDate.getTime()) ? new Date() : msgDate;
+
+      dbMsg = new WhatsAppMessage({
+        messageId,
         userId: uid,
-        phone,
-        contactName: chatDetails?.name || phone,
-        isGroup: chatDetails?.isGroup || false,
-        lead: leadId
+        chatId,
+        fromMe: !!msg.fromMe,
+        sender: msg.from ? msg.from.split('@')[0] : phone,
+        body: msg.body || (mediaDetails ? `[Media: ${msg.type || 'media'}]` : (msg.hasMedia ? `[Media: ${msg.type || 'media'}]` : '')),
+        timestamp: validDate,
+        status: mapAckStatus(msg.ack),
+        type: msg.type || (mediaDetails ? 'image' : 'chat'),
+        mediaUrl: mediaDetails?.mediaUrl || '',
+        mediaMimeType: mediaDetails?.mediaMimeType || ''
       });
+      await dbMsg.save();
+
+      let dbChat = await WhatsAppChat.findOne({ userId: uid, chatId });
+      if (!dbChat) {
+        let contactName = phone;
+        let isGroup = chatId.endsWith('@g.us');
+        try {
+          const chatDetails = await msg.getChat();
+          if (chatDetails?.name) contactName = chatDetails.name;
+          if (typeof chatDetails?.isGroup === 'boolean') isGroup = chatDetails.isGroup;
+        } catch (chatErr) {
+          // Safe fallback
+        }
+
+        let leadId = null;
+        try {
+          leadId = await syncChatWithLead(chatId);
+        } catch (leadErr) {
+          // Safe fallback
+        }
+
+        dbChat = new WhatsAppChat({
+          chatId,
+          userId: uid,
+          phone,
+          contactName: contactName || phone,
+          isGroup: !!isGroup,
+          lead: leadId,
+          unreadCount: 0
+        });
+      }
+
+      dbChat.lastMessage = dbMsg.body || (dbMsg.mediaUrl ? '[Media]' : '');
+      dbChat.lastMessageTime = dbMsg.timestamp;
+      
+      if (!msg.fromMe) {
+        dbChat.unreadCount = (Number(dbChat.unreadCount) || 0) + 1;
+      }
+
+      await dbChat.save();
+
+      const populatedChat = await WhatsAppChat.findById(dbChat._id)
+        .populate('lead', 'companyName contactName status phone')
+        .populate('userId', 'name email');
+
+      const chatPayload = populatedChat ? (populatedChat.toObject ? populatedChat.toObject() : populatedChat) : (dbChat.toObject ? dbChat.toObject() : dbChat);
+      const msgPayload = dbMsg.toObject ? dbMsg.toObject() : dbMsg;
+
+      emitToAll('whatsapp:message_received', msgPayload);
+      emitToAll('whatsapp:chat_updated', chatPayload);
+    } catch (error) {
+      console.error('Error in handleNewMessage:', error);
     }
-
-    dbChat.lastMessage = dbMsg.body;
-    dbChat.lastMessageTime = dbMsg.timestamp;
-    
-    if (!msg.fromMe) {
-      dbChat.unreadCount += 1;
-    }
-
-    await dbChat.save();
-
-    emitToAll('whatsapp:message_received', dbMsg);
-    emitToAll('whatsapp:chat_updated', dbChat);
-  } catch (error) {
-    // Keep logs quiet
-  }
+  });
 }
 
-export async function initializeWhatsApp(userId) {
+export async function initializeWhatsApp(userId, tenantInfo = null) {
   const uid = userId.toString();
+  if (tenantInfo && tenantInfo.dbName) {
+    userTenantContexts.set(uid, tenantInfo);
+    try {
+      const sessionDir = path.join('.wwebjs_auth', `session-${uid}`);
+      await fs.mkdir(sessionDir, { recursive: true });
+      await fs.writeFile(path.join(sessionDir, 'tenant_info.json'), JSON.stringify(tenantInfo, null, 2));
+    } catch (_) {}
+  }
+
   const currentClient = clients.get(uid);
   const currentStatus = statuses.get(uid) || 'DISCONNECTED';
 
@@ -338,24 +504,43 @@ export async function initializeWhatsApp(userId) {
       }
     });
 
-    clientInstance.on('message', (msg) => handleNewMessage(userId, msg, clientInstance));
-    clientInstance.on('message_create', (msg) => handleNewMessage(userId, msg, clientInstance));
+    // Handle incoming messages
+    clientInstance.on('message', async (msg) => {
+      try {
+        await handleNewMessage(userId, msg, clientInstance);
+      } catch (err) {
+        console.error('Error in message listener:', err);
+      }
+    });
+
+    // Handle outgoing messages sent directly from the connected phone
+    clientInstance.on('message_create', async (msg) => {
+      if (msg.fromMe) {
+        try {
+          await handleNewMessage(userId, msg, clientInstance);
+        } catch (err) {
+          console.error('Error in message_create listener:', err);
+        }
+      }
+    });
 
     clientInstance.on('message_ack', async (msg, ack) => {
-      try {
-        const messageId = msg.id._serialized;
-        const mappedAck = mapAckStatus(ack);
-        const dbMsg = await WhatsAppMessage.findOneAndUpdate(
-          { userId: uid, messageId },
-          { status: mappedAck },
-          { new: true }
-        );
-        if (dbMsg) {
-          emitToAll('whatsapp:message_ack', { userId: uid, messageId, status: mappedAck, chatId: dbMsg.chatId });
+      await runWithUserTenantContext(userId, async () => {
+        try {
+          const messageId = msg.id._serialized;
+          const mappedAck = mapAckStatus(ack);
+          const dbMsg = await WhatsAppMessage.findOneAndUpdate(
+            { userId: uid, messageId },
+            { status: mappedAck },
+            { new: true }
+          );
+          if (dbMsg) {
+            emitToAll('whatsapp:message_ack', { userId: uid, messageId, status: mappedAck, chatId: dbMsg.chatId });
+          }
+        } catch (error) {
+          // Quiet
         }
-      } catch (error) {
-        // Quiet
-      }
+      });
     });
 
     await clientInstance.initialize();
@@ -381,6 +566,7 @@ export async function disconnectWhatsApp(userId) {
   }
   statuses.set(uid, 'DISCONNECTED');
   qrCodes.set(uid, '');
+  userTenantContexts.delete(uid);
   emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
 
   // Clear session folder for fresh connection
@@ -427,6 +613,16 @@ export async function sendWhatsAppMessage(...args) {
     return null;
   }
 
+  let chatId = targetTo.toString().trim();
+  // Validate JID format
+  if (!chatId.includes('@')) {
+    let cleanNumber = chatId.replace(/\D/g, '');
+    if (cleanNumber.length === 10) {
+      cleanNumber = '91' + cleanNumber;
+    }
+    chatId = cleanNumber + '@c.us';
+  }
+
   let clientInstance = targetUid ? clients.get(targetUid) : null;
   let currentStatus = targetUid ? (statuses.get(targetUid) || 'DISCONNECTED') : 'DISCONNECTED';
 
@@ -442,23 +638,9 @@ export async function sendWhatsAppMessage(...args) {
     }
   }
 
-  if (currentStatus !== 'CONNECTED' || !clientInstance) {
-    console.warn('sendWhatsAppMessage: No connected WhatsApp client found.');
-    return null;
-  }
+  let sentMsg = null;
 
-  try {
-    let chatId = targetTo.toString().trim();
-    // Validate JID format
-    if (!chatId.includes('@')) {
-      let cleanNumber = chatId.replace(/\D/g, '');
-      if (cleanNumber.length === 10) {
-        cleanNumber = '91' + cleanNumber;
-      }
-      chatId = cleanNumber + '@c.us';
-    }
-
-    let sentMsg = null;
+  if (clientInstance && currentStatus === 'CONNECTED') {
     try {
       if (targetMedia) {
         let base64Data = '';
@@ -500,7 +682,7 @@ export async function sendWhatsAppMessage(...args) {
         id: {
           _serialized: 'simulated_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
         },
-        from: clientInstance.info?.wid?._serialized || (targetUid ? targetUid + '@c.us' : 'crm@c.us'),
+        from: clientInstance?.info?.wid?._serialized || (targetUid ? targetUid + '@c.us' : 'crm@c.us'),
         to: chatId,
         body: targetMsg || '',
         timestamp: Math.floor(Date.now() / 1000),
@@ -509,53 +691,82 @@ export async function sendWhatsAppMessage(...args) {
         ack: 1
       };
     }
-
-    return sentMsg;
-  } catch (error) {
-    console.error('sendWhatsAppMessage error:', error);
-    return null;
   }
+
+  // If no active client was connected or in simulated mode, provide a valid simulated message
+  if (!sentMsg) {
+    sentMsg = {
+      id: {
+        _serialized: 'simulated_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+      },
+      from: targetUid ? targetUid + '@c.us' : 'crm@c.us',
+      to: chatId,
+      body: targetMsg || '',
+      timestamp: Math.floor(Date.now() / 1000),
+      fromMe: true,
+      type: targetMedia ? 'media' : 'chat',
+      ack: 1
+    };
+  }
+
+  return sentMsg;
 }
 
 // Fetch and sync chat history on-demand (when chat is opened)
 export async function fetchChatMessagesOnDemand(userId, chatId, limit = 50) {
-  const uid = userId.toString();
-  const clientInstance = clients.get(uid);
-  const currentStatus = statuses.get(uid) || 'DISCONNECTED';
+  return runWithUserTenantContext(userId, async () => {
+    const uid = userId ? userId.toString() : '';
+    let clientInstance = uid ? clients.get(uid) : null;
+    let currentStatus = uid ? (statuses.get(uid) || 'DISCONNECTED') : 'DISCONNECTED';
 
-  if (currentStatus !== 'CONNECTED' || !clientInstance) return;
-  try {
-    const chat = await clientInstance.getChatById(chatId);
-    const messages = await chat.fetchMessages({ limit: Number(limit) });
-    for (const msg of messages) {
-      const messageId = msg.id._serialized;
-      let dbMsg = await WhatsAppMessage.findOne({ userId: uid, messageId });
-      if (!dbMsg) {
-        let mediaDetails = null;
-        if (msg.hasMedia) {
-          mediaDetails = {
-            mediaUrl: 'historical_placeholder',
-            mediaMimeType: msg.type || 'image'
-          };
+    // Fallback to any connected client in CRM if targetUid client is not connected
+    if (currentStatus !== 'CONNECTED' || !clientInstance) {
+      for (const [key, client] of clients.entries()) {
+        if (statuses.get(key) === 'CONNECTED' && client) {
+          clientInstance = client;
+          currentStatus = 'CONNECTED';
+          break;
         }
-        dbMsg = new WhatsAppMessage({
-          messageId,
-          userId: uid,
-          chatId,
-          fromMe: msg.fromMe,
-          sender: msg.from.split('@')[0],
-          body: msg.body || (msg.hasMedia ? `[Media: ${msg.type}]` : ''),
-          timestamp: new Date(msg.timestamp * 1000),
-          status: mapAckStatus(msg.ack),
-          type: msg.type,
-          mediaUrl: mediaDetails?.mediaUrl || '',
-          mediaMimeType: mediaDetails?.mediaMimeType || ''
-        });
-        await dbMsg.save();
       }
     }
-  } catch (error) {
-    // Quiet
-  }
+
+    if (currentStatus !== 'CONNECTED' || !clientInstance) return;
+    try {
+      const chat = await clientInstance.getChatById(chatId);
+      const messages = await chat.fetchMessages({ limit: Number(limit) });
+      for (const msg of messages) {
+        const messageId = msg.id._serialized;
+        let dbMsg = await WhatsAppMessage.findOne({ messageId });
+        if (!dbMsg) {
+          let mediaDetails = null;
+          if (msg.hasMedia) {
+            mediaDetails = {
+              mediaUrl: '',
+              mediaMimeType: msg.type || 'image'
+            };
+          }
+          const rawTs = msg.timestamp ? Number(msg.timestamp) : Date.now();
+          const msgDate = rawTs > 1e11 ? new Date(rawTs) : new Date(rawTs * 1000);
+          dbMsg = new WhatsAppMessage({
+            messageId,
+            userId: uid || (msg.from ? msg.from.split('@')[0] : 'system'),
+            chatId,
+            fromMe: !!msg.fromMe,
+            sender: msg.from ? msg.from.split('@')[0] : '',
+            body: msg.body || (msg.hasMedia ? `[Media: ${msg.type || 'media'}]` : ''),
+            timestamp: isNaN(msgDate.getTime()) ? new Date() : msgDate,
+            status: mapAckStatus(msg.ack),
+            type: msg.type || 'chat',
+            mediaUrl: mediaDetails?.mediaUrl || '',
+            mediaMimeType: mediaDetails?.mediaMimeType || ''
+          });
+          await dbMsg.save();
+        }
+      }
+    } catch (error) {
+      console.error('fetchChatMessagesOnDemand error:', error);
+    }
+  });
 }
+
 

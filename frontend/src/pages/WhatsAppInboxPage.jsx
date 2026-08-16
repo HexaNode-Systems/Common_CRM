@@ -162,14 +162,12 @@ export default function WhatsAppInboxPage() {
     });
 
     socket.on('whatsapp:message_received', (msg) => {
-      if (msg.userId && msg.userId !== user?._id && user?.role !== 'super_admin') return;
+      if (!msg || !msg.chatId) return;
+
       const currentActive = activeChatRef.current;
       
       // If message belongs to active chat, append it
-      if (currentActive && msg.chatId === currentActive.chatId) {
-        const activeOwnerId = currentActive.userId?._id || currentActive.userId;
-        if (msg.userId && activeOwnerId && msg.userId !== activeOwnerId) return;
-
+      if (currentActive && (currentActive.chatId === msg.chatId || (currentActive.phone && msg.chatId.startsWith(currentActive.phone)))) {
         setMessages(current => {
           if (current.some(m => m.messageId === msg.messageId)) return current;
           return [...current, msg];
@@ -178,19 +176,37 @@ export default function WhatsAppInboxPage() {
         api.post(`/v1/whatsapp/chats/${currentActive.chatId}/read`).catch(console.error);
       }
 
+      // Update sidebar chat list immediately
+      setChats(current => {
+        const index = current.findIndex(c => c.chatId === msg.chatId);
+        if (index === -1) {
+          // If brand new conversation not yet in list, trigger reload
+          loadChats(1, true);
+          return current;
+        }
+        const copy = [...current];
+        const isChatActive = currentActive?.chatId === msg.chatId;
+        copy[index] = {
+          ...copy[index],
+          lastMessage: msg.body || (msg.mediaUrl ? '[Media]' : ''),
+          lastMessageTime: msg.timestamp || new Date().toISOString(),
+          unreadCount: isChatActive ? 0 : ((Number(copy[index].unreadCount) || 0) + (msg.fromMe ? 0 : 1))
+        };
+        return copy.sort((a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime));
+      });
+
       if (!msg.fromMe) {
         playNotificationSound();
         const senderName = msg.sender || 'WhatsApp Contact';
-        showDesktopNotification(`New message from ${senderName}`, msg.body, msg.chatId);
+        showDesktopNotification(`New message from ${senderName}`, msg.body || 'New media attachment', msg.chatId);
       }
     });
 
     socket.on('whatsapp:chat_updated', (updatedChat) => {
-      const chatOwnerId = updatedChat.userId?._id || updatedChat.userId;
-      if (chatOwnerId && chatOwnerId !== user?._id && user?.role !== 'super_admin') return;
+      if (!updatedChat || !updatedChat.chatId) return;
 
       setChats(current => {
-        const index = current.findIndex(c => c.chatId === updatedChat.chatId && (c.userId?._id || c.userId) === chatOwnerId);
+        const index = current.findIndex(c => c.chatId === updatedChat.chatId);
         if (index === -1) {
           return [updatedChat, ...current];
         }
@@ -200,17 +216,15 @@ export default function WhatsAppInboxPage() {
       });
 
       const currentActive = activeChatRef.current;
-      const activeOwnerId = currentActive?.userId?._id || currentActive?.userId;
-      if (currentActive && updatedChat.chatId === currentActive.chatId && chatOwnerId === activeOwnerId) {
+      if (currentActive && updatedChat.chatId === currentActive.chatId) {
         setActiveChat(current => ({ ...current, ...updatedChat }));
       }
     });
 
     socket.on('whatsapp:message_ack', (data) => {
-      if (data.userId && data.userId !== user?._id && user?.role !== 'super_admin') return;
+      if (!data || !data.messageId) return;
       const currentActive = activeChatRef.current;
-      const activeOwnerId = currentActive?.userId?._id || currentActive?.userId;
-      if (currentActive && data.chatId === currentActive.chatId && (!data.userId || data.userId === activeOwnerId)) {
+      if (currentActive && (!data.chatId || data.chatId === currentActive.chatId)) {
         setMessages(current => current.map(m => 
           m.messageId === data.messageId ? { ...m, status: data.status } : m
         ));
