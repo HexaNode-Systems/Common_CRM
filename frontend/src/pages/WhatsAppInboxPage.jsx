@@ -163,6 +163,11 @@ export default function WhatsAppInboxPage() {
     socket.on('whatsapp:message_received', (msg) => {
       if (!msg || !msg.chatId) return;
 
+      // Ensure user only receives messages for their own WhatsApp session
+      const msgUserId = String(msg.userId?._id || msg.userId || '');
+      const currentUserId = String(user?._id || '');
+      if (msgUserId && currentUserId && msgUserId !== currentUserId && user?.role !== 'super_admin') return;
+
       const currentActive = activeChatRef.current;
       
       // If message belongs to active chat, append it
@@ -177,7 +182,7 @@ export default function WhatsAppInboxPage() {
 
       // Update sidebar chat list immediately
       setChats(current => {
-        const index = current.findIndex(c => c.chatId === msg.chatId);
+        const index = current.findIndex(c => c.chatId === msg.chatId && (!msgUserId || String(c.userId?._id || c.userId) === msgUserId));
         if (index === -1) {
           // If brand new conversation not yet in list, trigger reload
           loadChats(1, true);
@@ -204,8 +209,12 @@ export default function WhatsAppInboxPage() {
     socket.on('whatsapp:chat_updated', (updatedChat) => {
       if (!updatedChat || !updatedChat.chatId) return;
 
+      const chatOwnerId = String(updatedChat.userId?._id || updatedChat.userId || '');
+      const currentUserId = String(user?._id || '');
+      if (chatOwnerId && currentUserId && chatOwnerId !== currentUserId && user?.role !== 'super_admin') return;
+
       setChats(current => {
-        const index = current.findIndex(c => c.chatId === updatedChat.chatId);
+        const index = current.findIndex(c => c.chatId === updatedChat.chatId && (!chatOwnerId || String(c.userId?._id || c.userId) === chatOwnerId));
         if (index === -1) {
           return [updatedChat, ...current];
         }
@@ -222,6 +231,10 @@ export default function WhatsAppInboxPage() {
 
     socket.on('whatsapp:message_ack', (data) => {
       if (!data || !data.messageId) return;
+      const dataUserId = String(data.userId?._id || data.userId || '');
+      const currentUserId = String(user?._id || '');
+      if (dataUserId && currentUserId && dataUserId !== currentUserId && user?.role !== 'super_admin') return;
+
       const currentActive = activeChatRef.current;
       if (currentActive && (!data.chatId || data.chatId === currentActive.chatId)) {
         setMessages(current => current.map(m => 

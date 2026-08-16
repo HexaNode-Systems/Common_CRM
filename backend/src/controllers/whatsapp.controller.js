@@ -67,7 +67,10 @@ export async function listChats(req, res) {
     const { filter = 'all', search = '', limit = 50, page = 1 } = req.query;
     const query = {};
 
-    if (req.query.userId) {
+    // Privacy isolation: Non-super_admin users can ONLY see their own WhatsApp chats
+    if (req.user.role !== 'super_admin') {
+      query.userId = req.user._id;
+    } else if (req.query.userId) {
       query.userId = req.query.userId;
     }
 
@@ -115,14 +118,18 @@ export async function getMessages(req, res) {
     const { chatId } = req.params;
     const { limit = 50, page = 1, ownerId } = req.query;
 
-    const targetUserId = ownerId || req.user._id;
+    const targetUserId = (req.user.role === 'super_admin' && ownerId) ? ownerId : req.user._id;
 
     // Fetch and sync chat history on-demand from Puppeteer
     await fetchChatMessagesOnDemand(targetUserId, chatId, limit);
 
     const skip = (Number(page) - 1) * Number(limit);
     const query = { chatId };
-    if (ownerId) {
+
+    // Privacy isolation: Non-super_admin users can ONLY see messages for their own WhatsApp session
+    if (req.user.role !== 'super_admin') {
+      query.userId = req.user._id;
+    } else if (ownerId) {
       query.userId = ownerId;
     }
 
