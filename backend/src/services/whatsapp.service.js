@@ -71,50 +71,58 @@ export async function runWithUserTenantContext(userId, callback) {
   return await callback();
 }
 
+// Clean and format phone number into a standard WhatsApp JID (e.g. 919876543210@c.us)
+export function formatWhatsAppJid(to) {
+  if (!to) return null;
+  let str = to.toString().trim();
+  if (str.includes('@')) {
+    return str;
+  }
+  let clean = str.replace(/\D/g, '');
+  // Remove leading zeros (e.g. 09876543210 -> 9876543210)
+  clean = clean.replace(/^0+/, '');
+  if (!clean || clean.length < 7) {
+    return null;
+  }
+  // Default 10-digit Indian numbers to 91 prefix
+  if (clean.length === 10) {
+    clean = '91' + clean;
+  }
+  return clean + '@c.us';
+}
+
 export function getWhatsAppStatus(userId) {
   const uid = userId ? userId.toString() : '';
-  if (uid && statuses.get(uid) === 'CONNECTED') {
-    return {
-      status: 'CONNECTED',
-      qrCode: qrCodes.get(uid) || ''
-    };
-  }
 
-  // Check if any client in memory is connected
-  for (const [key, status] of statuses.entries()) {
-    if (status === 'CONNECTED') {
-      return {
-        status: 'CONNECTED',
-        qrCode: ''
-      };
-    }
-  }
-
-  // Return specific user status if set
-  if (uid && statuses.has(uid)) {
-    return {
-      status: statuses.get(uid) || 'DISCONNECTED',
-      qrCode: qrCodes.get(uid) || ''
-    };
-  }
-
-  // Check if any client has QR or loading
-  for (const [key, status] of statuses.entries()) {
-    if (status && status !== 'DISCONNECTED') {
-      return {
-        status,
-        qrCode: qrCodes.get(key) || ''
-      };
-    }
-  }
-
-  // Auto-restore from disk if session folder exists
   if (uid) {
+    if (statuses.has(uid)) {
+      return {
+        status: statuses.get(uid) || 'DISCONNECTED',
+        qrCode: qrCodes.get(uid) || ''
+      };
+    }
+
+    // Auto-restore from disk if session folder exists
     const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
     if (fsSync.existsSync(sessionPath) && !clients.has(uid)) {
       void initializeWhatsApp(uid);
       return {
         status: 'INITIALIZING',
+        qrCode: ''
+      };
+    }
+
+    return {
+      status: 'DISCONNECTED',
+      qrCode: ''
+    };
+  }
+
+  // Fallback for system checks with no specific user: check if any client in memory is connected
+  for (const [key, status] of statuses.entries()) {
+    if (status === 'CONNECTED') {
+      return {
+        status: 'CONNECTED',
         qrCode: ''
       };
     }
@@ -150,8 +158,12 @@ export async function restoreAllWhatsAppSessions() {
 function getChromeExecutablePath() {
   const defaultPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
   const x86Path = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
+  const localAppData = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe') : null;
+  const edgePath = 'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe';
   if (fsSync.existsSync(defaultPath)) return defaultPath;
   if (fsSync.existsSync(x86Path)) return x86Path;
+  if (localAppData && fsSync.existsSync(localAppData)) return localAppData;
+  if (fsSync.existsSync(edgePath)) return edgePath;
   return undefined; // Fallback to Puppeteer default Chromium
 }
 
@@ -582,28 +594,28 @@ export async function disconnectWhatsApp(userId) {
 export async function sendWhatsAppMessage(...args) {
   let targetUid = null;
   let targetTo = null;
-  let targetMsg = null;
+  let targetMsg = '';
   let targetMedia = null;
 
   if (args.length === 2) {
     // sendWhatsAppMessage(to, message)
     targetTo = args[0];
-    targetMsg = args[1];
-  } else if (args.length === 3 && typeof args[0] === 'string' && (args[0].includes('@') || /^\+?\d{8,15}$/.test(args[0]))) {
+    targetMsg = args[1] || '';
+  } else if (args.length === 3 && typeof args[0] === 'string' && (args[0].includes('@') || /^\+?\d{7,15}$/.test(args[0]))) {
     // sendWhatsAppMessage(to, message, mediaFile)
     targetTo = args[0];
-    targetMsg = args[1];
+    targetMsg = args[1] || '';
     targetMedia = args[2];
   } else {
     // sendWhatsAppMessage(userId, to, message, mediaFile)
     targetUid = args[0] ? args[0].toString() : null;
     targetTo = args[1];
-    targetMsg = args[2];
+    targetMsg = args[2] || '';
     targetMedia = args[3] || null;
   }
 
-  // If targetTo is missing or in wrong order (e.g. targetTo is empty, but targetUid contains phone number):
-  if (!targetTo && targetUid && (targetUid.includes('@') || /^\+?\d{8,15}$/.test(targetUid))) {
+  // If targetTo is missing or in wrong order:
+  if (!targetTo && targetUid && (targetUid.includes('@') || /^\+?\d{7,15}$/.test(targetUid))) {
     targetTo = targetUid;
     targetUid = null;
   }
@@ -613,103 +625,76 @@ export async function sendWhatsAppMessage(...args) {
     return null;
   }
 
-  let chatId = targetTo.toString().trim();
-  // Validate JID format
-  if (!chatId.includes('@')) {
-    let cleanNumber = chatId.replace(/\D/g, '');
-    if (cleanNumber.length === 10) {
-      cleanNumber = '91' + cleanNumber;
-    }
-    chatId = cleanNumber + '@c.us';
+  const chatId = formatWhatsAppJid(targetTo);
+  if (!chatId) {
+    console.error('sendWhatsAppMessage: invalid recipient phone format:', targetTo);
+    return null;
   }
 
   let clientInstance = targetUid ? clients.get(targetUid) : null;
   let currentStatus = targetUid ? (statuses.get(targetUid) || 'DISCONNECTED') : 'DISCONNECTED';
 
-  // Fallback to any connected client in CRM if targetUid client is not connected
-  if (currentStatus !== 'CONNECTED' || !clientInstance) {
-    for (const [key, client] of clients.entries()) {
-      if (statuses.get(key) === 'CONNECTED' && client) {
-        clientInstance = client;
-        currentStatus = 'CONNECTED';
-        targetUid = key;
-        break;
+  // If targetUid was not provided (e.g. system notification from task/lead controller), fallback to any connected client
+  if (!targetUid || currentStatus !== 'CONNECTED' || !clientInstance) {
+    if (!targetUid) {
+      for (const [key, client] of clients.entries()) {
+        if (statuses.get(key) === 'CONNECTED' && client) {
+          clientInstance = client;
+          currentStatus = 'CONNECTED';
+          targetUid = key;
+          break;
+        }
       }
     }
   }
 
-  let sentMsg = null;
+  if (!clientInstance || currentStatus !== 'CONNECTED') {
+    console.error(`sendWhatsAppMessage: WhatsApp client not connected for user ${targetUid || 'system'}`);
+    return null;
+  }
 
-  if (clientInstance && currentStatus === 'CONNECTED') {
-    try {
-      if (targetMedia) {
-        let base64Data = '';
-        let mimetype = targetMedia.mimetype || 'image/png';
-        let originalname = targetMedia.originalname || 'media.png';
+  try {
+    let sentMsg = null;
+    if (targetMedia) {
+      let base64Data = '';
+      let mimetype = targetMedia.mimetype || 'image/png';
+      let originalname = targetMedia.originalname || 'media.png';
 
-        if (Buffer.isBuffer(targetMedia)) {
-          base64Data = targetMedia.toString('base64');
-        } else if (targetMedia.buffer && Buffer.isBuffer(targetMedia.buffer)) {
-          base64Data = targetMedia.buffer.toString('base64');
-        } else if (typeof targetMedia === 'string') {
-          // File path on disk (e.g. /storage/whatsapp/campaign_123.png)
-          try {
-            const diskPath = targetMedia.startsWith('/') ? targetMedia.slice(1) : targetMedia;
-            const fileBuf = await fs.readFile(diskPath);
-            base64Data = fileBuf.toString('base64');
-            const ext = diskPath.split('.').pop()?.toLowerCase();
-            if (ext === 'jpg' || ext === 'jpeg') mimetype = 'image/jpeg';
-            else if (ext === 'png') mimetype = 'image/png';
-            else if (ext === 'pdf') mimetype = 'application/pdf';
-            else if (ext === 'mp4') mimetype = 'video/mp4';
-          } catch (readErr) {
-            console.error('Failed reading media file from disk:', targetMedia, readErr);
-          }
+      if (Buffer.isBuffer(targetMedia)) {
+        base64Data = targetMedia.toString('base64');
+      } else if (targetMedia.buffer && Buffer.isBuffer(targetMedia.buffer)) {
+        base64Data = targetMedia.buffer.toString('base64');
+      } else if (typeof targetMedia === 'string') {
+        // File path on disk (e.g. /storage/whatsapp/campaign_123.png)
+        try {
+          const diskPath = targetMedia.startsWith('/') ? targetMedia.slice(1) : targetMedia;
+          const fileBuf = await fs.readFile(diskPath);
+          base64Data = fileBuf.toString('base64');
+          const ext = diskPath.split('.').pop()?.toLowerCase();
+          if (ext === 'jpg' || ext === 'jpeg') mimetype = 'image/jpeg';
+          else if (ext === 'png') mimetype = 'image/png';
+          else if (ext === 'pdf') mimetype = 'application/pdf';
+          else if (ext === 'mp4') mimetype = 'video/mp4';
+        } catch (readErr) {
+          console.error('Failed reading media file from disk:', targetMedia, readErr);
         }
+      }
 
-        if (base64Data) {
-          const media = new MessageMedia(mimetype, base64Data, originalname);
-          sentMsg = await clientInstance.sendMessage(chatId, media, { caption: targetMsg || '' });
-        } else {
-          sentMsg = await clientInstance.sendMessage(chatId, targetMsg || '');
-        }
+      if (base64Data) {
+        const media = new MessageMedia(mimetype, base64Data, originalname);
+        sentMsg = await clientInstance.sendMessage(chatId, media, { caption: targetMsg || '' });
       } else {
         sentMsg = await clientInstance.sendMessage(chatId, targetMsg || '');
       }
-    } catch (sendError) {
-      console.error('sendMessage failed, generating fallback response:', sendError);
-      sentMsg = {
-        id: {
-          _serialized: 'simulated_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-        },
-        from: clientInstance?.info?.wid?._serialized || (targetUid ? targetUid + '@c.us' : 'crm@c.us'),
-        to: chatId,
-        body: targetMsg || '',
-        timestamp: Math.floor(Date.now() / 1000),
-        fromMe: true,
-        type: targetMedia ? 'media' : 'chat',
-        ack: 1
-      };
+    } else {
+      sentMsg = await clientInstance.sendMessage(chatId, targetMsg || '');
     }
-  }
 
-  // If no active client was connected or in simulated mode, provide a valid simulated message
-  if (!sentMsg) {
-    sentMsg = {
-      id: {
-        _serialized: 'simulated_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
-      },
-      from: targetUid ? targetUid + '@c.us' : 'crm@c.us',
-      to: chatId,
-      body: targetMsg || '',
-      timestamp: Math.floor(Date.now() / 1000),
-      fromMe: true,
-      type: targetMedia ? 'media' : 'chat',
-      ack: 1
-    };
+    return sentMsg;
+  } catch (sendError) {
+    console.error('WhatsApp sendMessage failed for chatId:', chatId, sendError);
+    return null;
   }
-
-  return sentMsg;
 }
 
 // Fetch and sync chat history on-demand (when chat is opened)

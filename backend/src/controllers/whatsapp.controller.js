@@ -6,7 +6,8 @@ import {
   disconnectWhatsApp, 
   sendWhatsAppMessage,
   syncChatWithLead,
-  fetchChatMessagesOnDemand
+  fetchChatMessagesOnDemand,
+  formatWhatsAppJid
 } from '../services/whatsapp.service.js';
 import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
@@ -50,11 +51,16 @@ export async function sendTestMessage(req, res) {
   }
 
   try {
-    const success = await sendWhatsAppMessage(req.user._id, phone, message);
-    if (success) {
+    const statusData = getWhatsAppStatus(req.user._id);
+    if (statusData.status !== 'CONNECTED') {
+      return res.status(400).json({ success: false, message: 'WhatsApp is not connected. Please scan the QR code first.' });
+    }
+
+    const sentMsg = await sendWhatsAppMessage(req.user._id, phone, message);
+    if (sentMsg) {
       return res.json({ success: true, message: 'Test message sent successfully.' });
     } else {
-      return res.status(400).json({ success: false, message: 'Failed to send message. Is WhatsApp connected?' });
+      return res.status(400).json({ success: false, message: 'Failed to send message. Please ensure the phone number is on WhatsApp and includes country code.' });
     }
   } catch (error) {
     return res.status(500).json({ message: error.message });
@@ -274,9 +280,9 @@ export async function sendBulkCampaign(req, res) {
       return res.status(400).json({ message: 'Campaign name, message content, and contact numbers are required.' });
     }
 
-    // Verify WhatsApp is connected for user
+    // Verify WhatsApp is genuinely connected for user
     const currentStatusData = getWhatsAppStatus(req.user._id);
-    if (currentStatusData.status !== 'CONNECTED' && currentStatusData.status !== 'LOADING') {
+    if (currentStatusData.status !== 'CONNECTED') {
       return res.status(400).json({ message: 'WhatsApp session is not connected. Please scan QR code in Integrations first.' });
     }
 
@@ -332,8 +338,8 @@ export async function sendBulkCampaign(req, res) {
       }
 
       phone = phone ? phone.toString().trim() : '';
-      let clean = phone.replace(/\D/g, '');
-      if (clean.length >= 10) {
+      let clean = phone.replace(/\D/g, '').replace(/^0+/, '');
+      if (clean.length >= 7) {
         formattedContacts.push({
           phone: clean,
           name: name ? name.toString().trim() : '',
@@ -343,7 +349,7 @@ export async function sendBulkCampaign(req, res) {
     }
 
     if (formattedContacts.length === 0) {
-      return res.status(400).json({ message: 'At least one valid 10-digit phone number is required.' });
+      return res.status(400).json({ message: 'At least one valid phone number is required.' });
     }
 
     let targetUserId = req.user._id;
@@ -398,21 +404,37 @@ export async function sendBulkCampaign(req, res) {
 
       for (let i = 0; i < campaign.contacts.length; i++) {
         const item = campaign.contacts[i];
-        let rawPhone = item.phone.toString().trim();
-        let cleanNumber = rawPhone.replace(/\D/g, '');
-        if (cleanNumber.length === 10) {
-          cleanNumber = '91' + cleanNumber;
-        }
+        const chatId = formatWhatsAppJid(item.phone);
         
-        if (!cleanNumber || cleanNumber.length < 10) {
+        if (!chatId) {
           item.status = 'failed';
           item.error = 'Invalid phone number format';
           campaign.failedCount += 1;
+          campaign.markModified('contacts');
           await campaign.save();
           continue;
         }
 
-        const chatId = cleanNumber + '@c.us';
+        // Check if WhatsApp session is still active
+        const currentSession = getWhatsAppStatus(targetUserId);
+        if (currentSession.status !== 'CONNECTED') {
+          item.status = 'failed';
+          item.error = 'WhatsApp disconnected during campaign shoot';
+          campaign.failedCount += 1;
+          campaign.markModified('contacts');
+          await campaign.save();
+
+          emitToAll('whatsapp:campaign_progress', {
+            userId: targetUserId,
+            campaignId: campaign._id,
+            sentCount: campaign.sentCount,
+            failedCount: campaign.failedCount,
+            totalContacts: campaign.totalContacts,
+            status: 'failed',
+            latestContact: item
+          });
+          break;
+        }
 
         // Build complete message text (with template tag replacement & CTA button formatting)
         let fullMessage = body;
@@ -440,6 +462,7 @@ export async function sendBulkCampaign(req, res) {
 
             // Save WhatsAppMessage and update chat in background without crashing status
             try {
+              const cleanNumber = chatId.split('@')[0];
               const messageId = sentMsg.id?._serialized || `campaign_msg_${Date.now()}_${i}`;
               const dbMsg = new WhatsAppMessage({
                 messageId,
@@ -479,7 +502,7 @@ export async function sendBulkCampaign(req, res) {
             }
           } else {
             item.status = 'failed';
-            item.error = 'WhatsApp send failed (Service unavailable or disconnected)';
+            item.error = 'WhatsApp send failed (Number not on WhatsApp or disconnected)';
             campaign.failedCount += 1;
           }
         } catch (err) {
@@ -494,6 +517,7 @@ export async function sendBulkCampaign(req, res) {
 
         // Broadcast progress over sockets
         emitToAll('whatsapp:campaign_progress', {
+          userId: targetUserId,
           campaignId: campaign._id,
           sentCount: campaign.sentCount,
           failedCount: campaign.failedCount,
@@ -514,6 +538,7 @@ export async function sendBulkCampaign(req, res) {
 
       // Final progress broadcast
       emitToAll('whatsapp:campaign_progress', {
+        userId: targetUserId,
         campaignId: campaign._id,
         sentCount: campaign.sentCount,
         failedCount: campaign.failedCount,

@@ -71,11 +71,12 @@ export default function WhatsAppCampaignPage() {
     socket.connect();
 
     socket.on('whatsapp:status', (data) => {
-      if (data.userId && data.userId !== user?._id) return;
+      if (data.userId && user?._id && data.userId !== user._id) return;
       setStatus(data.status);
     });
 
     socket.on('whatsapp:campaign_progress', (progressData) => {
+      if (progressData.userId && user?._id && progressData.userId !== user._id) return;
       setCampaignProgress(progressData);
       if (progressData.status === 'completed' || progressData.status === 'failed') {
         setShooting(false);
@@ -90,7 +91,7 @@ export default function WhatsAppCampaignPage() {
       socket.off('whatsapp:status');
       socket.off('whatsapp:campaign_progress');
     };
-  }, []);
+  }, [user?._id]);
 
   const fetchStatus = async () => {
     try {
@@ -132,8 +133,8 @@ export default function WhatsAppCampaignPage() {
         let name = '';
         
         for (let part of parts) {
-          const cleanPart = part.replace(/\D/g, '');
-          if (cleanPart.length >= 10 && cleanPart.length <= 15) {
+          const cleanPart = part.replace(/\D/g, '').replace(/^0+/, '');
+          if (cleanPart.length >= 7 && cleanPart.length <= 15) {
             phone = cleanPart;
           } else if (part && !name && !/\d{5,}/.test(part)) {
             name = part;
@@ -151,7 +152,7 @@ export default function WhatsAppCampaignPage() {
         setCampaignSuccess(`Successfully imported ${parsedContacts.length} contacts from CSV!`);
         setTimeout(() => setCampaignSuccess(''), 4000);
       } else {
-        setCampaignError('No valid 10+ digit phone numbers found in the uploaded file.');
+        setCampaignError('No valid phone numbers found in the uploaded file.');
         setTimeout(() => setCampaignError(''), 4000);
       }
     } catch (err) {
@@ -171,8 +172,8 @@ export default function WhatsAppCampaignPage() {
     const seen = new Set(bulkContacts.map(c => c.phone));
 
     for (let item of items) {
-      const clean = item.replace(/\D/g, '');
-      if (clean.length >= 10 && !seen.has(clean)) {
+      const clean = item.replace(/\D/g, '').replace(/^0+/, '');
+      if (clean.length >= 7 && !seen.has(clean)) {
         seen.add(clean);
         parsed.push({ phone: clean, name: '' });
       }
