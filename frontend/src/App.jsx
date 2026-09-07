@@ -26,6 +26,7 @@ import WorkReportsPage from './pages/WorkReportsPage.jsx';
 import AccessoriesManagementPage from './pages/AccessoriesManagementPage.jsx';
 import SuperAdminDashboard from './pages/SuperAdminDashboard.jsx';
 import ForbiddenPage from './pages/ForbiddenPage.jsx';
+import LandingPage from './pages/LandingPage.jsx';
 
 export default function App() {
   const { settings } = useSettings();
@@ -122,7 +123,7 @@ export default function App() {
 
   return (
     <>
-      {renderSplashScreen()}
+      {/* {renderSplashScreen()}
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route
@@ -132,7 +133,20 @@ export default function App() {
               <AdminLayout />
             </ProtectedRoute>
           }
-        >
+        > */}{renderSplashScreen()}
+    <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+
+
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<ProtectedRoute permission="dashboard:read"><Dashboard /></ProtectedRoute>} />
           <Route path="users" element={<ProtectedRoute permission="users:read"><UsersManagementPage /></ProtectedRoute>} />
@@ -164,6 +178,7 @@ export default function App() {
           <Route path="accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
           <Route path="super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
           <Route path="forbidden" element={<ForbiddenPage />} />
+          
         </Route>
       </Routes>
     </>
