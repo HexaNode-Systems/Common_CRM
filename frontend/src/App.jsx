@@ -145,8 +145,6 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-
-
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<ProtectedRoute permission="dashboard:read"><Dashboard /></ProtectedRoute>} />
           <Route path="users" element={<ProtectedRoute permission="users:read"><UsersManagementPage /></ProtectedRoute>} />
