@@ -145,46 +145,60 @@ export default function App() {
           <Route path="/data-deletion-request" element={<DataDeletionRequest />} />
           <Route path="/refund-policy" element={<RefundPolicy />} />
 
+          {/* Admin Layout & Protected Routes */}
           <Route
-            path="/dashboard"
             element={
               <ProtectedRoute>
                 <AdminLayout />
               </ProtectedRoute>
             }
           >
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="dashboard" element={<ProtectedRoute permission="dashboard:read"><Dashboard /></ProtectedRoute>} />
-            <Route path="users" element={<ProtectedRoute permission="users:read"><UsersManagementPage /></ProtectedRoute>} />
-            <Route path="catalog" element={<ProtectedRoute permission="catalog:read"><ProjectsManagementPage /></ProtectedRoute>} />
-            <Route path="catalog/create" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
-            <Route path="catalog/edit/:id" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
-            <Route path="catalog/:id" element={<ProtectedRoute permission="catalog:read"><ProjectDetailsPage /></ProtectedRoute>} />
-            <Route path="orders" element={<ProtectedRoute permission="orders:read"><ResourcePage title="Orders / Leads" endpoint="/orders" /></ProtectedRoute>} />
-            <Route path="leads" element={<ProtectedRoute permission="leads:read"><LeadsManagementPage /></ProtectedRoute>} />
-            <Route path="leads/distribution" element={<ProtectedRoute permission="leads:update"><LeadDistributionPage /></ProtectedRoute>} />
-            <Route path="tasks" element={<ProtectedRoute permission="tasks:read"><TaskManagementPage /></ProtectedRoute>} />
-            <Route path="payments" element={<ProtectedRoute permission="payments:read"><TaskManagementPage /></ProtectedRoute>} />
-            <Route path="vault" element={<ProtectedRoute permission="vault:read"><VaultManagementPage /></ProtectedRoute>} />
-            <Route path="storage" element={<ProtectedRoute permission="storage:read"><StorageManagementPage /></ProtectedRoute>} />
-            <Route path="invoices" element={<ProtectedRoute permission="invoices:read"><ResourcePage title="Invoices" endpoint="/invoices" /></ProtectedRoute>} />
-            <Route path="enquiries" element={<ProtectedRoute permission="enquiries:read"><ResourcePage title="Contact Enquiries" endpoint="/enquiries" /></ProtectedRoute>} />
-            <Route path="banners" element={<ProtectedRoute permission="banners:read"><ResourcePage title="Banner / Slider Management" endpoint="/banners" /></ProtectedRoute>} />
-            <Route path="coupons" element={<ProtectedRoute permission="coupons:read"><ResourcePage title="Coupon / Offer Management" endpoint="/coupons" /></ProtectedRoute>} />
-            <Route path="reports" element={<ProtectedRoute permission="reports:read"><WorkReportsPage /></ProtectedRoute>} />
-            <Route path="Integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
-            <Route path="integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
-            <Route path="content" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="content" title="Website Content Management" /></ProtectedRoute>} />
-            <Route path="theme" element={<ProtectedRoute permission="settings:update"><ThemeSettings /></ProtectedRoute>} />
-            <Route path="settings" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="general" title="General Settings" /></ProtectedRoute>} />
-            <Route path="support" element={<ProtectedRoute permission="support:read"><SupportTicketsPage /></ProtectedRoute>} />
-            <Route path="roles" element={<ProtectedRoute permission="roles:read"><RolePermissionsPage /></ProtectedRoute>} />
-            <Route path="whatsapp-inbox" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppInboxPage /></ProtectedRoute>} />
-            <Route path="whatsapp-campaign" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppCampaignPage /></ProtectedRoute>} />
-            <Route path="accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
-            <Route path="super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
-            <Route path="forbidden" element={<ForbiddenPage />} />
+            <Route path="/dashboard" element={<ProtectedRoute permission="dashboard:read"><Dashboard /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute permission="users:read"><UsersManagementPage /></ProtectedRoute>} />
+            <Route path="/catalog" element={<ProtectedRoute permission="catalog:read"><ProjectsManagementPage /></ProtectedRoute>} />
+            <Route path="/catalog/create" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
+            <Route path="/catalog/edit/:id" element={<ProtectedRoute permission="catalog:update"><ProjectFormPage /></ProtectedRoute>} />
+            <Route path="/catalog/:id" element={<ProtectedRoute permission="catalog:read"><ProjectDetailsPage /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute permission="orders:read"><ResourcePage title="Orders / Leads" endpoint="/orders" /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute permission="leads:read"><LeadsManagementPage /></ProtectedRoute>} />
+            <Route path="/leads/distribution" element={<ProtectedRoute permission="leads:update"><LeadDistributionPage /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute permission="tasks:read"><TaskManagementPage /></ProtectedRoute>} />
+            <Route path="/payments" element={<ProtectedRoute permission="payments:read"><TaskManagementPage /></ProtectedRoute>} />
+            <Route path="/vault" element={<ProtectedRoute permission="vault:read"><VaultManagementPage /></ProtectedRoute>} />
+            <Route path="/storage" element={<ProtectedRoute permission="storage:read"><StorageManagementPage /></ProtectedRoute>} />
+            <Route path="/invoices" element={<ProtectedRoute permission="invoices:read"><ResourcePage title="Invoices" endpoint="/invoices" /></ProtectedRoute>} />
+            <Route path="/enquiries" element={<ProtectedRoute permission="enquiries:read"><ResourcePage title="Contact Enquiries" endpoint="/enquiries" /></ProtectedRoute>} />
+            <Route path="/banners" element={<ProtectedRoute permission="banners:read"><ResourcePage title="Banner / Slider Management" endpoint="/banners" /></ProtectedRoute>} />
+            <Route path="/coupons" element={<ProtectedRoute permission="coupons:read"><ResourcePage title="Coupon / Offer Management" endpoint="/coupons" /></ProtectedRoute>} />
+            <Route path="/reports" element={<ProtectedRoute permission="reports:read"><WorkReportsPage /></ProtectedRoute>} />
+            <Route path="/Integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
+            <Route path="/integrations" element={<ProtectedRoute permission="settings:update|whatsapp_integration:read"><IntegrationsPage /></ProtectedRoute>} />
+            <Route path="/content" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="content" title="Website Content Management" /></ProtectedRoute>} />
+            <Route path="/theme" element={<ProtectedRoute permission="settings:update"><ThemeSettings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute permission="settings:update"><GeneralSettings section="general" title="General Settings" /></ProtectedRoute>} />
+            <Route path="/support" element={<ProtectedRoute permission="support:read"><SupportTicketsPage /></ProtectedRoute>} />
+            <Route path="/roles" element={<ProtectedRoute permission="roles:read"><RolePermissionsPage /></ProtectedRoute>} />
+            <Route path="/whatsapp-inbox" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppInboxPage /></ProtectedRoute>} />
+            <Route path="/whatsapp-campaign" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppCampaignPage /></ProtectedRoute>} />
+            <Route path="/accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
+            <Route path="/super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
+            <Route path="/forbidden" element={<ForbiddenPage />} />
+
+            {/* Compatibility aliases if accessed under /dashboard/* */}
+            <Route path="/dashboard/dashboard" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard/users" element={<Navigate to="/users" replace />} />
+            <Route path="/dashboard/catalog" element={<Navigate to="/catalog" replace />} />
+            <Route path="/dashboard/leads" element={<Navigate to="/leads" replace />} />
+            <Route path="/dashboard/tasks" element={<Navigate to="/tasks" replace />} />
+            <Route path="/dashboard/settings" element={<Navigate to="/settings" replace />} />
+            <Route path="/dashboard/reports" element={<Navigate to="/reports" replace />} />
+            <Route path="/dashboard/theme" element={<Navigate to="/theme" replace />} />
+            <Route path="/dashboard/roles" element={<Navigate to="/roles" replace />} />
+            <Route path="/dashboard/support" element={<Navigate to="/support" replace />} />
           </Route>
+
+          {/* Catch-all fallback */}
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Routes>
       </Suspense>
     </>
