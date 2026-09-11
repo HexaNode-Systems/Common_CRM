@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import Button from '../Button.jsx';
+import GradientBlob from '../GradientBlob.jsx';
 import { Zap } from 'lucide-react';
 
 export default function FinalCTA() {
   return (
-    <section className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 py-24 font-theme">
-      <div className="mx-auto max-w-3xl px-6 text-center">
+    <section className="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 py-24 font-theme">
+      <GradientBlob position="right" />
+      <div className="relative mx-auto max-w-3xl px-6 text-center">
         <Zap className="mx-auto h-8 w-8 text-indigo-300" />
         <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
           Bring your leads, chats and projects into one place today

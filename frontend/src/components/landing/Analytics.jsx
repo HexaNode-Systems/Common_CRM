@@ -1,38 +1,27 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { TrendingUp, Clock } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import GradientBlob from '../GradientBlob.jsx';
+import { TrendingUp } from 'lucide-react';
 
 function useReveal() {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
-
   useEffect(() => {
     const node = ref.current;
     if (!node) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.2 }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setVisible(true); obs.disconnect(); } }, { threshold: 0.2 });
+    obs.observe(node);
+    return () => obs.disconnect();
   }, []);
-
   return [ref, visible];
 }
 
 function useCountUp(target, decimals, visible, duration = 1200) {
   const [value, setValue] = useState(0);
   const startedRef = useRef(false);
-
   useEffect(() => {
     if (!visible || startedRef.current) return;
     startedRef.current = true;
     const start = performance.now();
-
     function tick(now) {
       const progress = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
@@ -41,58 +30,26 @@ function useCountUp(target, decimals, visible, duration = 1200) {
     }
     requestAnimationFrame(tick);
   }, [visible, target, duration]);
-
   return value.toFixed(decimals);
 }
 
 const bars = [40, 65, 50, 80, 60, 90, 72];
 
 export default function Analytics() {
-  const sectionRef = useRef(null);
   const [contentRef, contentVisible] = useReveal();
   const [chartRef, chartVisible] = useReveal();
-  const [mouse, setMouse] = useState({ x: 0, y: 0 });
-
   const responseValue = useCountUp(32, 0, contentVisible);
   const followUpValue = useCountUp(4.6, 1, contentVisible);
 
-  const handleMouseMove = useCallback((e) => {
-    const rect = sectionRef.current?.getBoundingClientRect();
-    if (!rect) return;
-    const x = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
-    const y = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
-    setMouse({ x, y });
-  }, []);
-  const handleMouseLeave = useCallback(() => setMouse({ x: 0, y: 0 }), []);
-
   return (
-    <section
-      ref={sectionRef}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
-      className="relative overflow-hidden bg-slate-950 py-24 font-theme"
-    >
-      {/* Ambient parallax orbs — dark themed to match this section */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <span
-          className="an-orb an-orb-1 absolute -left-20 top-0 h-80 w-80 rounded-full bg-indigo-600/25 blur-3xl sm:h-[26rem] sm:w-[26rem]"
-          style={{ transform: `translate3d(${mouse.x * 28}px, ${mouse.y * 28}px, 0)` }}
-        />
-        <span
-          className="an-orb an-orb-2 absolute -right-24 bottom-0 h-72 w-72 rounded-full bg-sky-500/15 blur-3xl sm:h-96 sm:w-96"
-          style={{ transform: `translate3d(${mouse.x * -32}px, ${mouse.y * -32}px, 0)` }}
-        />
-        <div className="an-grid absolute inset-0 opacity-[0.05]" />
-      </div>
+    <section className="relative overflow-hidden bg-slate-950 py-24 font-theme">
+      <GradientBlob position="left" />
 
       <div className="relative mx-auto grid max-w-7xl grid-cols-1 items-center gap-12 px-6 lg:grid-cols-2">
         <div
           ref={contentRef}
           className="transition-all duration-700 ease-out motion-reduce:transition-none"
-          style={{
-            opacity: contentVisible ? 1 : 0,
-            transform: contentVisible ? 'translateY(0)' : 'translateY(16px)',
-          }}
+          style={{ opacity: contentVisible ? 1 : 0, transform: contentVisible ? 'translateY(0)' : 'translateY(16px)' }}
         >
           <span className="an-icon-pulse relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-white">
             <span className="absolute inset-0 rounded-xl bg-indigo-400/30 an-pulse-ring" />
@@ -123,9 +80,7 @@ export default function Analytics() {
           className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition-all duration-700 ease-out motion-reduce:transition-none"
           style={{
             opacity: chartVisible ? 1 : 0,
-            transform: chartVisible
-              ? 'translateY(0) scale(1) rotate(0deg)'
-              : 'translateY(24px) scale(0.94) rotate(-2deg)',
+            transform: chartVisible ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.94)',
             transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         >
@@ -162,51 +117,10 @@ export default function Analytics() {
       </div>
 
       <style>{`
-        .an-orb {
-          will-change: transform, opacity;
-          transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-        }
-        .an-orb-1 { animation: an-float-a 14s ease-in-out infinite; }
-        .an-orb-2 { animation: an-float-b 17s ease-in-out infinite; }
-
-        @keyframes an-float-a {
-          0%, 100% { margin: 0 0; opacity: 0.8; }
-          50% { margin: 60px 0 0 40px; opacity: 1; }
-        }
-        @keyframes an-float-b {
-          0%, 100% { margin: 0 0; opacity: 0.6; }
-          50% { margin: -50px 0 0 -60px; opacity: 0.95; }
-        }
-
-        .an-grid {
-          background-image:
-            linear-gradient(to right, rgba(255,255,255,0.6) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(255,255,255,0.6) 1px, transparent 1px);
-          background-size: 48px 48px;
-          animation: an-grid-pan 22s linear infinite;
-        }
-        @keyframes an-grid-pan {
-          0% { background-position: 0 0; }
-          100% { background-position: 48px 48px; }
-        }
-
-        .an-pulse-ring {
-          animation: an-pulse 2.4s ease-in-out infinite;
-        }
-        @keyframes an-pulse {
-          0%, 100% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.4); opacity: 0; }
-        }
-
-        .an-bar:hover {
-          transform: scaleY(1.02);
-          transform-origin: bottom;
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .an-orb-1, .an-orb-2, .an-grid, .an-pulse-ring { animation: none !important; }
-          .an-orb { transition: none; transform: none !important; }
-        }
+        .an-pulse-ring { animation: an-pulse 2.4s ease-in-out infinite; }
+        @keyframes an-pulse { 0%,100%{transform:scale(1);opacity:.5;} 50%{transform:scale(1.4);opacity:0;} }
+        .an-bar:hover { transform: scaleY(1.02); transform-origin: bottom; }
+        @media (prefers-reduced-motion: reduce) { .an-pulse-ring { animation: none !important; } }
       `}</style>
     </section>
   );

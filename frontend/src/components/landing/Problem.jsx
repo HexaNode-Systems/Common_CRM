@@ -1,13 +1,14 @@
 import SectionHeading from './SectionHeading.jsx';
 
+const points = [
+  { title: 'Leads go cold in spreadsheets', body: 'By the time someone follows up, the enquiry is three days old and already talking to a competitor.' },
+  { title: 'WhatsApp replies get lost', body: 'Conversations live on personal phones with no record of who said what, or who owns the follow-up.' },
+  { title: 'No one sees the full picture', body: 'Sales, delivery and finance each work off their own tool, so nothing lines up at the end of the month.' },
+];
+
 export default function Problem() {
-  const points = [
-    { title: 'Leads go cold in spreadsheets', body: 'By the time someone follows up, the enquiry is three days old and already talking to a competitor.' },
-    { title: 'WhatsApp replies get lost', body: 'Conversations live on personal phones with no record of who said what, or who owns the follow-up.' },
-    { title: 'No one sees the full picture', body: 'Sales, delivery and finance each work off their own tool, so nothing lines up at the end of the month.' },
-  ];
   return (
-    <section className="bg-slate-50 py-24 font-theme">
+    <section className="bg-slate-950 py-24 font-theme">
       <div className="mx-auto max-w-7xl px-6">
         <SectionHeading
           eyebrow="The problem"
@@ -16,9 +17,9 @@ export default function Problem() {
         />
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {points.map((p) => (
-            <div key={p.title} className="rounded-2xl border border-slate-200 bg-white p-6">
-              <h3 className="text-base font-bold text-slate-900">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-600">{p.body}</p>
+            <div key={p.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <h3 className="text-base font-bold text-white">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-400">{p.body}</p>
             </div>
           ))}
         </div>
