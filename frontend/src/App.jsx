@@ -1,10 +1,12 @@
 import { useState, useEffect, Suspense, lazy } from 'react';
+import { HelmetProvider } from "react-helmet-async";
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSettings } from './context/SettingsContext.jsx';
 import AdminLayout from './components/layout/AdminLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import LandingPage from './pages/LandingPage.jsx';
+
 
 // Legal pages — small, keep eager
 import PrivacyPolicy from './components/landing/PrivacyPolicy.jsx';
@@ -90,6 +92,7 @@ export default function App() {
     };
 
     return (
+      
       <div
         style={bgStyle}
         className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300 ${
@@ -132,6 +135,7 @@ export default function App() {
   };
 
   return (
+    <HelmetProvider>
     <>
       {renderSplashScreen()}
       <Suspense fallback={<RouteLoader />}>
@@ -202,5 +206,6 @@ export default function App() {
         </Routes>
       </Suspense>
     </>
+    </HelmetProvider>
   );
 }

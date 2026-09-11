@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /login
+Allow: /privacy-policy
+Allow: /terms-and-conditions
+Allow: /data-deletion-request
+Allow: /refund-policy
+
+Disallow: /dashboard
+
+Sitemap: https://appnix.info/sitemap.xml

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
 import Button from '../components/Button.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -30,6 +31,28 @@ export default function Login() {
 
   return (
     <main className="flex min-h-screen w-full bg-slate-50 font-theme">
+      <Helmet>
+        {/* Shown in the browser tab and as the bold clickable line in Google search results */}
+        <title>Login | Appnix CRM Pro</title>
+
+        {/* Grey summary text shown below the title in Google search results */}
+        <meta
+          name="description"
+          content="Sign in to your Appnix CRM Pro workspace to manage leads, WhatsApp conversations, projects and your team from one dashboard."
+        />
+
+        {/* Points to the official URL for this page */}
+        <link rel="canonical" href="https://appnix.info/login" />
+
+        {/*
+          noindex: tells Google not to show this page in search results.
+          A login form has no content someone would search for, and letting it get indexed
+          just wastes Google's "crawl budget" on a page that will only ever show a form.
+          follow: still lets Google follow links found on this page (e.g. footer links).
+        */}
+        <meta name="robots" content="noindex, follow" />
+      </Helmet>
+
       <div className="grid w-full grid-cols-1 lg:grid-cols-12">
         {/* Left Side: CRM Image Showcase */}
         <div className="relative hidden flex-col justify-between p-12 lg:col-span-5 lg:flex xl:col-span-6 overflow-hidden">
@@ -222,4 +245,3 @@ export default function Login() {
     </main>
   );
 }
-
