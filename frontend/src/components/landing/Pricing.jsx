@@ -100,7 +100,7 @@ export default function Pricing() {
                 <span className="text-base font-medium text-slate-400">{p.period}</span>
               </p>
 
-              <ul className="mt-6 space-y-2.5">
+              <ul className="mt-6 flex-1 space-y-2.5">
                 {p.features.map((f) => (
                   <li key={f} className="flex items-start gap-2.5 text-sm text-slate-700">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" /> {f}
@@ -108,7 +108,7 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <Link to="/login" className="mt-8">
+              <Link to="/login" className="mt-8 pt-0">
                 <Button
                   className={`w-full justify-center text-sm transition-transform duration-200 group-hover:scale-[1.02] ${
                     p.highlight ? '' : 'bg-slate-900 hover:bg-slate-800'
