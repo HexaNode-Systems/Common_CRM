@@ -125,12 +125,12 @@ export default function HowItWorks() {
             ))}
           </svg>
 
-          <div className="relative flex flex-col gap-16 lg:gap-24">
+          <div className="relative flex flex-col gap-8 lg:gap-12">
             {steps.map((step, i) => (
               <div key={step.title} className={`flex ${step.align === 'left' ? 'justify-start' : 'justify-end'}`}>
                 <div
                   ref={(el) => (cardRefs.current[i] = el)}
-                  className="w-full max-w-md rounded-2xl border border-white/5 bg-white/[0.03] p-8 backdrop-blur-sm"
+                  className="w-full max-w-sm rounded-2xl border border-white/5 bg-white/[0.03] p-6 backdrop-blur-sm"
                   style={{
                     opacity: visible[i] ? 1 : 0,
                     transform: visible[i] ? 'translateY(0)' : 'translateY(24px)',
@@ -140,7 +140,7 @@ export default function HowItWorks() {
                   <span className="text-sm font-semibold text-primary">{String(i + 1).padStart(2, '0')}</span>
                   <h3 className="mt-3 text-xl font-bold text-white">{step.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-slate-400">{step.body}</p>
-                  <div className="mt-6">
+                  <div className="mt-5">
                     <step.Visual />
                   </div>
                 </div>

@@ -29,8 +29,13 @@ export default function Industries() {
   const [gridRef, visible] = useReveal();
 
   return (
-    <section id="industries" className="relative overflow-hidden bg-slate-950 py-24 font-theme">
-      <GradientBlob position="right" />
+    <section id="industries" className="industries-light relative overflow-hidden bg-white py-24 font-theme">
+      {/* GradientBlob is tuned for dark backgrounds; dimmed here so it reads as a
+          faint tint on white instead of a washed-out dark shape. */}
+      <div className="pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply">
+        <GradientBlob position="right" />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
       <div className="relative mx-auto max-w-7xl px-6">
         <SectionHeading
@@ -42,7 +47,7 @@ export default function Industries() {
           {industries.map(({ name, icon: Icon }, i) => (
             <div
               key={name}
-              className="ind-card group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-8 text-center transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 motion-reduce:transition-none"
+              className="ind-card group relative flex flex-col items-center gap-3 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-8 text-center shadow-sm shadow-slate-900/[0.03] transition-all duration-300 ease-out hover:-translate-y-1.5 hover:border-primary/40 hover:shadow-md hover:shadow-slate-900/[0.06] motion-reduce:transition-none"
               style={{
                 opacity: visible ? 1 : 0,
                 transform: visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.94)',
@@ -50,12 +55,12 @@ export default function Industries() {
               }}
             >
               <span className="relative flex h-11 w-11 items-center justify-center">
-                <span className="ind-pulse-ring absolute inset-0 rounded-xl bg-primary/25" />
-                <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 transition-all duration-300 group-hover:bg-primary group-hover:text-white">
-                  <Icon className="h-6 w-6 text-indigo-300 transition-colors duration-300 group-hover:text-white" />
+                <span className="ind-pulse-ring absolute inset-0 rounded-xl bg-primary/20" />
+                <span className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 transition-all duration-300 group-hover:bg-primary group-hover:text-white">
+                  <Icon className="h-6 w-6 text-indigo-600 transition-colors duration-300 group-hover:text-white" />
                 </span>
               </span>
-              <span className="relative text-sm font-semibold text-slate-300 transition-colors duration-300 group-hover:text-white">
+              <span className="relative text-sm font-semibold text-slate-700 transition-colors duration-300 group-hover:text-slate-900">
                 {name}
               </span>
             </div>
@@ -63,7 +68,17 @@ export default function Industries() {
         </div>
       </div>
 
+      {/* SectionHeading is shared with dark sections; re-mapped here for light
+          background rather than editing the shared component. */}
       <style>{`
+        .industries-light h2 { color: #0f172a; }
+        .industries-light p { color: #475569; }
+        .industries-light [class*="text-slate-100"],
+        .industries-light [class*="text-slate-200"] { color: #0f172a; }
+        .industries-light [class*="text-slate-300"],
+        .industries-light [class*="text-slate-400"] { color: #475569; }
+        .industries-light [class*="border-white/"] { border-color: rgba(15, 23, 42, 0.1); }
+
         .ind-pulse-ring { animation: ind-pulse 2.6s ease-in-out infinite; }
         @keyframes ind-pulse {
           0%, 100% { transform: scale(1); opacity: 0.5; }

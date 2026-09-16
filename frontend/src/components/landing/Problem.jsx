@@ -8,8 +8,13 @@ const points = [
 
 export default function Problem() {
   return (
-    <section className="bg-slate-950 py-24 font-theme">
-      <div className="mx-auto max-w-7xl px-6">
+    <section className="problem-light relative bg-white py-24 font-theme">
+      {/* Seam from the dark hero into the light section, so the switch reads as
+          intentional rather than an abrupt cut. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-950/[0.06] to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
+      <div className="relative mx-auto max-w-7xl px-6">
         <SectionHeading
           eyebrow="The problem"
           title="Most teams don't lose deals to competitors. They lose them to gaps."
@@ -17,13 +22,31 @@ export default function Problem() {
         />
         <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
           {points.map((p) => (
-            <div key={p.title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <h3 className="text-base font-bold text-white">{p.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-slate-400">{p.body}</p>
+            <div
+              key={p.title}
+              className="rounded-2xl border border-slate-200 bg-slate-50/70 p-6 shadow-sm shadow-slate-900/[0.03]"
+            >
+              <h3 className="text-base font-bold text-slate-900">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600">{p.body}</p>
             </div>
           ))}
         </div>
       </div>
+
+      {/* SectionHeading is shared with the dark sections, so its own colours are
+          re-mapped here rather than editing the component. Descendant selectors
+          out-rank Tailwind's single-class utilities, so no !important needed. */}
+      <style>{`
+        .problem-light h2 { color: #0f172a; }
+        .problem-light p { color: #475569; }
+        .problem-light .text-white,
+        .problem-light [class*="text-slate-100"],
+        .problem-light [class*="text-slate-200"] { color: #0f172a; }
+        .problem-light [class*="text-slate-300"],
+        .problem-light [class*="text-slate-400"] { color: #475569; }
+        .problem-light [class*="bg-white/"] { background-color: rgba(15, 23, 42, 0.03); }
+        .problem-light [class*="border-white/"] { border-color: rgba(15, 23, 42, 0.1); }
+      `}</style>
     </section>
   );
 }

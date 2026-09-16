@@ -34,14 +34,17 @@ export default function ProductShowcase() {
   const dotPercent = Math.min(progress * 100, 100);
 
   return (
-    <section id="product" ref={containerRef} className="relative bg-slate-950 font-theme" style={{ height: `${steps.length * 90}vh` }}>
+    <section id="product" ref={containerRef} className="relative bg-white font-theme" style={{ height: `${steps.length * 55}vh` }}>
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+        {/* Seam at the top of the sticky viewport, matching the light Problem section */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+
         <div className="relative mx-auto grid w-full max-w-6xl grid-cols-1 gap-16 px-6 lg:grid-cols-[80px_1fr]">
           {/* connecting line + moving dot */}
           <div className="relative hidden justify-self-center lg:block">
-            <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-white/10" />
+            <div className="absolute left-1/2 top-0 h-full w-px -translate-x-1/2 bg-slate-900/10" />
             <div
-              className="absolute left-1/2 h-4 w-4 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_16px_4px_rgba(99,102,241,0.6)] transition-[top] duration-150 ease-out"
+              className="absolute left-1/2 h-4 w-4 -translate-x-1/2 rounded-full bg-primary shadow-[0_0_16px_4px_rgba(99,102,241,0.35)] transition-[top] duration-150 ease-out"
               style={{ top: `${dotPercent}%` }}
             />
           </div>
@@ -51,17 +54,17 @@ export default function ProductShowcase() {
             {(() => {
               const Icon = steps[activeIndex].icon;
               return (
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10">
-                  <Icon className="h-6 w-6 text-indigo-300" />
+                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-inset ring-primary/15">
+                  <Icon className="h-6 w-6 text-indigo-600" />
                 </span>
               );
             })()}
-            <h3 className="mt-6 text-3xl font-bold text-white sm:text-4xl">{steps[activeIndex].title}</h3>
-            <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-300">{steps[activeIndex].body}</p>
+            <h3 className="mt-6 text-3xl font-bold text-slate-900 sm:text-4xl">{steps[activeIndex].title}</h3>
+            <p className="mt-4 max-w-lg text-base leading-relaxed text-slate-600">{steps[activeIndex].body}</p>
 
             <div className="mt-8 flex gap-2">
               {steps.map((_, i) => (
-                <span key={i} className={`h-1 w-8 rounded-full transition-colors duration-300 ${i === activeIndex ? 'bg-primary' : 'bg-white/10'}`} />
+                <span key={i} className={`h-1 w-8 rounded-full transition-colors duration-300 ${i === activeIndex ? 'bg-primary' : 'bg-slate-900/10'}`} />
               ))}
             </div>
           </div>

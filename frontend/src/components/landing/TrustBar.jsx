@@ -2,9 +2,9 @@ export default function TrustBar() {
   const names = ['Northbridge Realty', 'Vantage Clinics', 'Studio Loom', 'Craft & Co.', 'Beacon Academy', 'Fernway Agency'];
 
   return (
-    <section className="border-b border-white/5 bg-slate-950 py-12 font-theme">
+    <section className="border-b border-slate-200 bg-white py-12 font-theme">
       <div className="mx-auto max-w-7xl px-6">
-        <p className="text-center text-sm font-medium text-slate-400">
+        <p className="text-center text-sm font-medium text-slate-500">
           Trusted by growing teams across industries
         </p>
 
@@ -13,7 +13,7 @@ export default function TrustBar() {
             {[...names, ...names].map((n, i) => (
               <span
                 key={`${n}-${i}`}
-                className="shrink-0 text-base font-semibold text-slate-500 transition-colors duration-300 hover:text-slate-200"
+                className="shrink-0 text-base font-semibold text-slate-400 transition-colors duration-300 hover:text-slate-800"
               >
                 {n}
               </span>

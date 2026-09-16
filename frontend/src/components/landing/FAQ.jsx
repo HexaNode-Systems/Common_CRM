@@ -28,8 +28,13 @@ export default function FAQ() {
   const [listRef, visible] = useReveal();
 
   return (
-    <section id="faq" className="relative overflow-hidden bg-slate-950 py-24 font-theme">
-      <GradientBlob position="right" />
+    <section id="faq" className="faq-light relative overflow-hidden bg-white py-24 font-theme">
+      {/* GradientBlob is tuned for dark backgrounds; dimmed here so it reads as a
+          faint tint on white instead of a washed-out pale shape. */}
+      <div className="pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply">
+        <GradientBlob position="right" />
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
       <div className="relative mx-auto max-w-3xl px-6">
         <SectionHeading eyebrow="FAQ" title="Questions teams usually ask" align="center" />
@@ -41,21 +46,21 @@ export default function FAQ() {
               <div
                 key={f.q}
                 className={`faq-item group overflow-hidden rounded-2xl border transition-all duration-300 ease-out motion-reduce:transition-none ${
-                  isOpen ? 'border-primary/40 bg-white/[0.06]' : 'border-white/10 bg-white/[0.03] hover:border-primary/25'
+                  isOpen ? 'border-primary/40 bg-primary/[0.04]' : 'border-slate-200 bg-slate-50/70 hover:border-primary/25'
                 }`}
                 style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(14px)', transitionDelay: visible ? `${i * 90}ms` : '0ms' }}
               >
                 <button onClick={() => setOpenIndex(isOpen ? -1 : i)} className="flex w-full items-center justify-between gap-4 px-5 py-5 text-left">
-                  <span className={`text-sm font-semibold transition-colors duration-300 ${isOpen ? 'text-white' : 'text-slate-200 group-hover:text-white'}`}>
+                  <span className={`text-sm font-semibold transition-colors duration-300 ${isOpen ? 'text-slate-900' : 'text-slate-700 group-hover:text-slate-900'}`}>
                     {f.q}
                   </span>
-                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${isOpen ? 'rotate-45 bg-primary text-white' : 'bg-white/10 text-slate-400 group-hover:bg-primary/20 group-hover:text-primary'}`}>
+                  <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-300 ${isOpen ? 'rotate-45 bg-primary text-white' : 'bg-slate-900/5 text-slate-500 group-hover:bg-primary/15 group-hover:text-primary'}`}>
                     <Plus className="h-4 w-4" />
                   </span>
                 </button>
                 <div className="faq-collapse grid transition-[grid-template-rows] duration-300 ease-out motion-reduce:transition-none" style={{ gridTemplateRows: isOpen ? '1fr' : '0fr' }}>
                   <div className="overflow-hidden">
-                    <p className="px-5 pb-5 text-sm leading-relaxed text-slate-400 transition-opacity duration-300" style={{ opacity: isOpen ? 1 : 0, transitionDelay: isOpen ? '100ms' : '0ms' }}>
+                    <p className="px-5 pb-5 text-sm leading-relaxed text-slate-600 transition-opacity duration-300" style={{ opacity: isOpen ? 1 : 0, transitionDelay: isOpen ? '100ms' : '0ms' }}>
                       {f.a}
                     </p>
                   </div>
@@ -66,7 +71,16 @@ export default function FAQ() {
         </div>
       </div>
 
+      {/* SectionHeading is shared with dark sections; re-mapped here for light background */}
       <style>{`
+        .faq-light h2 { color: #0f172a; }
+        .faq-light p { color: #475569; }
+        .faq-light [class*="text-slate-100"],
+        .faq-light [class*="text-slate-200"] { color: #0f172a; }
+        .faq-light [class*="text-slate-300"],
+        .faq-light [class*="text-slate-400"] { color: #475569; }
+        .faq-light [class*="border-white/"] { border-color: rgba(15, 23, 42, 0.1); }
+
         @media (prefers-reduced-motion: reduce) { .faq-collapse { transition: none !important; } }
       `}</style>
     </section>
