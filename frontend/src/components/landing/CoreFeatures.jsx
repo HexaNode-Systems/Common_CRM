@@ -29,11 +29,16 @@ export default function CoreFeatures() {
   const [active, setActive] = useState(null);
 
   return (
-    <section id="features" className="relative overflow-hidden bg-slate-950 py-24 font-theme">
+    <section id="features" className="relative overflow-hidden bg-slate-950 py-20 sm:py-24 font-theme">
       <GradientBlob position="left" />
 
       <div className="relative mx-auto max-w-7xl px-6">
-        <SectionHeading eyebrow="Why teams switch" title="Common CRM replaces five disconnected tools with one" description="Every gap below is where deals usually go quiet. Hover a card to see how it's closed." />
+        <SectionHeading
+          dark
+          eyebrow="Why teams switch"
+          title="Appnix CRM Pro replaces five disconnected tools with one"
+          description="Every gap below is where deals usually go quiet. Hover or tap a card to see how it's closed."
+        />
 
         <div ref={gridRef} className="mt-12 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(({ icon: Icon, title, short, detail }, i) => {
@@ -41,25 +46,68 @@ export default function CoreFeatures() {
             return (
               <div
                 key={title}
+                tabIndex={0}
+                role="button"
+                aria-pressed={isActive}
+                onClick={() => setActive(active === i ? null : i)}
                 onMouseEnter={() => setActive(i)}
                 onMouseLeave={() => setActive(null)}
-                className={`relative overflow-hidden rounded-2xl border p-6 transition-all duration-500 ease-out ${isActive ? 'border-primary/40 bg-white/[0.06]' : 'border-white/10 bg-white/[0.03]'} ${i === 0 ? 'lg:col-span-2' : ''}`}
-                style={{ opacity: visible ? 1 : 0, transform: visible ? 'translateY(0)' : 'translateY(14px)', transitionProperty: 'opacity, transform, border-color, background-color', transitionDelay: visible ? `${i * 90}ms` : '0ms' }}
+                className={`group relative overflow-hidden rounded-2xl border p-6 transition-all duration-300 ease-out cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/80 ${
+                  isActive
+                    ? 'border-primary/50 bg-slate-900/95 shadow-lg shadow-primary/10 -translate-y-1'
+                    : 'border-slate-800/90 bg-slate-900/60 hover:border-primary/40 hover:bg-slate-900/80 hover:-translate-y-0.5 shadow-sm shadow-black/20'
+                } ${i === 0 ? 'lg:col-span-2' : ''}`}
+                style={{
+                  opacity: visible ? 1 : 0,
+                  transform: visible ? undefined : 'translateY(14px)',
+                  transitionProperty: 'opacity, transform, border-color, background-color, box-shadow',
+                  transitionDelay: visible ? `${i * 80}ms` : '0ms',
+                }}
               >
-                <span className="relative flex h-11 w-11 items-center justify-center">
-                  <span className={`absolute flex h-11 w-11 items-center justify-center rounded-xl bg-white/10 text-indigo-300 transition-all duration-300 ${isActive ? 'scale-90 opacity-0' : 'scale-100 opacity-100'}`}>
-                    <Icon className="h-5 w-5" />
+                <div className="flex items-center justify-between">
+                  <span className="relative flex h-11 w-11 items-center justify-center">
+                    <span
+                      className={`absolute flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 text-indigo-300 border border-primary/25 transition-all duration-300 ${
+                        isActive ? 'scale-90 opacity-0' : 'scale-100 opacity-100'
+                      }`}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span
+                      className={`absolute flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/30 transition-all duration-300 ${
+                        isActive ? 'scale-100 opacity-100' : 'scale-90 opacity-0'
+                      }`}
+                    >
+                      <Check className="h-5 w-5" />
+                    </span>
                   </span>
-                  <span className={`absolute flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-white transition-all duration-300 ${isActive ? 'scale-100 opacity-100' : 'scale-90 opacity-0'}`}>
-                    <Check className="h-5 w-5" />
+
+                  <span className={`text-[11px] font-semibold tracking-wider uppercase transition-colors duration-200 ${
+                    isActive ? 'text-primary' : 'text-slate-300'
+                  }`}>
+                    {isActive ? 'Solution' : 'The Gap'}
                   </span>
-                </span>
+                </div>
 
-                <h3 className="mt-4 text-base font-bold text-white">{title}</h3>
+                <h3 className="mt-5 text-base sm:text-lg font-bold text-white tracking-tight">
+                  {title}
+                </h3>
 
-                <div className="relative mt-2">
-                  <p className={`text-sm leading-relaxed text-slate-400 transition-opacity duration-300 ${isActive ? 'opacity-0 absolute inset-0' : 'opacity-100'}`}>{short}</p>
-                  <p className={`text-sm leading-relaxed text-slate-200 transition-opacity duration-300 delay-100 ${isActive ? 'opacity-100' : 'opacity-0 absolute inset-0'}`}>{detail}</p>
+                <div className="relative mt-2.5 min-h-[52px]">
+                  <p
+                    className={`text-sm leading-relaxed text-slate-300 transition-opacity duration-300 ${
+                      isActive ? 'opacity-0 pointer-events-none absolute inset-0' : 'opacity-100'
+                    }`}
+                  >
+                    {short}
+                  </p>
+                  <p
+                    className={`text-sm leading-relaxed text-slate-100 font-medium transition-opacity duration-300 delay-75 ${
+                      isActive ? 'opacity-100' : 'opacity-0 pointer-events-none absolute inset-0'
+                    }`}
+                  >
+                    {detail}
+                  </p>
                 </div>
               </div>
             );

@@ -23,9 +23,10 @@ function useReveal() {
   return [ref, visible];
 }
 
-export default function SectionHeading({ eyebrow, title, description, align = 'left' }) {
+export default function SectionHeading({ eyebrow, title, description, align = 'left', dark = false, theme }) {
   const [ref, visible] = useReveal();
   const isCenter = align === 'center';
+  const isDark = dark || theme === 'dark';
 
   return (
     <div
@@ -44,11 +45,15 @@ export default function SectionHeading({ eyebrow, title, description, align = 'l
           <p className="text-sm font-semibold text-primary">{eyebrow}</p>
         </div>
       )}
-      <h2 className="mt-3 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+      <h2 className={`mt-3 text-3xl font-extrabold tracking-tight sm:text-4xl ${
+        isDark ? 'text-white' : 'text-slate-900'
+      }`}>
         {title}
       </h2>
       {description && (
-        <p className="mt-4 text-base leading-relaxed text-slate-600">{description}</p>
+        <p className={`mt-4 text-base leading-relaxed ${
+          isDark ? 'text-slate-300' : 'text-slate-600'
+        }`}>{description}</p>
       )}
     </div>
   );

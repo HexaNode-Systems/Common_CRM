@@ -64,29 +64,29 @@ export default function Analytics() {
             spreadsheet exports, no waiting for a monthly report.
           </p>
           <div className="mt-8 grid grid-cols-2 gap-4">
-            <div className="group rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/[0.08]">
+            <div className="group rounded-xl border border-slate-800/90 bg-slate-900/60 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-slate-900/90 shadow-sm shadow-black/20">
               <p className="text-2xl font-bold text-white">{responseValue}%</p>
-              <p className="mt-1 text-xs text-slate-400">Faster lead response</p>
+              <p className="mt-1 text-xs text-slate-300 font-medium">Faster lead response</p>
             </div>
-            <div className="group rounded-xl border border-white/10 bg-white/5 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-indigo-400/30 hover:bg-white/[0.08]">
+            <div className="group rounded-xl border border-slate-800/90 bg-slate-900/60 p-4 transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 hover:bg-slate-900/90 shadow-sm shadow-black/20">
               <p className="text-2xl font-bold text-white">{followUpValue}x</p>
-              <p className="mt-1 text-xs text-slate-400">More follow-ups logged</p>
+              <p className="mt-1 text-xs text-slate-300 font-medium">More follow-ups logged</p>
             </div>
           </div>
         </div>
 
         <div
           ref={chartRef}
-          className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md transition-all duration-700 ease-out motion-reduce:transition-none"
+          className="rounded-2xl border border-slate-800/90 bg-slate-900/70 p-6 backdrop-blur-md shadow-xl shadow-black/30 transition-all duration-700 ease-out motion-reduce:transition-none"
           style={{
             opacity: chartVisible ? 1 : 0,
             transform: chartVisible ? 'translateY(0) scale(1)' : 'translateY(24px) scale(0.94)',
             transitionTimingFunction: 'cubic-bezier(0.22, 1, 0.36, 1)',
           }}
         >
-          <div className="flex items-center justify-between text-xs text-slate-400">
+          <div className="flex items-center justify-between text-xs text-slate-300 font-medium">
             <span>Weekly closed value</span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
+            <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />

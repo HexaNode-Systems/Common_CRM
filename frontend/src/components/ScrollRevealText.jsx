@@ -38,7 +38,7 @@ export default function ScrollRevealText({ text, highlightWords = [], className 
             style={{
               color: isRevealed
                 ? (isHighlight ? '#a3e635' : '#ffffff')
-                : 'rgba(148, 163, 184, 0.4)',
+                : 'rgba(203, 213, 225, 0.55)',
             }}
           >
             {word}{' '}

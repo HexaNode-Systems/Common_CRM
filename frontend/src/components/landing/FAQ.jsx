@@ -28,7 +28,7 @@ export default function FAQ() {
   const [listRef, visible] = useReveal();
 
   return (
-    <section id="faq" className="faq-light relative overflow-hidden bg-white py-24 font-theme">
+    <section className="faq-light relative overflow-hidden bg-white py-24 font-theme">
       {/* GradientBlob is tuned for dark backgrounds; dimmed here so it reads as a
           faint tint on white instead of a washed-out pale shape. */}
       <div className="pointer-events-none absolute inset-0 opacity-30 mix-blend-multiply">

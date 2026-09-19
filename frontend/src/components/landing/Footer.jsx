@@ -13,7 +13,7 @@ const productLinks = [
 const resourceLinks = [
   { label: 'FAQ', to: '/#faq' },
   { label: 'Sign In', to: '/login' },
-  { label: 'Dashboard', to: '/dashboard' },
+  { label: 'Start Free Trial', to: '/login' },
 ];
 
 // Legal links - these match the routes registered in App.jsx. Orchid keeps these

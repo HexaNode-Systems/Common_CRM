@@ -8,52 +8,34 @@ export default function Navbar() {
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
   const links = [
-    { label: 'Product', href: '#product' },
-    { label: 'Features', href: '#features' },
-    { label: 'Industries', href: '#industries' },
-    { label: 'Pricing', href: '#pricing' },
-    { label: 'FAQ', href: '#faq' },
+    { label: 'Product', href: '/#product' },
+    { label: 'Features', href: '/#features' },
+    { label: 'Industries', href: '/#industries' },
+    { label: 'Pricing', href: '/#pricing' },
+    { label: 'FAQ', href: '/#faq' },
   ];
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/70 backdrop-blur-xl shadow-sm font-theme">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-3.5">
         {/* Brand */}
-        {/* <a href="#top" className="flex items-center gap-1.5">
-          {settings?.brand?.logo ? (
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-xs bg-white border border-slate-200/60 p-1.5">
             <img
-              src={settings.brand.logo}
-              alt={settings?.brand?.name || 'CRM'}
-              className="h-9 w-9 shrink-0 rounded-xl object-cover ring-1 ring-slate-200"
+              src="/logo-favicon.png"
+              alt="Appnix Logo"
+              className="h-full w-full object-contain"
             />
-          ) : (
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-white shadow-md shadow-primary/30">
-              <Sparkles className="h-4.5 w-4.5" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-none">
+              Appnix
             </span>
-          )}
-          <span className="-ml-0.5 text-lg font-bold tracking-tight text-slate-900">
-            {settings?.brand?.name || 'Common CRM'}
-          </span>
-        </a> */}
-
-{/* Brand */}
-<a href="#top" className="flex items-center gap-2.5">
-  <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-xs bg-white border border-slate-200/60 p-1.5">
-    <img
-      src="/logo-favicon.png"
-      alt="Appnix Logo"
-      className="h-full w-full object-contain"
-    />
-  </div>
-  <div className="flex flex-col">
-    <span className="text-lg font-extrabold tracking-tight text-slate-900 leading-none">
-      Appnix
-    </span>
-    <span className="text-[10px] font-semibold text-slate-500 tracking-wider mt-0.5">
-      CRM Pro
-    </span>
-  </div>
-</a>
+            <span className="text-[10px] font-semibold text-slate-500 tracking-wider mt-0.5">
+              CRM Pro
+            </span>
+          </div>
+        </Link>
 
 
         {/* Desktop nav */}

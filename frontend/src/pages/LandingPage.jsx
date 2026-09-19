@@ -16,10 +16,11 @@ import FAQ from "../components/landing/FAQ.jsx";
 import FinalCTA from "../components/landing/FinalCTA.jsx";
 import Footer from "../components/landing/Footer.jsx";
 import ScrollToHash from "../components/ScrollToHash.jsx";
+import StickyContactButtons from "../components/landing/StickyContactButtons.jsx";
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-white font-theme">
+    <div className="min-h-screen bg-white font-theme overflow-x-clip">
       <Helmet>
         {/* Shown in the browser tab, and as the bold clickable line in Google search results */}
         <title>
@@ -83,6 +84,7 @@ export default function LandingPage() {
 
       <FinalCTA />
       <Footer />
+      <StickyContactButtons />
     </div>
   );
 }

@@ -115,7 +115,7 @@ export default function App() {
 
           <div className="space-y-2 animate-splash-slide-up">
             <h2 className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-100 to-slate-300">
-              {settings?.brand?.name || 'Common CRM'}
+              {settings?.brand?.name || 'Appnix CRM Pro'}
             </h2>
             <p className="text-sm font-semibold text-slate-400">{splashText}</p>
           </div>
