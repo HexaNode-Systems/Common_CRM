@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../Button.jsx';
 import SectionHeading from './SectionHeading.jsx';
+import { useInquiry } from '../../context/InquiryContext.jsx';
 import { CheckCircle2, Star, ArrowRight } from 'lucide-react';
 
 function useReveal() {
@@ -25,6 +26,7 @@ const plans = [
 
 export default function Pricing() {
   const [gridRef, visible] = useReveal();
+  const { openInquiryModal } = useInquiry();
 
   return (
     <section id="pricing" className="pricing-light relative bg-white py-24 font-theme">
@@ -64,11 +66,24 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link to={p.name === 'Enterprise' ? '/contact' : '/login'} className="mt-8 pt-0">
-                <Button className={`w-full justify-center text-sm transition-transform duration-200 group-hover:scale-[1.02] ${p.highlight ? '' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
+              <div className="mt-8 pt-0">
+                <Button
+                  onClick={() =>
+                    openInquiryModal(
+                      p.name === 'Enterprise'
+                        ? 'pricing_enterprise_contact'
+                        : p.name === 'Starter'
+                        ? 'pricing_starter_trial'
+                        : 'pricing_growth_trial'
+                    )
+                  }
+                  className={`w-full justify-center text-sm transition-transform duration-200 group-hover:scale-[1.02] ${
+                    p.highlight ? '' : 'bg-slate-900 text-white hover:bg-slate-800'
+                  }`}
+                >
                   {p.name === 'Enterprise' ? 'Contact sales' : 'Start free trial'}
                 </Button>
-              </Link>
+              </div>
             </div>
           ))}
         </div>

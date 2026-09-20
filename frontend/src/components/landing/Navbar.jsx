@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../Button.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
+import { useInquiry } from '../../context/InquiryContext.jsx';
 import { Sparkles, Menu, X } from 'lucide-react';
 
 export default function Navbar() {
   const { settings } = useSettings();
+  const { openInquiryModal } = useInquiry();
   const [open, setOpen] = useState(false);
   const links = [
     { label: 'WhatsApp CRM', href: '/whatsapp-crm' },
@@ -57,9 +59,12 @@ export default function Navbar() {
           <Link to="/login" className="text-sm font-semibold text-slate-700 transition-colors hover:text-slate-900">
             Sign in
           </Link>
-          <Link to="/login">
-            <Button className="text-sm shadow-sm shadow-primary/20">Get started</Button>
-          </Link>
+          <Button
+            onClick={() => openInquiryModal('navbar_get_started')}
+            className="text-sm shadow-sm shadow-primary/20"
+          >
+            Get started
+          </Button>
         </div>
 
         {/* Mobile toggle */}
@@ -93,9 +98,15 @@ export default function Navbar() {
             <Link to="/login" className="text-sm font-semibold text-slate-700" onClick={() => setOpen(false)}>
               Sign in
             </Link>
-            <Link to="/login" onClick={() => setOpen(false)}>
-              <Button className="w-full justify-center text-sm">Get started</Button>
-            </Link>
+            <Button
+              onClick={() => {
+                setOpen(false);
+                openInquiryModal('navbar_mobile_get_started');
+              }}
+              className="w-full justify-center text-sm"
+            >
+              Get started
+            </Button>
           </div>
         </nav>
       </div>

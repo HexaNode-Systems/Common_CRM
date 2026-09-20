@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext.jsx';
+import { useInquiry } from '../../context/InquiryContext.jsx';
 
 // Product column
 const productLinks = [
@@ -14,7 +15,7 @@ const resourceLinks = [
   { label: 'Contact Us', to: '/contact' },
   { label: 'FAQ', to: '/#faq' },
   { label: 'Sign In', to: '/login' },
-  { label: 'Start Free Trial', to: '/login' },
+  { label: 'Start Free Trial', action: 'inquiry', source: 'footer_start_trial' },
 ];
 
 // Legal links - these match the routes registered in App.jsx. Orchid keeps these
@@ -64,19 +65,29 @@ function buildSocialLinks(settings) {
   ];
 }
 
-function FooterColumn({ title, links }) {
+function FooterColumn({ title, links, onOpenInquiry }) {
   return (
     <div>
       <p className="text-sm font-semibold text-white">{title}</p>
       <ul className="mt-4 space-y-3">
         {links.map((l) => (
           <li key={l.label}>
-            <Link
-              to={l.to}
-              className="text-sm text-slate-400 transition-colors duration-150 hover:text-white"
-            >
-              {l.label}
-            </Link>
+            {l.action === 'inquiry' ? (
+              <button
+                type="button"
+                onClick={() => onOpenInquiry?.(l.source || 'footer_start_trial')}
+                className="text-left text-sm text-slate-400 transition-colors duration-150 hover:text-white"
+              >
+                {l.label}
+              </button>
+            ) : (
+              <Link
+                to={l.to}
+                className="text-sm text-slate-400 transition-colors duration-150 hover:text-white"
+              >
+                {l.label}
+              </Link>
+            )}
           </li>
         ))}
       </ul>
@@ -86,6 +97,7 @@ function FooterColumn({ title, links }) {
 
 export default function Footer() {
   const { settings } = useSettings();
+  const { openInquiryModal } = useInquiry();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
   const brandLogo = settings?.brand?.logo || '/logo-favicon.png';
   const socialLinks = buildSocialLinks(settings);
@@ -145,7 +157,7 @@ export default function Footer() {
           </div>
 
           <FooterColumn title="Product" links={productLinks} />
-          <FooterColumn title="Resources" links={resourceLinks} />
+          <FooterColumn title="Resources" links={resourceLinks} onOpenInquiry={openInquiryModal} />
         </div>
 
         {/* Bottom bar — copyright left, legal links right, matching Orchid's footer row */}

@@ -6,6 +6,7 @@ import Footer from '../components/landing/Footer.jsx';
 import StickyContactButtons from '../components/landing/StickyContactButtons.jsx';
 import JsonLd from '../components/JsonLd.jsx';
 import Button from '../components/Button.jsx';
+import { useInquiry } from '../context/InquiryContext.jsx';
 import { createBreadcrumbSchema, createFaqSchema } from '../utils/seoSchemas.js';
 import {
   Mail,
@@ -36,6 +37,7 @@ const FAQS = [
 
 export default function ContactPage() {
   const [openFaq, setOpenFaq] = useState(null);
+  const { openInquiryModal } = useInquiry();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -418,11 +420,12 @@ export default function ContactPage() {
               Start your free trial today or explore our WhatsApp CRM features.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link to="/login">
-                <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                  Start free trial
-                </Button>
-              </Link>
+              <Button
+                onClick={() => openInquiryModal('contact_page_final_trial')}
+                className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+              >
+                Start free trial
+              </Button>
               <Link to="/whatsapp-crm" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
                 Explore WhatsApp CRM
               </Link>

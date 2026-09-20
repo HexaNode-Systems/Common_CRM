@@ -6,6 +6,7 @@ import Footer from '../components/landing/Footer.jsx';
 import StickyContactButtons from '../components/landing/StickyContactButtons.jsx';
 import JsonLd from '../components/JsonLd.jsx';
 import Button from '../components/Button.jsx';
+import { useInquiry } from '../context/InquiryContext.jsx';
 import { createBreadcrumbSchema, createFaqSchema } from '../utils/seoSchemas.js';
 import {
   MessageCircle,
@@ -42,6 +43,7 @@ const FAQS = [
 
 export default function WhatsAppCrmPage() {
   const [openFaq, setOpenFaq] = useState(null);
+  const { openInquiryModal } = useInquiry();
 
   const breadcrumbs = createBreadcrumbSchema([
     { name: 'Home', url: 'https://www.appnix.info/' },
@@ -107,11 +109,12 @@ export default function WhatsAppCrmPage() {
                 Run your sales conversations from one unified WhatsApp workspace. Each sales representative manages their own assigned conversations, updates Kanban deal stages, and closes deals without message overlap or lost context.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Link to="/login">
-                  <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                    Start free trial
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => openInquiryModal('whatsapp_crm_hero_trial')}
+                  className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+                >
+                  Start free trial
+                </Button>
                 <Link to="/pricing" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-200 hover:text-white transition-colors">
                   View plans &amp; pricing
                   <ArrowRight className="h-4 w-4" />
@@ -451,14 +454,19 @@ export default function WhatsAppCrmPage() {
               Get started with Appnix CRM Pro today. Connect your number, assign conversations, and manage your pipeline from one workspace.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link to="/login">
-                <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                  Start free trial
-                </Button>
-              </Link>
-              <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
+              <Button
+                onClick={() => openInquiryModal('whatsapp_crm_final_trial')}
+                className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+              >
+                Start free trial
+              </Button>
+              <button
+                type="button"
+                onClick={() => openInquiryModal('whatsapp_crm_talk_sales')}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
                 Talk to sales
-              </Link>
+              </button>
               <Link to="/pricing" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
                 See pricing
               </Link>

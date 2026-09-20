@@ -2,10 +2,12 @@ import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../Button.jsx';
 import GradientBlob from '../GradientBlob.jsx';
+import { useInquiry } from '../../context/InquiryContext.jsx';
 import { ArrowRight, CheckCircle2, ChevronDown } from 'lucide-react';
 
 export default function Hero() {
   const heroRef = useRef(null);
+  const { openInquiryModal } = useInquiry();
 
   const handleScrollDown = () => {
     const nextSection = heroRef.current?.nextElementSibling || document.getElementById('problem');
@@ -48,11 +50,12 @@ export default function Hero() {
         </p>
 
         <div className="hero-fade-up hero-delay-4 mt-8 flex flex-wrap items-center justify-center gap-4">
-          <Link to="/login">
-            <Button className="hero-cta-btn px-6 py-3 text-sm shadow-lg shadow-primary/30">
-              Start free trial
-            </Button>
-          </Link>
+          <Button
+            onClick={() => openInquiryModal('hero_start_trial')}
+            className="hero-cta-btn px-6 py-3 text-sm shadow-lg shadow-primary/30"
+          >
+            Start free trial
+          </Button>
           <a href="#product" className="hero-link-arrow group inline-flex items-center gap-2 text-sm font-semibold text-white hover:text-slate-200">
             See how it works
             <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1.5" />

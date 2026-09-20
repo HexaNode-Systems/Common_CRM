@@ -6,6 +6,7 @@ import Footer from '../components/landing/Footer.jsx';
 import StickyContactButtons from '../components/landing/StickyContactButtons.jsx';
 import JsonLd from '../components/JsonLd.jsx';
 import Button from '../components/Button.jsx';
+import { useInquiry } from '../context/InquiryContext.jsx';
 import { createBreadcrumbSchema, createFaqSchema } from '../utils/seoSchemas.js';
 import {
   CheckCircle2,
@@ -30,7 +31,7 @@ const PLANS = [
     ],
     highlight: false,
     cta: 'Start free trial',
-    ctaLink: '/login'
+    ctaSource: 'pricing_page_starter_trial'
   },
   {
     name: 'Growth',
@@ -46,7 +47,7 @@ const PLANS = [
     ],
     highlight: true,
     cta: 'Start free trial',
-    ctaLink: '/login'
+    ctaSource: 'pricing_page_growth_trial'
   },
   {
     name: 'Enterprise',
@@ -61,7 +62,7 @@ const PLANS = [
     ],
     highlight: false,
     cta: 'Contact sales',
-    ctaLink: '/contact'
+    ctaSource: 'pricing_page_enterprise_contact'
   },
 ];
 
@@ -113,6 +114,7 @@ const FAQS = [
 
 export default function PricingPage() {
   const [openFaq, setOpenFaq] = useState(null);
+  const { openInquiryModal } = useInquiry();
 
   const breadcrumbs = createBreadcrumbSchema([
     { name: 'Home', url: 'https://www.appnix.info/' },
@@ -214,15 +216,14 @@ export default function PricingPage() {
                     ))}
                   </ul>
                   <div className="mt-8 pt-2">
-                    <Link to={p.ctaLink}>
-                      <Button
-                        className={`w-full justify-center text-sm ${
-                          p.highlight ? 'shadow-md shadow-primary/20' : 'bg-slate-900 text-white hover:bg-slate-800'
-                        }`}
-                      >
-                        {p.cta}
-                      </Button>
-                    </Link>
+                    <Button
+                      onClick={() => openInquiryModal(p.ctaSource)}
+                      className={`w-full justify-center text-sm ${
+                        p.highlight ? 'shadow-md shadow-primary/20' : 'bg-slate-900 text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {p.cta}
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -355,14 +356,19 @@ export default function PricingPage() {
               Start your free trial today or talk to our team for custom enterprise requirements.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link to="/login">
-                <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                  Start free trial
-                </Button>
-              </Link>
-              <Link to="/contact" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
+              <Button
+                onClick={() => openInquiryModal('pricing_page_final_trial')}
+                className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+              >
+                Start free trial
+              </Button>
+              <button
+                type="button"
+                onClick={() => openInquiryModal('pricing_page_final_contact')}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors"
+              >
                 Contact sales
-              </Link>
+              </button>
             </div>
           </div>
         </section>

@@ -6,6 +6,7 @@ import Footer from '../components/landing/Footer.jsx';
 import StickyContactButtons from '../components/landing/StickyContactButtons.jsx';
 import JsonLd from '../components/JsonLd.jsx';
 import Button from '../components/Button.jsx';
+import { useInquiry } from '../context/InquiryContext.jsx';
 import { createBreadcrumbSchema, createFaqSchema } from '../utils/seoSchemas.js';
 import {
   KanbanSquare,
@@ -43,6 +44,7 @@ const FAQS = [
 
 export default function LeadManagementPage() {
   const [openFaq, setOpenFaq] = useState(null);
+  const { openInquiryModal } = useInquiry();
 
   const breadcrumbs = createBreadcrumbSchema([
     { name: 'Home', url: 'https://www.appnix.info/' },
@@ -108,11 +110,12 @@ export default function LeadManagementPage() {
                 Stop losing deals in scattered spreadsheets. Capture leads from CSV imports, web forms, and WhatsApp, track every deal on a visual Kanban board, and convert won clients directly into delivery projects.
               </p>
               <div className="mt-8 flex flex-wrap items-center gap-4">
-                <Link to="/login">
-                  <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                    Start free trial
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => openInquiryModal('lead_mgmt_hero_trial')}
+                  className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+                >
+                  Start free trial
+                </Button>
                 <Link to="/pricing" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-200 hover:text-white transition-colors">
                   View plans &amp; pricing
                   <ArrowRight className="h-4 w-4" />
@@ -425,11 +428,12 @@ export default function LeadManagementPage() {
               Bring your leads into a structured pipeline. Capture inquiries, track stage progress, and close deals faster.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-              <Link to="/login">
-                <Button className="px-6 py-3 text-sm shadow-lg shadow-primary/30">
-                  Start free trial
-                </Button>
-              </Link>
+              <Button
+                onClick={() => openInquiryModal('lead_mgmt_final_trial')}
+                className="px-6 py-3 text-sm shadow-lg shadow-primary/30"
+              >
+                Start free trial
+              </Button>
               <Link to="/whatsapp-crm" className="inline-flex items-center gap-2 rounded-lg border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white hover:bg-white/10 transition-colors">
                 Explore WhatsApp CRM
               </Link>
