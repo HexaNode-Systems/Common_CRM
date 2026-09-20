@@ -8,7 +8,18 @@ import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './styles/index.css';
 
 const rootElement = document.getElementById('root');
-const publicPaths = ['/', '/login', '/privacy-policy', '/terms-and-conditions', '/data-deletion-request', '/refund-policy'];
+const publicPaths = [
+  '/',
+  '/login',
+  '/whatsapp-crm',
+  '/lead-management',
+  '/pricing',
+  '/contact',
+  '/privacy-policy',
+  '/terms-and-conditions',
+  '/data-deletion-request',
+  '/refund-policy',
+];
 const isPublicRoute = publicPaths.includes(window.location.pathname);
 
 const app = (
