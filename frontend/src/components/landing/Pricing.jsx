@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import Button from '../Button.jsx';
 import SectionHeading from './SectionHeading.jsx';
-import { CheckCircle2, Star } from 'lucide-react';
+import { CheckCircle2, Star, ArrowRight } from 'lucide-react';
 
 function useReveal() {
   const ref = useRef(null);
@@ -64,13 +64,20 @@ export default function Pricing() {
                   </li>
                 ))}
               </ul>
-              <Link to="/login" className="mt-8 pt-0">
+              <Link to={p.name === 'Enterprise' ? '/contact' : '/login'} className="mt-8 pt-0">
                 <Button className={`w-full justify-center text-sm transition-transform duration-200 group-hover:scale-[1.02] ${p.highlight ? '' : 'bg-slate-900 text-white hover:bg-slate-800'}`}>
                   {p.name === 'Enterprise' ? 'Contact sales' : 'Start free trial'}
                 </Button>
               </Link>
             </div>
           ))}
+        </div>
+
+        <div className="mt-12 text-center">
+          <Link to="/pricing" className="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1.5">
+            Compare all plan features &amp; view detailed comparison table
+            <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </div>
 

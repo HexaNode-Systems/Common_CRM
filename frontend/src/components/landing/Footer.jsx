@@ -1,16 +1,17 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext.jsx';
 
-// Product column - points to landing page sections (adjust ids if your sections differ)
+// Product column
 const productLinks = [
+  { label: 'WhatsApp CRM', to: '/whatsapp-crm' },
+  { label: 'Lead Management', to: '/lead-management' },
+  { label: 'Pricing', to: '/pricing' },
   { label: 'Features', to: '/#features' },
-  { label: 'Pricing', to: '/#pricing' },
-  { label: 'Industries', to: '/#industries' },
-  { label: 'Security', to: '/#security' },
 ];
 
 // Resources column
 const resourceLinks = [
+  { label: 'Contact Us', to: '/contact' },
   { label: 'FAQ', to: '/#faq' },
   { label: 'Sign In', to: '/login' },
   { label: 'Start Free Trial', to: '/login' },

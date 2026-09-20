@@ -8,11 +8,10 @@ export default function Navbar() {
   const { settings } = useSettings();
   const [open, setOpen] = useState(false);
   const links = [
-    { label: 'Product', href: '/#product' },
-    { label: 'Features', href: '/#features' },
-    { label: 'Industries', href: '/#industries' },
-    { label: 'Pricing', href: '/#pricing' },
-    { label: 'FAQ', href: '/#faq' },
+    { label: 'WhatsApp CRM', href: '/whatsapp-crm' },
+    { label: 'Lead Management', href: '/lead-management' },
+    { label: 'Pricing', href: '/pricing' },
+    { label: 'Contact', href: '/contact' },
   ];
 
   return (
@@ -43,13 +42,13 @@ export default function Navbar() {
         {/* Desktop nav */}
         <nav className="hidden items-center gap-8 lg:flex">
           {links.map((l) => (
-            <a
+            <Link
               key={l.label}
-              href={l.href}
+              to={l.href}
               className="relative text-sm font-medium text-slate-600 transition-colors hover:text-slate-900 after:absolute after:-bottom-1 after:left-0 after:h-[2px] after:w-0 after:bg-primary after:transition-all after:duration-300 hover:after:w-full"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
         </nav>
 
@@ -81,14 +80,14 @@ export default function Navbar() {
       >
         <nav className="flex flex-col gap-4 px-6 py-5">
           {links.map((l) => (
-            <a
+            <Link
               key={l.label}
-              href={l.href}
+              to={l.href}
               onClick={() => setOpen(false)}
               className="text-sm font-medium text-slate-700 transition-colors hover:text-primary"
             >
               {l.label}
-            </a>
+            </Link>
           ))}
           <div className="mt-2 flex flex-col gap-3 border-t border-slate-100 pt-4">
             <Link to="/login" className="text-sm font-semibold text-slate-700" onClick={() => setOpen(false)}>

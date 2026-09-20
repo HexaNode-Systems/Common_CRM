@@ -10,6 +10,10 @@ const serverEntryPath = path.resolve(distDir, 'server', 'entry-server.js');
 const ROUTES = [
   '/',
   '/login',
+  '/whatsapp-crm',
+  '/lead-management',
+  '/pricing',
+  '/contact',
   '/privacy-policy',
   '/terms-and-conditions',
   '/data-deletion-request',

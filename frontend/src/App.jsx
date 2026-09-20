@@ -6,7 +6,10 @@ import AdminLayout from './components/layout/AdminLayout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import LandingPage from './pages/LandingPage.jsx';
-
+import WhatsAppCrmPage from './pages/WhatsAppCrmPage.jsx';
+import LeadManagementPage from './pages/LeadManagementPage.jsx';
+import PricingPage from './pages/PricingPage.jsx';
+import ContactPage from './pages/ContactPage.jsx';
 
 // Legal pages — small, keep eager
 import PrivacyPolicy from './components/landing/PrivacyPolicy.jsx';
@@ -51,7 +54,18 @@ export default function App({ helmetContext } = {}) {
   const { settings } = useSettings();
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const publicPaths = ['/', '/login', '/privacy-policy', '/terms-and-conditions', '/data-deletion-request', '/refund-policy'];
+    const publicPaths = [
+      '/',
+      '/login',
+      '/whatsapp-crm',
+      '/lead-management',
+      '/pricing',
+      '/contact',
+      '/privacy-policy',
+      '/terms-and-conditions',
+      '/data-deletion-request',
+      '/refund-policy',
+    ];
     if (publicPaths.includes(window.location.pathname)) return false;
     return settings?.theme?.splashEnabled ?? true;
   });
@@ -148,6 +162,12 @@ export default function App({ helmetContext } = {}) {
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
+
+          {/* Public SEO Feature & Commercial Pages */}
+          <Route path="/whatsapp-crm" element={<WhatsAppCrmPage />} />
+          <Route path="/lead-management" element={<LeadManagementPage />} />
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
           {/* Legal pages — top-level, standalone */}
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
