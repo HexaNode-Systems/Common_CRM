@@ -1,4 +1,5 @@
 import React from 'react';
+import { Helmet } from 'react-helmet-async';
 import { ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,6 +8,10 @@ export default function ForbiddenPage() {
 
   return (
     <div className="flex min-h-[75vh] flex-col items-center justify-center px-4 text-center">
+      <Helmet>
+        <title>Access Denied | Appnix CRM Pro</title>
+        <meta name="robots" content="noindex, nofollow" />
+      </Helmet>
       <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-red-50 text-red-500 shadow-sm ring-1 ring-red-100 dark:bg-red-950/20 dark:text-red-400 dark:ring-red-900/30 animate-bounce">
         <ShieldAlert size={40} />
       </div>

@@ -8,7 +8,7 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const [impersonating, setImpersonating] = useState(
-    localStorage.getItem('crm_impersonate_active') === 'true'
+    () => typeof localStorage !== 'undefined' && localStorage.getItem('crm_impersonate_active') === 'true'
   );
 
   useEffect(() => {

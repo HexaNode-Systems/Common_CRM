@@ -1,4 +1,5 @@
 export function applyTheme(settings) {
+  if (typeof document === 'undefined') return;
   if (!settings?.theme) return;
 
   const { theme, brand, seo } = settings;
@@ -11,7 +12,9 @@ export function applyTheme(settings) {
   root.dataset.buttonStyle = theme.buttonStyle;
   root.dataset.cardStyle = theme.cardStyle;
 
-  document.title = seo?.title || brand?.name || 'Common CRM';
+  if (seo?.title) {
+    document.title = seo.title;
+  }
 
   if (brand?.favicon) {
     let icon = document.querySelector("link[rel='icon']");

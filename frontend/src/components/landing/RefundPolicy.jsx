@@ -233,7 +233,8 @@ export default function RefundPolicy() {
           name="keywords"
           content="Appnix refund policy, Appnix cancellation policy, CRM refund policy, SaaS refund policy, software cancellation policy, subscription refund, Appnix CRM"
         />
-        <link rel="canonical" href="https://appnix.info/refund-policy" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.appnix.info/refund-policy" />
       </Helmet>
 
       <Navbar />

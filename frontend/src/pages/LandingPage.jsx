@@ -22,26 +22,17 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white font-theme overflow-x-clip">
       <Helmet>
-        {/* Shown in the browser tab, and as the bold clickable line in Google search results */}
-        <title>
-          Appnix CRM Pro | WhatsApp, Leads & Team Management in One Dashboard
-        </title>
-
-        {/* The grey summary text shown below the title in Google search results */}
+        <title>Appnix CRM Pro | WhatsApp CRM Software for Sales Teams</title>
         <meta
           name="description"
-          content="Appnix CRM Pro brings your leads, WhatsApp chats and project delivery into one workspace. Track pipeline, assign teams and grow — live in a day, no credit card required."
+          content="Appnix CRM Pro is a WhatsApp CRM software for managing leads, chats, pipelines, projects and teams from one workspace."
         />
-
-        {/* Keywords - not heavily weighted by modern Google ranking, but harmless to include */}
         <meta
           name="keywords"
           content="CRM software, lead management CRM, WhatsApp CRM, sales pipeline tool, team capacity CRM, CRM for real estate, CRM for agencies"
         />
-
-        {/* Tells search engines the "official" URL for this page - prevents duplicate content issues */}
-        <link rel="canonical" href="https://appnix.info/" />
-
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.appnix.info/" />
       </Helmet>
 
       {/* Handles smooth-scrolling to a section when the URL has a #hash */}

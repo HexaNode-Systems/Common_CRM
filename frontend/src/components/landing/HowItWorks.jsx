@@ -32,6 +32,8 @@ const steps = [
   },
 ];
 
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
 export default function HowItWorks() {
   const wrapRef = useRef(null);
   const cardRefs = useRef([]);
@@ -41,7 +43,7 @@ export default function HowItWorks() {
 
   // Measure card positions and build a connector path (horizontal leg,
   // rounded corner, vertical leg) between each consecutive pair of cards.
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     function measure() {
       const wrap = wrapRef.current;
       if (!wrap) return;

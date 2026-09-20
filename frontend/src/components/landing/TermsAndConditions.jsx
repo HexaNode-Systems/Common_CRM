@@ -398,7 +398,8 @@ export default function TermsAndConditions() {
           name="keywords"
           content="Appnix terms and conditions, Appnix CRM terms of use, CRM software agreement, Appnix legal terms"
         />
-        <link rel="canonical" href="https://appnix.info/terms-and-conditions" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.appnix.info/terms-and-conditions" />
       </Helmet>
 
       <Navbar />

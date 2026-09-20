@@ -7,5 +7,29 @@ Allow: /data-deletion-request
 Allow: /refund-policy
 
 Disallow: /dashboard
+Disallow: /leads
+Disallow: /catalog
+Disallow: /users
+Disallow: /vault
+Disallow: /storage
+Disallow: /tasks
+Disallow: /reports
+Disallow: /orders
+Disallow: /payments
+Disallow: /invoices
+Disallow: /enquiries
+Disallow: /banners
+Disallow: /coupons
+Disallow: /integrations
+Disallow: /content
+Disallow: /theme
+Disallow: /settings
+Disallow: /support
+Disallow: /roles
+Disallow: /whatsapp-inbox
+Disallow: /whatsapp-campaign
+Disallow: /accessories
+Disallow: /super-admin
+Disallow: /forbidden
 
-Sitemap: https://appnix.info/sitemap.xml
+Sitemap: https://www.appnix.info/sitemap.xml

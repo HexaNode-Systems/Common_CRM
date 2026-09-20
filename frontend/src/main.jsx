@@ -7,7 +7,11 @@ import { SettingsProvider } from './context/SettingsContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './styles/index.css';
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const rootElement = document.getElementById('root');
+const publicPaths = ['/', '/login', '/privacy-policy', '/terms-and-conditions', '/data-deletion-request', '/refund-policy'];
+const isPublicRoute = publicPaths.includes(window.location.pathname);
+
+const app = (
   <React.StrictMode>
     <ErrorBoundary>
       <BrowserRouter>
@@ -20,4 +24,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     </ErrorBoundary>
   </React.StrictMode>
 );
+
+if (isPublicRoute && rootElement.hasChildNodes()) {
+  ReactDOM.hydrateRoot(rootElement, app);
+} else {
+  ReactDOM.createRoot(rootElement).render(app);
+}
 

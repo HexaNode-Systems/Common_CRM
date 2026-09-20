@@ -334,7 +334,8 @@ export default function PrivacyPolicy() {
           name="keywords"
           content="Appnix CRM privacy policy, CRM privacy, data privacy, personal data protection"
         />
-        <link rel="canonical" href="https://appnix.info/privacy-policy" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.appnix.info/privacy-policy" />
       </Helmet>
 
       <Navbar />

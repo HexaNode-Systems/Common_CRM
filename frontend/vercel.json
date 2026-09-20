@@ -1,5 +1,45 @@
 {
+  "headers": [
+    {
+      "source": "/robots.txt",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/(dashboard|leads|catalog|users|vault|storage|tasks|reports|orders|payments|invoices|enquiries|banners|coupons|integrations|Integrations|content|theme|settings|support|roles|whatsapp-inbox|whatsapp-campaign|accessories|super-admin|forbidden)(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/sitemap.xml",
+      "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/(dashboard|leads|catalog|users|vault|storage|tasks|reports|orders|payments|invoices|enquiries|banners|coupons|integrations|Integrations|content|theme|settings|support|roles|whatsapp-inbox|whatsapp-campaign|accessories|super-admin|forbidden)(.*)",
+      "destination": "/index.html"
+    }
   ]
 }

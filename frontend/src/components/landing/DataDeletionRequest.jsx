@@ -205,13 +205,14 @@ export default function DataDeletionRequest() {
         <title>Data Deletion Request | Appnix CRM Pro</title>
         <meta
           name="description"
-          content="Request permanent deletion of your Appnix CRM Pro account and personal data. Learn what data is deleted, what may be retained, and how to submit a deletion request."
+          content="Submit a data deletion request for your Appnix CRM Pro account and personal data. Learn what data is erased and how requests are processed."
         />
         <meta
           name="keywords"
           content="Appnix data deletion, Appnix account deletion, data deletion request, account deletion, personal data deletion, GDPR data deletion, CCPA data deletion, DPDP data deletion, Appnix CRM"
         />
-        <link rel="canonical" href="https://appnix.info/data-deletion-request" />
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href="https://www.appnix.info/data-deletion-request" />
       </Helmet>
 
       <Navbar />

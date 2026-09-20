@@ -37,6 +37,7 @@ const WorkReportsPage = lazy(() => import('./pages/WorkReportsPage.jsx'));
 const AccessoriesManagementPage = lazy(() => import('./pages/AccessoriesManagementPage.jsx'));
 const SuperAdminDashboard = lazy(() => import('./pages/SuperAdminDashboard.jsx'));
 const ForbiddenPage = lazy(() => import('./pages/ForbiddenPage.jsx'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 
 function RouteLoader() {
   return (
@@ -46,9 +47,14 @@ function RouteLoader() {
   );
 }
 
-export default function App() {
+export default function App({ helmetContext } = {}) {
   const { settings } = useSettings();
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    const publicPaths = ['/', '/login', '/privacy-policy', '/terms-and-conditions', '/data-deletion-request', '/refund-policy'];
+    if (publicPaths.includes(window.location.pathname)) return false;
+    return settings?.theme?.splashEnabled ?? true;
+  });
   const [fadeSplash, setFadeSplash] = useState(false);
 
   const splashEnabled = settings?.theme?.splashEnabled ?? true;
@@ -135,7 +141,7 @@ export default function App() {
   };
 
   return (
-    <HelmetProvider>
+    <HelmetProvider context={helmetContext}>
     <>
       {renderSplashScreen()}
       <Suspense fallback={<RouteLoader />}>
@@ -201,8 +207,8 @@ export default function App() {
             <Route path="/dashboard/support" element={<Navigate to="/support" replace />} />
           </Route>
 
-          {/* Catch-all fallback */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          {/* Catch-all: render 404 page for unknown routes */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </Suspense>
     </>

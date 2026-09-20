@@ -32,25 +32,13 @@ export default function Login() {
   return (
     <main className="flex min-h-screen w-full bg-slate-50 font-theme">
       <Helmet>
-        {/* Shown in the browser tab and as the bold clickable line in Google search results */}
-        <title>Login | Appnix CRM Pro</title>
-
-        {/* Grey summary text shown below the title in Google search results */}
+        <title>Sign In | Appnix CRM Pro</title>
         <meta
           name="description"
-          content="Sign in to your Appnix CRM Pro workspace to manage leads, WhatsApp conversations, projects and your team from one dashboard."
+          content="Sign in to Appnix CRM Pro to manage leads, WhatsApp conversations, projects, teams and your CRM workspace."
         />
-
-        {/* Points to the official URL for this page */}
-        <link rel="canonical" href="https://appnix.info/login" />
-
-        {/*
-          noindex: tells Google not to show this page in search results.
-          A login form has no content someone would search for, and letting it get indexed
-          just wastes Google's "crawl budget" on a page that will only ever show a form.
-          follow: still lets Google follow links found on this page (e.g. footer links).
-        */}
-        <meta name="robots" content="noindex, follow" />
+        <link rel="canonical" href="https://www.appnix.info/login" />
+        <meta name="robots" content="index, follow" />
       </Helmet>
 
       <div className="grid w-full grid-cols-1 lg:grid-cols-12">
@@ -81,7 +69,7 @@ export default function Login() {
               </div>
             )}
             <span className="text-xl font-bold tracking-tight text-white">
-              {settings?.brand?.name || 'Common CRM'}
+              {settings?.brand?.name || 'Appnix CRM Pro'}
             </span>
           </div>
 
@@ -114,7 +102,7 @@ export default function Login() {
             </div>
 
             <p className="mt-8 text-xs text-slate-400">
-              &copy; {new Date().getFullYear()} {settings?.brand?.name || 'Common CRM'}. All rights reserved.
+              &copy; {new Date().getFullYear()} {settings?.brand?.name || 'Appnix CRM Pro'}. All rights reserved.
             </p>
           </div>
         </div>
@@ -136,7 +124,7 @@ export default function Login() {
               </div>
             )}
             <span className="text-lg font-bold tracking-tight text-slate-900">
-              {settings?.brand?.name || 'Common CRM'}
+              {settings?.brand?.name || 'Appnix CRM Pro'}
             </span>
           </div>
 
