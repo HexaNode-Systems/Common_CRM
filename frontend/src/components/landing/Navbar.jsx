@@ -23,7 +23,9 @@ export default function Navbar() {
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-xs bg-white border border-slate-200/60 p-1.5">
             <img
               src="/logo-favicon.png"
-              alt="Appnix Logo"
+              alt="Appnix CRM Pro Logo"
+              width="40"
+              height="40"
               className="h-full w-full object-contain"
             />
           </div>

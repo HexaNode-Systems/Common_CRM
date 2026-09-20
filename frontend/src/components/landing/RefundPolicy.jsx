@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { Helmet } from "react-helmet-async";
+import JsonLd from '../JsonLd.jsx';
+import { createBreadcrumbSchema } from '../../utils/seoSchemas.js';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 const SECTIONS = [
@@ -217,6 +219,11 @@ export default function RefundPolicy() {
   const { settings } = useSettings();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
 
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://www.appnix.info/' },
+    { name: 'Refund & Cancellation Policy', url: 'https://www.appnix.info/refund-policy' },
+  ]);
+
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, []);
@@ -236,6 +243,7 @@ export default function RefundPolicy() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://www.appnix.info/refund-policy" />
       </Helmet>
+      <JsonLd schema={breadcrumbSchema} />
 
       <Navbar />
 

@@ -100,7 +100,13 @@ export default function Footer() {
           <div className="sm:col-span-2 lg:col-span-1 lg:pr-6">
             <Link to="/" className="flex items-center gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white p-1.5 shadow-lg shadow-black/20">
-                <img src={brandLogo} alt={brandName} className="h-full w-full object-contain" />
+                <img
+                  src={brandLogo}
+                  alt={`${brandName} Logo`}
+                  width="44"
+                  height="44"
+                  className="h-full w-full object-contain"
+                />
               </div>
               <span className="text-lg font-bold leading-tight text-white">{brandName}</span>
             </Link>

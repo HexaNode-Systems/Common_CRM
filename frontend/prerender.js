@@ -68,6 +68,14 @@ async function prerender() {
       }
     }
 
+    // Inject Helmet script tags (JSON-LD structured data, etc.)
+    if (helmet?.script) {
+      const scriptStr = helmet.script.toString();
+      if (scriptStr) {
+        html = html.replace('</head>', `  ${scriptStr}\n  </head>`);
+      }
+    }
+
     // Determine target output files
     if (route === '/') {
       fs.writeFileSync(path.resolve(distDir, 'index.html'), html, 'utf-8');

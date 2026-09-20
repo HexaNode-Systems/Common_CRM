@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useNavigate } from 'react-router-dom';
+import JsonLd from '../components/JsonLd.jsx';
+import { createBreadcrumbSchema } from '../utils/seoSchemas.js';
 import Button from '../components/Button.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
@@ -14,6 +16,11 @@ export default function Login() {
   const [form, setForm] = useState({ email: 'admin@example.com', password: 'Admin@12345' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://www.appnix.info/' },
+    { name: 'Sign In', url: 'https://www.appnix.info/login' },
+  ]);
 
   async function submit(event) {
     event.preventDefault();
@@ -40,6 +47,7 @@ export default function Login() {
         <link rel="canonical" href="https://www.appnix.info/login" />
         <meta name="robots" content="index, follow" />
       </Helmet>
+      <JsonLd schema={breadcrumbSchema} />
 
       <div className="grid w-full grid-cols-1 lg:grid-cols-12">
         {/* Left Side: CRM Image Showcase */}
@@ -48,7 +56,9 @@ export default function Login() {
           <div className="absolute inset-0 z-0">
             <img 
               src={crmHero} 
-              alt="CRM Hero" 
+              alt="Appnix CRM Pro workspace illustration" 
+              width="1080"
+              height="1080"
               className="h-full w-full object-cover object-center transition-transform duration-10000 hover:scale-105"
             />
             <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/85 to-indigo-950/95" />
@@ -60,7 +70,9 @@ export default function Login() {
             {settings?.brand?.logo ? (
               <img 
                 src={settings.brand.logo} 
-                alt={settings?.brand?.name || 'CRM Logo'} 
+                alt={`${settings?.brand?.name || 'Appnix CRM Pro'} Logo`} 
+                width="40"
+                height="40"
                 className="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 backdrop-blur-sm"
               />
             ) : (
@@ -115,7 +127,9 @@ export default function Login() {
             {settings?.brand?.logo ? (
               <img 
                 src={settings.brand.logo} 
-                alt="CRM Logo" 
+                alt={`${settings?.brand?.name || 'Appnix CRM Pro'} Logo`} 
+                width="32"
+                height="32"
                 className="h-8 w-8 rounded-lg object-contain"
               />
             ) : (

@@ -1,4 +1,6 @@
 import { Helmet } from "react-helmet-async";
+import JsonLd from "../components/JsonLd.jsx";
+import { homeSchemaGraph } from "../utils/seoSchemas.js";
 import Navbar from "../components/landing/Navbar.jsx";
 import Hero from "../components/landing/Hero.jsx";
 import TrustBar from "../components/landing/TrustBar.jsx";
@@ -34,46 +36,49 @@ export default function LandingPage() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://www.appnix.info/" />
       </Helmet>
+      <JsonLd schema={homeSchemaGraph} />
 
       {/* Handles smooth-scrolling to a section when the URL has a #hash */}
       <ScrollToHash />
 
       <Navbar />
-      <Hero />
-      <TrustBar />
-      <Problem />
+      <main id="main-content">
+        <Hero />
+        <TrustBar />
+        <Problem />
 
-      {/* Each target section is wrapped in a div with a matching id.
-          scroll-mt-20 keeps the section from hiding under the sticky navbar. */}
-      <div id="features" className="scroll-mt-20">
-        <CoreFeatures />
-      </div>
+        {/* Each target section is wrapped in a div with a matching id.
+            scroll-mt-20 keeps the section from hiding under the sticky navbar. */}
+        <div id="features" className="scroll-mt-20">
+          <CoreFeatures />
+        </div>
 
-      <ProductShowcase />
-      <HowItWorks />
+        <ProductShowcase />
+        <HowItWorks />
 
-      <div id="industries" className="scroll-mt-20">
-        <Industries />
-      </div>
+        <div id="industries" className="scroll-mt-20">
+          <Industries />
+        </div>
 
-      <Analytics />
-      <Integrations />
+        <Analytics />
+        <Integrations />
 
-      <div id="security" className="scroll-mt-20">
-        <Security />
-      </div>
+        <div id="security" className="scroll-mt-20">
+          <Security />
+        </div>
 
-      <div id="pricing" className="scroll-mt-20">
-        <Pricing />
-      </div>
+        <div id="pricing" className="scroll-mt-20">
+          <Pricing />
+        </div>
 
-      <Testimonials />
+        <Testimonials />
 
-      <div id="faq" className="scroll-mt-20">
-        <FAQ />
-      </div>
+        <div id="faq" className="scroll-mt-20">
+          <FAQ />
+        </div>
 
-      <FinalCTA />
+        <FinalCTA />
+      </main>
       <Footer />
       <StickyContactButtons />
     </div>

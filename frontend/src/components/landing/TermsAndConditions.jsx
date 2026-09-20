@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { Helmet } from "react-helmet-async";
+import JsonLd from '../JsonLd.jsx';
+import { createBreadcrumbSchema } from '../../utils/seoSchemas.js';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
 
@@ -386,6 +388,11 @@ export default function TermsAndConditions() {
   const { settings } = useSettings();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
 
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://www.appnix.info/' },
+    { name: 'Terms and Conditions', url: 'https://www.appnix.info/terms-and-conditions' },
+  ]);
+
   return (
     <div className="min-h-screen bg-slate-50 font-theme flex flex-col">
       <Helmet>
@@ -401,6 +408,7 @@ export default function TermsAndConditions() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://www.appnix.info/terms-and-conditions" />
       </Helmet>
+      <JsonLd schema={breadcrumbSchema} />
 
       <Navbar />
 

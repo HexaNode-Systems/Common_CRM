@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Helmet } from "react-helmet-async";
+import JsonLd from '../JsonLd.jsx';
+import { createBreadcrumbSchema } from '../../utils/seoSchemas.js';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
@@ -322,6 +324,11 @@ export default function PrivacyPolicy() {
   const { settings } = useSettings();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
 
+  const breadcrumbSchema = createBreadcrumbSchema([
+    { name: 'Home', url: 'https://www.appnix.info/' },
+    { name: 'Privacy Policy', url: 'https://www.appnix.info/privacy-policy' },
+  ]);
+
   return (
     <div className="min-h-screen bg-slate-50 font-theme flex flex-col">
       <Helmet>
@@ -337,6 +344,7 @@ export default function PrivacyPolicy() {
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href="https://www.appnix.info/privacy-policy" />
       </Helmet>
+      <JsonLd schema={breadcrumbSchema} />
 
       <Navbar />
 
