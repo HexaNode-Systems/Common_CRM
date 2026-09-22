@@ -30,11 +30,13 @@ import searchRoutes from './routes/search.routes.js';
 import accessoryRoutes from './routes/accessory.routes.js';
 import superAdminRoutes from './routes/superAdmin.routes.js';
 import { tenantContextMiddleware } from './middleware/tenant.middleware.js';
+import { corsOptions } from './config/cors.js';
 
 export const app = express();
 
 app.use(helmet({ crossOriginResourcePolicy: false }));
-app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || '*', credentials: true }));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use('/storage', express.static('storage'));
