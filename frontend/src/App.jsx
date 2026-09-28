@@ -2,14 +2,15 @@ import { useState, useEffect, Suspense, lazy } from 'react';
 import { HelmetProvider } from "react-helmet-async";
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useSettings } from './context/SettingsContext.jsx';
-import AdminLayout from './components/layout/AdminLayout.jsx';
+// Lazy: only logged-in users need the layout
+const AdminLayout = lazy(() => import('./components/layout/AdminLayout.jsx'));
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import Login from './pages/Login.jsx';
 import LandingPage from './pages/LandingPage.jsx';
-import WhatsAppCrmPage from './pages/WhatsAppCrmPage.jsx';
-import LeadManagementPage from './pages/LeadManagementPage.jsx';
-import PricingPage from './pages/PricingPage.jsx';
-import ContactPage from './pages/ContactPage.jsx';
+const WhatsAppCrmPage = lazy(() => import('./pages/WhatsAppCrmPage.jsx'));
+const LeadManagementPage = lazy(() => import('./pages/LeadManagementPage.jsx'));
+const PricingPage = lazy(() => import('./pages/PricingPage.jsx'));
+const ContactPage = lazy(() => import('./pages/ContactPage.jsx'));
 import { InquiryProvider } from './context/InquiryContext.jsx';
 import InquiryModal from './components/InquiryModal.jsx';
 
@@ -69,8 +70,19 @@ export default function App({ helmetContext } = {}) {
       '/refund-policy',
     ];
     if (publicPaths.includes(window.location.pathname)) return false;
+    // NEW: skip the splash if this tab has already seen it
+    try {
+      if (sessionStorage.getItem('splashShown')) return false;
+    } catch { }
     return settings?.theme?.splashEnabled ?? true;
   });
+
+  useEffect(() => {
+    if (!showSplash) return;
+    try { sessionStorage.setItem('splashShown', '1'); } catch { }
+  }, [showSplash]);
+
+
   const [fadeSplash, setFadeSplash] = useState(false);
 
   const splashEnabled = settings?.theme?.splashEnabled ?? true;
@@ -114,12 +126,11 @@ export default function App({ helmetContext } = {}) {
     };
 
     return (
-      
+
       <div
         style={bgStyle}
-        className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300 ${
-          fadeSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
-        }`}
+        className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center text-white transition-opacity duration-300 ${fadeSplash ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
       >
         <div className="flex flex-col items-center space-y-6 max-w-sm px-6 text-center">
           <div className="h-20 w-20 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 p-2 shadow-2xl animate-splash-pulse">
