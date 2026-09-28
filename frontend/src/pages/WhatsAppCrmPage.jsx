@@ -69,14 +69,14 @@ export default function WhatsAppCrmPage() {
           content="Manage WhatsApp leads without losing context. Appnix CRM Pro provides isolated team inboxes on shared numbers, Kanban pipelines, and conversation ownership."
         />
         <meta property="og:url" content="https://www.appnix.info/whatsapp-crm" />
-        <meta property="og:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta property="og:image" content="https://www.appnix.info/logo-favicon.webp" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="WhatsApp CRM for Sales Teams | Appnix CRM Pro" />
         <meta
           name="twitter:description"
           content="Manage WhatsApp leads without losing context. Appnix CRM Pro provides isolated team inboxes on shared numbers, Kanban pipelines, and conversation ownership."
         />
-        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.webp" />
       </Helmet>
 
       <JsonLd schema={breadcrumbs} />

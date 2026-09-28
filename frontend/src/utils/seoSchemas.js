@@ -25,7 +25,7 @@ export const homeSchemaGraph = {
       'logo': {
         '@type': 'ImageObject',
         '@id': 'https://www.appnix.info/#logo',
-        'url': 'https://www.appnix.info/logo-favicon.png',
+        'url': 'https://www.appnix.info/logo-favicon.webp',
         'caption': 'Appnix Technologies Logo'
       },
       'contactPoint': {

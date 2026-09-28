@@ -59,7 +59,7 @@ export default function ContactPage() {
     '@type': 'Organization',
     'name': 'Appnix Technologies',
     'url': 'https://www.appnix.info/',
-    'logo': 'https://www.appnix.info/logo-favicon.png',
+    'logo': 'https://www.appnix.info/logo-favicon.webp',
     'contactPoint': {
       '@type': 'ContactPoint',
       'telephone': '+917753983175',
@@ -95,14 +95,14 @@ export default function ContactPage() {
           content="Contact Appnix CRM Pro for product questions, sales enquiries and support. Connect with our team via phone, email or WhatsApp."
         />
         <meta property="og:url" content="https://www.appnix.info/contact" />
-        <meta property="og:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta property="og:image" content="https://www.appnix.info/logo-favicon.webp" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Contact Appnix CRM Pro | Sales & Support" />
         <meta
           name="twitter:description"
           content="Contact Appnix CRM Pro for product questions, sales enquiries and support. Connect with our team via phone, email or WhatsApp."
         />
-        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.webp" />
       </Helmet>
 
       <JsonLd schema={breadcrumbs} />

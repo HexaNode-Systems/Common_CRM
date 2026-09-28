@@ -99,7 +99,7 @@ export default function Footer() {
   const { settings } = useSettings();
   const { openInquiryModal } = useInquiry();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
-  const brandLogo = settings?.brand?.logo || '/logo-favicon.png';
+  const brandLogo = settings?.brand?.logo || '/logo-favicon.webp';
   const socialLinks = buildSocialLinks(settings);
 
   return (
