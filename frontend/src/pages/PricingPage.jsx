@@ -140,14 +140,14 @@ export default function PricingPage() {
           content="Transparent pricing plans for Appnix CRM Pro. Compare Starter, Growth, and Enterprise tiers with user allowances, WhatsApp numbers, and features."
         />
         <meta property="og:url" content="https://www.appnix.info/pricing" />
-        <meta property="og:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta property="og:image" content="https://www.appnix.info/logo-favicon.webp" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Appnix CRM Pro Pricing | CRM Plans" />
         <meta
           name="twitter:description"
           content="Transparent pricing plans for Appnix CRM Pro. Compare Starter, Growth, and Enterprise tiers with user allowances, WhatsApp numbers, and features."
         />
-        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.webp" />
       </Helmet>
 
       <JsonLd schema={breadcrumbs} />

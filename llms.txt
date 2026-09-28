@@ -1,0 +1,11 @@
+# Your CRM Name
+
+> Web-based CRM for managing leads, WhatsApp conversations, campaigns, documents and storage in one place.
+
+## Main pages
+
+- [WhatsApp Inbox](https://your-domain.com/whatsapp-inbox): Team inbox for live WhatsApp chats, replies, attachments and linking chats to CRM leads.
+- [WhatsApp Bulk Campaign Studio](https://your-domain.com/whatsapp-campaign): Create and send bulk WhatsApp campaigns.
+- [Integrations](https://your-domain.com/integrations): Connect a WhatsApp device by scanning a QR code.
+- [Vault](https://your-domain.com/vault): Secure storage for sensitive files.
+- [Storage](https://your-domain.com/storage): File storage and management.

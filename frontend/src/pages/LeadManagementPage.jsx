@@ -70,14 +70,14 @@ export default function LeadManagementPage() {
           content="Capture leads from CSV, web forms, and WhatsApp. Appnix CRM Pro provides visual Kanban pipelines, automated stage tracking, and seamless project delivery handoff."
         />
         <meta property="og:url" content="https://www.appnix.info/lead-management" />
-        <meta property="og:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta property="og:image" content="https://www.appnix.info/logo-favicon.webp" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Lead Management Software | Appnix CRM Pro" />
         <meta
           name="twitter:description"
           content="Capture leads from CSV, web forms, and WhatsApp. Appnix CRM Pro provides visual Kanban pipelines, automated stage tracking, and seamless project delivery handoff."
         />
-        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.png" />
+        <meta name="twitter:image" content="https://www.appnix.info/logo-favicon.webp" />
       </Helmet>
 
       <JsonLd schema={breadcrumbs} />

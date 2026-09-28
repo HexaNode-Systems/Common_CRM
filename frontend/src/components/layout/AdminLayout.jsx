@@ -11,14 +11,20 @@ export default function AdminLayout() {
   const { impersonating, exitImpersonation, user } = useAuth();
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-slate-100 font-theme text-slate-900">
+    <div
+      className="min-h-screen overflow-x-clip bg-slate-100 font-theme text-slate-900"
+      // Banner ki height: Sidebar aur Header isi ke neeche start hote hain
+      style={{ '--banner-h': impersonating ? '2.5rem' : '0px' }}
+    >
       <Helmet>
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
+
       {impersonating && (
-        <div className="bg-amber-600 text-white px-4 py-2.5 text-center text-sm font-bold flex items-center justify-center gap-4 z-50 sticky top-0 shadow-md animate-pulse">
-          <span>
-            ⚠️ Impersonation Active: Logged in as <strong>{user?.name}</strong> ({user?.email})
+        <div className="sticky top-0 z-50 flex h-10 items-center justify-center gap-3 bg-amber-600 px-3 text-sm font-bold text-white shadow-md sm:gap-4 sm:px-4">
+          <span className="min-w-0 truncate">
+            ⚠️ Impersonating <strong>{user?.name}</strong>
+            <span className="hidden sm:inline"> ({user?.email})</span>
           </span>
           <button
             type="button"
@@ -26,20 +32,25 @@ export default function AdminLayout() {
               exitImpersonation();
               window.location.href = '/super-admin';
             }}
-            className="bg-white text-amber-700 hover:bg-amber-50 px-3 py-1 rounded-lg text-xs font-extrabold transition shadow-sm"
+            className="shrink-0 rounded-lg bg-white px-3 py-1 text-xs font-extrabold text-amber-700 shadow-sm transition hover:bg-amber-50"
           >
-            Exit Impersonation
+            Exit
           </button>
         </div>
       )}
+
       <Sidebar
         collapsed={sidebarCollapsed}
         mobileOpen={mobileSidebarOpen}
         onCloseMobile={() => setMobileSidebarOpen(false)}
         onToggle={() => setSidebarCollapsed((value) => !value)}
       />
+
       <div className={`min-h-screen transition-[padding] duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
-        <Header onMenuClick={() => setMobileSidebarOpen(true)} />
+        {/* Header ko banner ke neeche chipkane wala wrapper (Header.jsx ko touch nahi karna pada) */}
+        <div className="sticky top-[var(--banner-h,0px)] z-20">
+          <Header onMenuClick={() => setMobileSidebarOpen(true)} />
+        </div>
         <main className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
           <Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading...</div>}>
             <Outlet />

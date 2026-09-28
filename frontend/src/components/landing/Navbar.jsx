@@ -23,7 +23,7 @@ export default function Navbar() {
         <Link to="/" className="flex items-center gap-2.5">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl overflow-hidden shadow-xs bg-white border border-slate-200/60 p-1.5">
             <img
-              src="/logo-favicon.png"
+              src="/logo-favicon.webp"
               alt="Appnix CRM Pro Logo"
               width="40"
               height="40"
