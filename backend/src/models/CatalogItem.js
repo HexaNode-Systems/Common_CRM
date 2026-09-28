@@ -74,4 +74,5 @@ const catalogItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
 export const CatalogItem = makeTenantModel('CatalogItem', catalogItemSchema);

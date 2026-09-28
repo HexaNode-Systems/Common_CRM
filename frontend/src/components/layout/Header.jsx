@@ -254,23 +254,27 @@ export default function Header({ onMenuClick }) {
 
   return (
     <header className="sticky top-0 z-20 border-b border-slate-200 bg-white">
-      <div className="grid h-16 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 sm:px-6 lg:px-8">
+      {/* FIX: grid -> flex, so a hidden/extra child can never push the profile to a new row */}
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+        {/* 1. Menu button */}
         <button
           type="button"
           onClick={onMenuClick}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-theme border border-slate-200 text-slate-700 transition hover:bg-slate-50 lg:hidden"
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-theme border border-slate-200 text-slate-700 transition hover:bg-slate-50 lg:hidden"
           aria-label="Open sidebar"
           title="Open sidebar"
         >
           <Menu size={20} />
         </button>
 
-        <div className="min-w-0">
+        {/* 2. Title */}
+        <div className="min-w-0 shrink-0">
           {/* <p className="text-sm text-slate-500">{settings?.brand?.name || 'Common CRM'}</p> */}
           <h1 className="truncate text-base font-semibold">Admin Panel</h1>
         </div>
 
-        <div className="mx-auto hidden w-full max-w-xl md:block relative">
+        {/* 3. Desktop search: flex-1 takes the middle space */}
+        <div className="relative mx-auto hidden w-full max-w-xl flex-1 md:block">
           <label className="relative block">
             <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
             <input
@@ -288,10 +292,14 @@ export default function Header({ onMenuClick }) {
           {renderSearchResults()}
         </div>
 
-        <div className="flex items-center justify-end gap-2 sm:gap-3">
+        {/* Spacer on mobile so bell + profile stay on the right */}
+        <div className="flex-1 md:hidden" />
+
+        {/* 4. Bell + Profile */}
+        <div className="flex shrink-0 items-center justify-end gap-2 sm:gap-3">
           <button
             type="button"
-            className="relative inline-flex h-10 w-10 items-center justify-center rounded-theme border border-slate-200 text-slate-600 transition hover:bg-slate-50"
+            className="relative inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-theme border border-slate-200 text-slate-600 transition hover:bg-slate-50"
             aria-label="Notifications"
             title="Notifications"
           >
@@ -300,7 +308,7 @@ export default function Header({ onMenuClick }) {
           </button>
 
           {/* Clickable Profile Section with Dropdown */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <div
               className="flex items-center gap-2 cursor-pointer select-none rounded-theme hover:bg-slate-50 p-1.5 transition"
               onClick={() => setDropdownOpen(!dropdownOpen)}
@@ -358,6 +366,7 @@ export default function Header({ onMenuClick }) {
         </div>
       </div>
 
+      {/* Mobile search row */}
       <div className="px-4 pb-3 md:hidden relative">
         <label className="relative block">
           <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />

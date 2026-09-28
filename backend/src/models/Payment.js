@@ -16,5 +16,9 @@ const paymentSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+
+// Speeds up queries that filter by status and date, and read amount
+paymentSchema.index({ status: 1, createdAt: 1, amount: 1 });
+
 export const Payment = makeTenantModel('Payment', paymentSchema);
 

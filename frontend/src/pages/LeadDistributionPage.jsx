@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom'; // FIX: Link was used below but never imported
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
-import Card from '../components/Card.jsx';
 import {
   GitFork,
   Plus,
@@ -10,10 +10,7 @@ import {
   Trash2,
   Edit2,
   Users,
-  User,
-  Power,
   Layers,
-  ArrowRightLeft,
   Globe,
   Phone,
   ShoppingBag,
@@ -22,9 +19,7 @@ import {
   UserPlus,
   Zap,
   ChevronDown,
-  Check,
   AlertCircle,
-  Info,
   ShieldAlert,
   Sliders,
   CheckCircle,
@@ -41,70 +36,104 @@ const triggerSources = [
   { value: 'manual_entry', label: 'Manual Entry', icon: UserPlus, color: 'text-sky-600 bg-sky-50 border-sky-100' }
 ];
 
+const emptyForm = {
+  name: '',
+  isActive: true,
+  triggerSource: 'all',
+  distributionType: 'round_robin',
+  salespersons: [],
+  singleAssignee: ''
+};
+
+// Shows the source name with its icon
+function SourceBadge({ sourceValue }) {
+  const config = triggerSources.find((s) => s.value === sourceValue) || {
+    label: sourceValue,
+    icon: Layers,
+    color: 'text-slate-600 bg-slate-50 border-slate-100'
+  };
+  const Icon = config.icon;
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold ${config.color}`}>
+      <Icon size={12} />
+      {config.label}
+    </span>
+  );
+}
+
 export default function LeadDistributionPage() {
   const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'super_admin';
+
   const [rules, setRules] = useState([]);
   const [salespersons, setSalespersons] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [salespersonsLoading, setSalespersonsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
+  const [form, setForm] = useState(emptyForm);
 
-  // Form State
-  const [form, setForm] = useState({
-    name: '',
-    isActive: true,
-    triggerSource: 'all',
-    distributionType: 'round_robin',
-    salespersons: [],
-    singleAssignee: ''
-  });
-
-  const [error, setError] = useState('');
+  const [error, setError] = useState('');         // errors inside the form dialog
+  const [pageError, setPageError] = useState(''); // errors for the whole page (load, delete, toggle)
   const [successMsg, setSuccessMsg] = useState('');
 
-  const fetchRules = async () => {
+  const salespersonsLoaded = useRef(false);
+  const successTimer = useRef(null);
+
+  // Load the rules list. This is the only thing needed to show the page.
+  const fetchRules = useCallback(async () => {
+    setLoading(true);
+    setPageError('');
     try {
-      setLoading(true);
       const res = await api.get('/leads/distribution-rules');
       setRules(res.data.items || []);
     } catch (err) {
-      console.error('Failed to fetch distribution rules', err);
-      setError('Unable to load distribution rules.');
+      setPageError(err.response?.data?.message || 'Unable to load distribution rules.');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const fetchSalespersons = async () => {
+  // The salespersons list is only needed inside the form,
+  // so we load it the first time the form opens (not on page load).
+  const loadSalespersons = useCallback(async () => {
+    if (salespersonsLoaded.current) return;
+    salespersonsLoaded.current = true;
+    setSalespersonsLoading(true);
     try {
       const res = await api.get('/users?limit=100');
-      const sales = (res.data.items || []).filter(u => u.isActive && u.role !== 'super_admin');
-      setSalespersons(sales);
-    } catch (err) {
-      console.error('Failed to fetch salespersons list', err);
+      setSalespersons((res.data.items || []).filter((u) => u.isActive && u.role !== 'super_admin'));
+    } catch {
+      salespersonsLoaded.current = false; // allow a retry next time
+      setError('Unable to load the salespersons list.');
+    } finally {
+      setSalespersonsLoading(false);
     }
-  };
+  }, []);
 
+  // Depends on a simple true/false value, so it does not reload when the user object is only re-created
   useEffect(() => {
-    if (user?.role === 'super_admin') {
-      fetchRules();
-      fetchSalespersons();
-    }
-  }, [user]);
+    if (isSuperAdmin) fetchRules();
+  }, [isSuperAdmin, fetchRules]);
+
+  // Clear the success message timer when leaving the page
+  useEffect(() => () => clearTimeout(successTimer.current), []);
+
+  const showSuccess = (msg) => {
+    setSuccessMsg(msg);
+    clearTimeout(successTimer.current);
+    successTimer.current = setTimeout(() => setSuccessMsg(''), 4000);
+  };
 
   const handleOpenCreate = () => {
     setError('');
     setSuccessMsg('');
     setEditingRule(null);
-    setForm({
-      name: '',
-      isActive: true,
-      triggerSource: 'all',
-      distributionType: 'round_robin',
-      salespersons: [],
-      singleAssignee: ''
-    });
+    setForm(emptyForm);
     setIsModalOpen(true);
+    loadSalespersons();
   };
 
   const handleOpenEdit = (rule) => {
@@ -116,10 +145,11 @@ export default function LeadDistributionPage() {
       isActive: rule.isActive,
       triggerSource: rule.triggerSource,
       distributionType: rule.distributionType,
-      salespersons: rule.salespersons?.map(s => s._id) || [],
+      salespersons: rule.salespersons?.map((s) => s._id) || [],
       singleAssignee: rule.singleAssignee?._id || ''
     });
     setIsModalOpen(true);
+    loadSalespersons();
   };
 
   const handleSave = async (e) => {
@@ -128,9 +158,6 @@ export default function LeadDistributionPage() {
       setError('Please provide a name for this distribution flow.');
       return;
     }
-
-    setError('');
-    setSuccessMsg('');
 
     const payload = {
       name: form.name.trim(),
@@ -141,7 +168,6 @@ export default function LeadDistributionPage() {
       singleAssignee: form.distributionType === 'single_assignee' ? form.singleAssignee || null : null
     };
 
-    // Validation
     if (form.distributionType === 'round_robin' && payload.salespersons.length === 0) {
       setError('Please select at least one salesperson for the Round Robin queue.');
       return;
@@ -151,90 +177,73 @@ export default function LeadDistributionPage() {
       return;
     }
 
+    setError('');
+    setSaving(true);
     try {
       if (editingRule) {
         const res = await api.put(`/leads/distribution-rules/${editingRule._id}`, payload);
-        setRules(rules.map(r => (r._id === editingRule._id ? res.data : r)));
+        setRules((current) => current.map((r) => (r._id === editingRule._id ? res.data : r)));
         showSuccess('Flow updated successfully.');
       } else {
         const res = await api.post('/leads/distribution-rules', payload);
-        setRules([res.data, ...rules]);
+        setRules((current) => [res.data, ...current]);
         showSuccess('Flow created successfully.');
       }
       setIsModalOpen(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to save lead distribution flow.');
+    } finally {
+      setSaving(false);
     }
-  };
-
-  const showSuccess = (msg) => {
-    setSuccessMsg(msg);
-    setTimeout(() => setSuccessMsg(''), 4000);
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this lead distribution rule?')) return;
+    setPageError('');
     try {
       await api.delete(`/leads/distribution-rules/${id}`);
-      setRules(rules.filter(r => r._id !== id));
+      setRules((current) => current.filter((r) => r._id !== id));
       showSuccess('Flow deleted successfully.');
     } catch (err) {
-      console.error('Failed to delete rule', err);
-      setError('Failed to delete rule.');
+      setPageError(err.response?.data?.message || 'Failed to delete rule.');
     }
   };
 
   const handleToggleActive = async (rule) => {
+    setTogglingId(rule._id);
+    setPageError('');
     try {
-      const res = await api.put(`/leads/distribution-rules/${rule._id}`, {
-        isActive: !rule.isActive
-      });
-      setRules(rules.map(r => (r._id === rule._id ? res.data : r)));
+      const res = await api.put(`/leads/distribution-rules/${rule._id}`, { isActive: !rule.isActive });
+      setRules((current) => current.map((r) => (r._id === rule._id ? res.data : r)));
       showSuccess(`Flow is now ${!rule.isActive ? 'Active' : 'Inactive'}.`);
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to toggle status.');
+      setPageError(err.response?.data?.message || 'Failed to toggle status.');
+    } finally {
+      setTogglingId(null);
     }
   };
 
   const handleSalespersonCheckbox = (id) => {
-    setForm(prev => {
+    setForm((prev) => {
       const alreadySelected = prev.salespersons.includes(id);
-      const nextList = alreadySelected
-        ? prev.salespersons.filter(sid => sid !== id)
-        : [...prev.salespersons, id];
+      const nextList = alreadySelected ? prev.salespersons.filter((sid) => sid !== id) : [...prev.salespersons, id];
       return { ...prev, salespersons: nextList };
     });
   };
 
-  // Helper to render source badge with icon
-  function renderSourceBadge(sourceValue) {
-    const config = triggerSources.find(s => s.value === sourceValue) || {
-      label: sourceValue,
-      icon: Layers,
-      color: 'text-slate-600 bg-slate-50 border-slate-100'
-    };
-    const Icon = config.icon;
-    return (
-      <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold border ${config.color}`}>
-        <Icon size={12} />
-        {config.label}
-      </span>
-    );
-  }
+  // How many active rules use each source (calculated only when rules change)
+  const overlappingSources = useMemo(() => {
+    const counts = {};
+    rules.filter((r) => r.isActive).forEach((r) => {
+      counts[r.triggerSource] = (counts[r.triggerSource] || 0) + 1;
+    });
+    return counts;
+  }, [rules]);
 
-  // Check if multiple active rules target the same source (except 'all')
-  const overlappingSources = rules
-    .filter(r => r.isActive)
-    .map(r => r.triggerSource)
-    .reduce((acc, curr) => {
-      acc[curr] = (acc[curr] || 0) + 1;
-      return acc;
-    }, {});
-
-  if (user?.role !== 'super_admin') {
+  if (!isSuperAdmin) {
     return (
       <div className="mx-auto max-w-lg py-12 text-center">
-        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600 border border-red-100 shadow-sm">
+        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-full border border-red-100 bg-red-50 text-red-600 shadow-sm">
           <ShieldAlert size={22} />
         </div>
         <h2 className="text-xl font-extrabold text-slate-900">Access Denied</h2>
@@ -248,21 +257,29 @@ export default function LeadDistributionPage() {
     );
   }
 
+  const agentsPlaceholder = salespersonsLoading ? (
+    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">Loading agents...</div>
+  ) : (
+    <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
+      No active agents found. Please create/activate staff in Users Management first.
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Top Header Section */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-100 pb-5">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">Lead Distribution</h1>
-          <p className="text-sm text-slate-500 mt-1">
+    <div className="space-y-5 sm:space-y-6">
+      {/* Header: stacks on phones */}
+      <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Lead Distribution</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Automate lead allocation to sales agents from incoming APIs, webhooks, form submissions, and files.
           </p>
         </div>
-        <div className="flex items-center gap-2.5">
+        <div className="flex w-full items-center gap-2.5 sm:w-auto">
           <Button
             onClick={fetchRules}
             variant="outline"
-            className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+            className="inline-flex flex-1 items-center justify-center gap-2 border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:flex-none"
             title="Refresh Flows List"
           >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
@@ -270,7 +287,7 @@ export default function LeadDistributionPage() {
           </Button>
           <Button
             onClick={handleOpenCreate}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold bg-slate-900 text-white hover:bg-slate-800 shadow-sm"
+            className="inline-flex flex-1 items-center justify-center gap-2 bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 sm:flex-none"
           >
             <Plus size={15} />
             New Flow
@@ -278,105 +295,109 @@ export default function LeadDistributionPage() {
         </div>
       </div>
 
-      {/* Success Notification Bar */}
       {successMsg && (
-        <div className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-sm transition">
+        <div role="status" className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-sm">
           <CheckCircle size={16} className="text-emerald-600" />
           <span>{successMsg}</span>
         </div>
       )}
 
-      {/* Grid Rules / Loading / Empty state */}
+      {/* FIX: page errors were never shown before, so a failed load looked like "no rules" */}
+      {pageError && (
+        <div role="alert" className="flex items-start justify-between gap-3 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle size={16} className="mt-0.5 shrink-0 text-red-600" />
+            <p className="text-sm text-red-700">{pageError}</p>
+          </div>
+          <button type="button" onClick={fetchRules} className="shrink-0 text-xs font-bold text-red-700 underline">Retry</button>
+        </div>
+      )}
+
       {loading ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading rules">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="rounded-xl border border-slate-150 bg-white p-5 space-y-4 animate-pulse">
-              <div className="flex justify-between items-center">
-                <div className="h-4 w-32 bg-slate-200 rounded" />
-                <div className="h-6 w-12 bg-slate-200 rounded-full" />
+            <div key={n} className="animate-pulse space-y-4 rounded-xl border border-slate-200 bg-white p-5">
+              <div className="flex items-center justify-between">
+                <div className="h-4 w-32 rounded bg-slate-200" />
+                <div className="h-6 w-12 rounded-full bg-slate-200" />
               </div>
               <div className="space-y-2 py-2">
-                <div className="h-3 w-full bg-slate-100 rounded" />
-                <div className="h-3 w-4/5 bg-slate-100 rounded" />
+                <div className="h-3 w-full rounded bg-slate-100" />
+                <div className="h-3 w-4/5 rounded bg-slate-100" />
               </div>
-              <div className="h-8 bg-slate-50 rounded" />
+              <div className="h-8 rounded bg-slate-50" />
             </div>
           ))}
         </div>
-      ) : rules.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-2xl bg-white max-w-2xl mx-auto px-6">
-          <div className="mx-auto h-12 w-12 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 mb-4">
-            <GitFork size={22} className="animate-pulse text-slate-400" />
+      ) : rules.length === 0 && !pageError ? (
+        <div className="mx-auto max-w-2xl rounded-2xl border-2 border-dashed border-slate-200 bg-white px-6 py-14 text-center sm:py-20">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full border border-slate-100 bg-slate-50 text-slate-400">
+            <GitFork size={22} />
           </div>
           <h3 className="text-lg font-bold text-slate-900">No Lead Assignment Rules Found</h3>
-          <p className="text-sm text-slate-500 max-w-md mx-auto mt-2">
+          <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">
             Configure automated triggers that automatically distribute leads from external sources directly to your designated sales agents.
           </p>
           <div className="mt-6 flex justify-center">
-            <Button
-              onClick={handleOpenCreate}
-              className="bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold px-4 py-2"
-            >
+            <Button onClick={handleOpenCreate} className="bg-slate-900 px-4 py-2 text-xs font-semibold text-white hover:bg-slate-800">
               Configure First Rule
             </Button>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
           {rules.map((rule) => {
             const hasOverlappingActiveRules = rule.isActive && rule.triggerSource !== 'all' && overlappingSources[rule.triggerSource] > 1;
             return (
               <div
                 key={rule._id}
-                className={`group relative rounded-xl border bg-white p-5 shadow-sm transition hover:shadow-md flex flex-col justify-between ${
-                  rule.isActive 
-                    ? 'border-slate-200 hover:border-slate-300' 
-                    : 'border-slate-150 bg-slate-50/40 opacity-75'
+                className={`group relative flex flex-col justify-between rounded-xl border bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5 ${
+                  rule.isActive ? 'border-slate-200 hover:border-slate-300' : 'border-slate-200 bg-slate-50/40 opacity-75'
                 }`}
               >
                 <div>
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h3 className="font-bold text-slate-900 text-base leading-snug">{rule.name}</h3>
-                      <span className="text-[10px] text-slate-400 font-medium">Flow ID: {rule._id.slice(-6).toUpperCase()}</span>
+                    <div className="min-w-0">
+                      <h3 className="break-words text-base font-bold leading-snug text-slate-900">{rule.name}</h3>
+                      <span className="text-[10px] font-medium text-slate-400">Flow ID: {rule._id.slice(-6).toUpperCase()}</span>
                     </div>
-                    
-                    {/* Shadcn Switch-like toggle */}
+
+                    {/* On/off switch */}
                     <button
                       onClick={() => handleToggleActive(rule)}
+                      disabled={togglingId === rule._id}
                       type="button"
                       role="switch"
                       aria-checked={rule.isActive}
-                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-250 ease-in-out focus:outline-none ${
-                        rule.isActive ? 'bg-slate-900' : 'bg-slate-200'
+                      aria-label={`${rule.name} is ${rule.isActive ? 'active' : 'inactive'}. Toggle status`}
+                      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 disabled:opacity-50 ${
+                        rule.isActive ? 'bg-slate-900' : 'bg-slate-300'
                       }`}
                     >
                       <span
                         aria-hidden="true"
-                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-250 ease-in-out ${
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
                           rule.isActive ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>
                   </div>
 
-                  {/* Overlap Source warning badge */}
                   {hasOverlappingActiveRules && (
-                    <div className="mt-3 flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-800">
-                      <AlertCircle size={12} className="text-amber-600 flex-shrink-0" />
+                    <div className="mt-3 flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800">
+                      <AlertCircle size={12} className="shrink-0 text-amber-600" />
                       <span>Multiple active flows for this source!</span>
                     </div>
                   )}
 
-                  {/* Core parameters list */}
                   <div className="mt-4 space-y-2.5 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Trigger Triggered</span>
-                      {renderSourceBadge(rule.triggerSource)}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Trigger Source</span>
+                      <SourceBadge sourceValue={rule.triggerSource} />
                     </div>
 
-                    <div className="flex justify-between items-center border-t border-slate-50 pt-2">
-                      <span className="text-slate-400 font-semibold uppercase tracking-wider text-[9px]">Assignment Type</span>
+                    <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Assignment Type</span>
                       <span className="inline-flex items-center gap-1 font-semibold text-slate-800">
                         <Sliders size={11} className="text-slate-400" />
                         {rule.distributionType === 'round_robin' ? 'Round Robin Queue' : 'Single Owner'}
@@ -384,31 +405,27 @@ export default function LeadDistributionPage() {
                     </div>
                   </div>
 
-                  {/* Team assigned */}
                   <div className="mt-5 border-t border-slate-100 pt-4">
-                    <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center gap-1.5">
+                    <h4 className="mb-2.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                       <Users size={12} /> Target Allocations
                     </h4>
                     {rule.distributionType === 'single_assignee' ? (
-                      <div className="text-xs font-semibold text-slate-800 bg-slate-50 border border-slate-100 p-2 rounded-lg flex items-center gap-2 max-w-full">
-                        <div className="h-5 w-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-[10px] flex-shrink-0">
+                      <div className="flex max-w-full items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 p-2 text-xs font-semibold text-slate-800">
+                        <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[10px] font-bold text-slate-700">
                           {rule.singleAssignee?.name?.slice(0, 1) || '?'}
                         </div>
                         <span className="truncate">{rule.singleAssignee?.name || 'Unassigned / Not Found'}</span>
                       </div>
                     ) : (
-                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto pr-1">
+                      <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto pr-1">
                         {rule.salespersons && rule.salespersons.length > 0 ? (
                           rule.salespersons.map((sp) => (
-                            <span
-                              key={sp._id}
-                              className="inline-flex items-center gap-1 rounded bg-slate-100 border border-slate-200/40 px-2 py-0.5 text-xs text-slate-700 font-semibold"
-                            >
+                            <span key={sp._id} className="inline-flex items-center gap-1 rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
                               {sp.name}
                             </span>
                           ))
                         ) : (
-                          <span className="text-xs text-amber-600 font-medium flex items-center gap-1">
+                          <span className="flex items-center gap-1 text-xs font-medium text-amber-700">
                             <AlertCircle size={11} /> No agents configured in queue!
                           </span>
                         )}
@@ -417,21 +434,24 @@ export default function LeadDistributionPage() {
                   </div>
                 </div>
 
-                {/* Operations Footer */}
-                <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-3 opacity-90 group-hover:opacity-100">
+                <div className="mt-6 flex justify-end gap-2 border-t border-slate-100 pt-3">
                   <button
+                    type="button"
                     onClick={() => handleOpenEdit(rule)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition"
+                    aria-label={`Edit ${rule.name}`}
                     title="Modify Flow"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 sm:h-8 sm:w-8"
                   >
-                    <Edit2 size={13} />
+                    <Edit2 size={14} />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDelete(rule._id)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 transition"
+                    aria-label={`Delete ${rule.name}`}
                     title="Remove Flow"
+                    className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-red-200 bg-white text-red-600 transition hover:border-red-300 hover:bg-red-50 sm:h-8 sm:w-8"
                   >
-                    <Trash2 size={13} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               </div>
@@ -440,71 +460,66 @@ export default function LeadDistributionPage() {
         </div>
       )}
 
-      {/* Modern Dialog Modal (shadcn style) */}
+      {/* Dialog: bottom sheet on phones, centered on larger screens */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 backdrop-blur-sm">
-          {/* Backdrop Click */}
-          <button 
-            type="button" 
-            className="absolute inset-0 cursor-default" 
-            aria-label="Close dialog" 
-            onClick={() => setIsModalOpen(false)} 
-          />
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-900/60 backdrop-blur-sm sm:items-center sm:p-4">
+          <button type="button" className="absolute inset-0 cursor-default" aria-label="Close dialog" onClick={() => setIsModalOpen(false)} />
 
-          <div className="relative z-10 flex w-full max-w-lg flex-col overflow-hidden rounded-xl bg-white shadow-2xl border border-slate-200/80 animate-in fade-in-50 zoom-in-95 duration-200">
-            {/* Header */}
-            <div className="border-b border-slate-100 px-6 py-4.5 flex items-center justify-between bg-slate-50/50">
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="distribution-dialog-title"
+            className="relative z-10 flex max-h-[92dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-xl border border-slate-200/80 bg-white shadow-2xl sm:max-h-[88dvh] sm:rounded-xl"
+          >
+            <div className="flex items-start justify-between gap-3 border-b border-slate-100 bg-slate-50/50 px-4 py-4 sm:px-6">
+              <div className="min-w-0">
+                <h2 id="distribution-dialog-title" className="text-lg font-bold text-slate-900">
                   {editingRule ? 'Edit Distribution Rule' : 'Create Distribution Rule'}
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">Define trigger conditions and destination salespersons.</p>
+                <p className="mt-0.5 text-xs text-slate-500">Define trigger conditions and destination salespersons.</p>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-800 rounded-lg p-1.5 transition hover:bg-slate-100"
-                title="Close"
+                aria-label="Close"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
               >
                 <X size={16} />
               </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSave} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
-              
-              {/* Validation alert */}
+            <form onSubmit={handleSave} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
               {error && (
-                <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-xs font-semibold text-red-700 flex items-start gap-2 animate-pulse">
-                  <AlertCircle size={15} className="mt-0.5 flex-shrink-0 text-red-600" />
+                <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
+                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-600" />
                   <span>{error}</span>
                 </div>
               )}
 
-              {/* Unique Flow Name */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Rule / Flow Name *</label>
+                <label htmlFor="rule-name" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Rule / Flow Name *</label>
                 <input
+                  id="rule-name"
                   type="text"
                   required
                   placeholder="e.g. IndiaMart Round Robin Queue"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-slate-400 focus:outline-none placeholder-slate-400 transition"
+                  className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm placeholder-slate-400 transition focus:border-slate-400 focus:outline-none"
                 />
               </div>
 
-              {/* Selector configurations */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Trigger Source *</label>
+                  <label htmlFor="trigger-source" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Trigger Source *</label>
                   <div className="relative">
                     <select
+                      id="trigger-source"
                       value={form.triggerSource}
                       onChange={(e) => setForm({ ...form, triggerSource: e.target.value })}
-                      className="w-full appearance-none rounded-lg border border-slate-200 p-2.5 pr-8 text-sm focus:border-slate-400 focus:outline-none transition bg-white"
+                      className="w-full appearance-none rounded-lg border border-slate-200 bg-white p-2.5 pr-8 text-sm transition focus:border-slate-400 focus:outline-none"
                     >
-                      {triggerSources.map(s => (
+                      {triggerSources.map((s) => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
@@ -513,12 +528,13 @@ export default function LeadDistributionPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Allocation Schema *</label>
+                  <label htmlFor="allocation-type" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Allocation Schema *</label>
                   <div className="relative">
                     <select
+                      id="allocation-type"
                       value={form.distributionType}
                       onChange={(e) => setForm({ ...form, distributionType: e.target.value })}
-                      className="w-full appearance-none rounded-lg border border-slate-200 p-2.5 pr-8 text-sm focus:border-slate-400 focus:outline-none transition bg-white"
+                      className="w-full appearance-none rounded-lg border border-slate-200 bg-white p-2.5 pr-8 text-sm transition focus:border-slate-400 focus:outline-none"
                     >
                       <option value="round_robin">Round Robin (Sequential)</option>
                       <option value="single_assignee">Single Agent (Targeted)</option>
@@ -528,98 +544,88 @@ export default function LeadDistributionPage() {
                 </div>
               </div>
 
-              {/* Target allocation lists */}
-              <div className="pt-2 border-t border-slate-50">
+              <div className="border-t border-slate-100 pt-3">
                 {form.distributionType === 'single_assignee' ? (
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Select Sales Agent *</label>
+                    <label htmlFor="single-agent" className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-700">Select Sales Agent *</label>
                     {salespersons.length > 0 ? (
                       <div className="relative">
                         <select
+                          id="single-agent"
                           value={form.singleAssignee}
                           onChange={(e) => setForm({ ...form, singleAssignee: e.target.value })}
-                          className="w-full appearance-none rounded-lg border border-slate-200 p-2.5 pr-8 text-sm focus:border-slate-400 focus:outline-none transition bg-white"
+                          className="w-full appearance-none rounded-lg border border-slate-200 bg-white p-2.5 pr-8 text-sm transition focus:border-slate-400 focus:outline-none"
                           required
                         >
                           <option value="">-- Choose Agent --</option>
-                          {salespersons.map(sp => (
+                          {salespersons.map((sp) => (
                             <option key={sp._id} value={sp._id}>{sp.name} ({sp.email})</option>
                           ))}
                         </select>
                         <ChevronDown size={14} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                       </div>
-                    ) : (
-                      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-                        No active agents found. Please create/activate staff in Users Management first.
-                      </div>
-                    )}
+                    ) : agentsPlaceholder}
                   </div>
                 ) : (
-                  <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                  <fieldset>
+                    <legend className="mb-2 block text-xs font-bold uppercase tracking-wider text-slate-700">
                       Assign Staff to Round Robin Queue *
-                    </label>
-                    
+                    </legend>
                     {salespersons.length > 0 ? (
-                      <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-lg p-2 space-y-1 bg-slate-50/50">
-                        {salespersons.map(sp => {
+                      <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50/50 p-2">
+                        {salespersons.map((sp) => {
                           const isChecked = form.salespersons.includes(sp._id);
                           return (
-                            <label 
-                              key={sp._id} 
-                              className={`flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 cursor-pointer rounded-md transition ${
-                                isChecked ? 'bg-white shadow-sm border border-slate-100' : 'hover:bg-white border border-transparent'
+                            <label
+                              key={sp._id}
+                              className={`flex min-h-[40px] cursor-pointer items-center gap-2.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition ${
+                                isChecked ? 'border border-slate-100 bg-white shadow-sm' : 'border border-transparent hover:bg-white'
                               }`}
                             >
                               <input
                                 type="checkbox"
                                 checked={isChecked}
                                 onChange={() => handleSalespersonCheckbox(sp._id)}
-                                className="rounded border-slate-350 text-slate-900 focus:ring-slate-900 h-4 w-4 accent-slate-900"
+                                className="h-4 w-4 shrink-0 rounded border-slate-300 accent-slate-900"
                               />
                               <span className="truncate">{sp.name}</span>
-                              <span className="text-[10px] text-slate-400 font-medium">({sp.email})</span>
+                              <span className="hidden truncate text-[10px] font-medium text-slate-400 sm:inline">({sp.email})</span>
                             </label>
                           );
                         })}
                       </div>
-                    ) : (
-                      <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-                        No active agents found. Please create/activate staff in Users Management first.
-                      </div>
-                    )}
-                  </div>
+                    ) : agentsPlaceholder}
+                  </fieldset>
                 )}
               </div>
 
-              {/* Toggle isActive switch */}
-              <div className="flex items-center gap-2.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center gap-2.5 border-t border-slate-100 pt-3">
                 <input
                   type="checkbox"
                   id="isActive"
                   checked={form.isActive}
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
-                  className="rounded border-slate-300 text-slate-900 focus:ring-slate-900 h-4.5 w-4.5 accent-slate-900"
+                  className="h-4 w-4 rounded border-slate-300 accent-slate-900"
                 />
-                <label htmlFor="isActive" className="text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                <label htmlFor="isActive" className="cursor-pointer select-none text-xs font-semibold text-slate-700">
                   Activate this distribution flow immediately
                 </label>
               </div>
 
-              {/* Form Actions */}
-              <div className="flex justify-end gap-2.5 pt-4 border-t border-slate-100">
+              <div className="flex flex-col-reverse gap-2.5 border-t border-slate-100 pt-4 sm:flex-row sm:justify-end">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-50 transition focus:outline-none"
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 focus:outline-none"
                 >
                   Cancel
                 </button>
-                <Button 
-                  type="submit" 
-                  className="rounded-lg bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold px-4 py-2 shadow-sm focus:outline-none"
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="rounded-lg bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-slate-800 focus:outline-none"
                 >
-                  Save Changes
+                  {saving ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </form>

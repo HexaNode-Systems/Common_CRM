@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Outlet } from 'react-router-dom';
 import Header from './Header.jsx';
@@ -41,7 +41,9 @@ export default function AdminLayout() {
       <div className={`min-h-screen transition-[padding] duration-300 ease-in-out ${sidebarCollapsed ? 'lg:pl-20' : 'lg:pl-72'}`}>
         <Header onMenuClick={() => setMobileSidebarOpen(true)} />
         <main className="mx-auto w-full max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-          <Outlet />
+          <Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading...</div>}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
