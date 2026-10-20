@@ -140,6 +140,19 @@ export default function PublicLanding() {
                 {link && <Link className="crm-text-link" to={link}>{linkText}<ArrowUpRight size={15} /></Link>}
               </article>)}
             </div>
+            <article className="crm-connected-leads" aria-labelledby="crm-connected-leads-title">
+              <div>
+                <p className="crm-eyebrow">CONNECTED LEAD SOURCES</p>
+                <h3 id="crm-connected-leads-title">Your lead sources.<br />One CRM workspace.</h3>
+                <p className="crm-connected-description">Bring leads from your connected platforms into one place. Manage, organize, and follow up with your leads from a single CRM workspace.</p>
+              </div>
+              <div className="crm-connected-sources">
+                <ul aria-label="Supported lead sources">
+                  {['Justdial', 'IndiaMart', 'Zoho CRM', 'Website forms'].map(source => <li key={source}><span>{source}</span><ArrowRight size={15} aria-hidden="true" /></li>)}
+                </ul>
+                <p>Lead intake via configured webhooks. Connections require setup.</p>
+              </div>
+            </article>
           </div>
         </section>
 

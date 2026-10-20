@@ -82,6 +82,16 @@
 .crm-feature-tags li{border:1px solid var(--crm-line);padding:3px 8px;border-radius:3px;font-size:9px;color:var(--crm-muted)}
 .crm-public .crm-text-link{display:inline-flex;align-items:center;gap:16px;color:var(--crm-accent);font-size:12px;font-weight:500;background:none;border:0;border-bottom:1px solid #b7ccbe;padding:0 0 5px}
 .crm-feature .crm-text-link{margin-top:25px;font-size:11px}
+.crm-connected-leads{display:grid;grid-template-columns:1.2fr 1fr;align-items:center;gap:55px;margin-top:16px;padding:34px 31px;border:1px solid var(--crm-line);border-left:3px solid var(--crm-accent);border-radius:5px;background:var(--crm-paper)}
+.crm-connected-leads h3{margin-top:15px;font-size:30px;line-height:1.2}
+.crm-public .crm-connected-description{max-width:510px;margin-top:16px;color:var(--crm-muted);font-size:14px;line-height:1.85}
+.crm-connected-sources ul{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;list-style:none;padding:0;margin:0}
+.crm-connected-sources li{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:51px;padding:12px 16px;border:1px solid var(--crm-line);border-radius:4px;background:var(--crm-bg);font-size:13px;font-weight:500}
+.crm-connected-sources svg{flex-shrink:0;color:var(--crm-accent)}
+.crm-public .crm-connected-sources p{margin-top:13px;color:var(--crm-muted);font-size:11px;line-height:1.8}
+@media(max-width:900px){.crm-connected-leads{gap:30px;padding:28px 26px}.crm-connected-sources li{padding:10px;font-size:12px}}
+@media(max-width:600px){.crm-connected-leads{grid-template-columns:1fr;gap:24px;margin-top:12px;padding:25px}.crm-connected-leads h3{font-size:27px}.crm-public .crm-connected-description{font-size:12px}.crm-connected-sources li{min-height:47px;font-size:11px}.crm-public .crm-connected-sources p{font-size:10px}}
+@media(max-width:380px){.crm-connected-sources ul{grid-template-columns:1fr}}
 .crm-workflow{padding-block:80px}
 .crm-workflow .crm-section-heading{margin-bottom:40px}
 .crm-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:45px;list-style:none;padding:0;margin:0}
