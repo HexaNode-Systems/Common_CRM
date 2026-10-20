@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useInquiry } from '../context/InquiryContext.jsx';
 import Button from './Button.jsx';
 import { X, CheckCircle2, AlertCircle, Loader2, Sparkles } from 'lucide-react';
@@ -23,6 +24,8 @@ const REQUIREMENT_OPTIONS = [
 ];
 
 export default function InquiryModal() {
+  const { pathname } = useLocation();
+  const isProductPage = ['/lead-management', '/contact', '/whatsapp-crm', '/pricing'].includes(pathname);
   const { isOpen, ctaSource, closeInquiryModal } = useInquiry();
   const [formData, setFormData] = useState({
     name: '',
@@ -46,6 +49,7 @@ export default function InquiryModal() {
     if (!isOpen) return;
 
     const previousOverflow = document.body.style.overflow;
+    const previousFocus = document.activeElement;
     document.body.style.overflow = 'hidden';
 
     // Focus the first input after modal opens
@@ -57,6 +61,13 @@ export default function InquiryModal() {
       if (e.key === 'Escape') {
         closeInquiryModal();
       }
+      if (isProductPage && e.key === 'Tab') {
+        const controls = Array.from(modalRef.current?.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex="0"]') || []).filter(node => node.offsetParent !== null);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -65,8 +76,18 @@ export default function InquiryModal() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKeyDown);
       clearTimeout(timer);
+      if (isProductPage && previousFocus?.isConnected) {
+        if (previousFocus.offsetParent !== null) previousFocus.focus();
+        else document.querySelector('.mp-menu-toggle')?.focus();
+      }
     };
-  }, [isOpen, closeInquiryModal]);
+  }, [isOpen, closeInquiryModal, isProductPage]);
+
+  useEffect(() => {
+    if (isProductPage && isOpen && submitStatus === 'success') {
+      modalRef.current?.querySelector('[data-inquiry-success]')?.focus();
+    }
+  }, [isProductPage, isOpen, submitStatus]);
 
   // Reset form when reopened after success
   useEffect(() => {
@@ -114,6 +135,9 @@ export default function InquiryModal() {
     }
 
     setErrors(errs);
+    if (isProductPage && Object.keys(errs).length) {
+      document.getElementById(`inquiry-${Object.keys(errs)[0]}`)?.focus();
+    }
     return Object.keys(errs).length === 0;
   };
 
@@ -176,7 +200,7 @@ export default function InquiryModal() {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4 sm:p-6 backdrop-blur-xs transition-opacity duration-200"
+      className={`fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-slate-950/75 p-4 sm:p-6 backdrop-blur-xs transition-opacity duration-200 ${isProductPage ? 'crm-inquiry-modal' : ''}`}
       onClick={(e) => {
         if (modalRef.current && !modalRef.current.contains(e.target)) {
           closeInquiryModal();
@@ -195,7 +219,7 @@ export default function InquiryModal() {
         <div className="flex items-start justify-between border-b border-slate-100 p-5 sm:p-6 pb-4">
           <div>
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-              <Sparkles className="h-3 w-3" />
+              {/* <Sparkles className="h-3 w-3" /> */}
               <span>Connect With Us</span>
             </div>
             <h2 id="inquiry-modal-title" className="mt-2 text-xl font-bold text-slate-900 tracking-tight">
@@ -218,7 +242,7 @@ export default function InquiryModal() {
         {/* Modal Body */}
         <div className="overflow-y-auto p-5 sm:p-6 pt-4 flex-1">
           {submitStatus === 'success' ? (
-            <div className="py-8 text-center">
+            <div className="py-8 text-center" role="status" tabIndex={-1} data-inquiry-success>
               <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                 <CheckCircle2 className="h-8 w-8" />
               </div>
@@ -233,9 +257,11 @@ export default function InquiryModal() {
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4" aria-busy={isSubmitting}>
+              {isProductPage && <p className="text-xs text-slate-500">Fields marked * are required.</p>}
+              {isProductPage && Object.values(errors).some(Boolean) && <p role="alert" className="text-xs text-rose-700">Please check the highlighted fields.</p>}
               {submitStatus === 'error' && (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 flex items-start gap-2.5">
+                <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800 flex items-start gap-2.5">
                   <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
                   <div>
                     <p className="font-semibold">{errorMessage}</p>
@@ -251,11 +277,17 @@ export default function InquiryModal() {
 
               {/* Full Name */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="inquiry-name" className="block text-xs font-semibold text-slate-700">
                   Full Name <span className="text-rose-500">*</span>
                 </label>
                 <input
                   ref={firstInputRef}
+                  id="inquiry-name"
+                  name="name"
+                  autoComplete="name"
+                  required
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? 'inquiry-name-error' : undefined}
                   type="text"
                   placeholder="e.g. Rahul Sharma"
                   value={formData.name}
@@ -266,17 +298,23 @@ export default function InquiryModal() {
                       : 'border-slate-200 focus:border-primary focus:ring-primary/20'
                   }`}
                 />
-                {errors.name && <p className="text-[11px] text-rose-600 font-medium">{errors.name}</p>}
+                {errors.name && <p id="inquiry-name-error" className="text-[11px] text-rose-600 font-medium">{errors.name}</p>}
               </div>
 
               {/* Work Email & Phone Number */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label htmlFor="inquiry-email" className="block text-xs font-semibold text-slate-700">
                     Work Email <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
+                    id="inquiry-email"
+                    name="email"
+                    autoComplete="email"
+                    required
+                    aria-invalid={Boolean(errors.email)}
+                    aria-describedby={errors.email ? 'inquiry-email-error' : undefined}
                     placeholder="you@company.com"
                     value={formData.email}
                     onChange={(e) => handleChange('email', e.target.value)}
@@ -286,15 +324,21 @@ export default function InquiryModal() {
                         : 'border-slate-200 focus:border-primary focus:ring-primary/20'
                     }`}
                   />
-                  {errors.email && <p className="text-[11px] text-rose-600 font-medium">{errors.email}</p>}
+                  {errors.email && <p id="inquiry-email-error" className="text-[11px] text-rose-600 font-medium">{errors.email}</p>}
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label htmlFor="inquiry-phone" className="block text-xs font-semibold text-slate-700">
                     Phone Number <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="tel"
+                    id="inquiry-phone"
+                    name="phone"
+                    autoComplete="tel"
+                    required
+                    aria-invalid={Boolean(errors.phone)}
+                    aria-describedby={errors.phone ? 'inquiry-phone-error' : undefined}
                     placeholder="+91 98765 43210"
                     value={formData.phone}
                     onChange={(e) => handleChange('phone', e.target.value)}
@@ -304,18 +348,21 @@ export default function InquiryModal() {
                         : 'border-slate-200 focus:border-primary focus:ring-primary/20'
                     }`}
                   />
-                  {errors.phone && <p className="text-[11px] text-rose-600 font-medium">{errors.phone}</p>}
+                  {errors.phone && <p id="inquiry-phone-error" className="text-[11px] text-rose-600 font-medium">{errors.phone}</p>}
                 </div>
               </div>
 
               {/* Company & Team Size */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label htmlFor="inquiry-company" className="block text-xs font-semibold text-slate-700">
                     Company / Business Name
                   </label>
                   <input
                     type="text"
+                    id="inquiry-company"
+                    name="company"
+                    autoComplete="organization"
                     placeholder="e.g. Acme Corp"
                     value={formData.company}
                     onChange={(e) => handleChange('company', e.target.value)}
@@ -324,10 +371,12 @@ export default function InquiryModal() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-700">
+                  <label htmlFor="inquiry-team-size" className="block text-xs font-semibold text-slate-700">
                     Team Size
                   </label>
                   <select
+                    id="inquiry-team-size"
+                    name="teamSize"
                     value={formData.teamSize}
                     onChange={(e) => handleChange('teamSize', e.target.value)}
                     className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm text-slate-900 transition-colors focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -343,10 +392,15 @@ export default function InquiryModal() {
 
               {/* Requirement */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="inquiry-requirement" className="block text-xs font-semibold text-slate-700">
                   What do you need help with? <span className="text-rose-500">*</span>
                 </label>
                 <select
+                  id="inquiry-requirement"
+                  name="requirement"
+                  required
+                  aria-invalid={Boolean(errors.requirement)}
+                  aria-describedby={errors.requirement ? 'inquiry-requirement-error' : undefined}
                   value={formData.requirement}
                   onChange={(e) => handleChange('requirement', e.target.value)}
                   className={`w-full rounded-xl border bg-white px-3.5 py-2 text-sm text-slate-900 transition-colors focus:outline-none focus:ring-2 ${
@@ -363,16 +417,18 @@ export default function InquiryModal() {
                   ))}
                 </select>
                 {errors.requirement && (
-                  <p className="text-[11px] text-rose-600 font-medium">{errors.requirement}</p>
+                  <p id="inquiry-requirement-error" className="text-[11px] text-rose-600 font-medium">{errors.requirement}</p>
                 )}
               </div>
 
               {/* Additional Message */}
               <div className="space-y-1">
-                <label className="block text-xs font-semibold text-slate-700">
+                <label htmlFor="inquiry-message" className="block text-xs font-semibold text-slate-700">
                   Additional Message
                 </label>
                 <textarea
+                  id="inquiry-message"
+                  name="message"
                   rows={3}
                   placeholder="Tell us about your team's workflow, challenges, or specific needs..."
                   value={formData.message}

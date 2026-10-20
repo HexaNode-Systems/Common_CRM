@@ -4,8 +4,13 @@ import Button from '../Button.jsx';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { useInquiry } from '../../context/InquiryContext.jsx';
 import { Sparkles, Menu, X } from 'lucide-react';
+import { ProductNavbar } from './MarketingChrome.jsx';
 
-export default function Navbar() {
+export default function Navbar({ variant = 'default' }) {
+  return variant === 'product' ? <ProductNavbar /> : <LegacyNavbar />;
+}
+
+function LegacyNavbar() {
   const { settings } = useSettings();
   const { openInquiryModal } = useInquiry();
   const [open, setOpen] = useState(false);

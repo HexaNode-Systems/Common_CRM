@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useSettings } from '../../context/SettingsContext.jsx';
 import { useInquiry } from '../../context/InquiryContext.jsx';
+import { ProductFooter } from './MarketingChrome.jsx';
 
 // Product column
 const productLinks = [
@@ -95,7 +96,11 @@ function FooterColumn({ title, links, onOpenInquiry }) {
   );
 }
 
-export default function Footer() {
+export default function Footer({ variant = 'default' }) {
+  return variant === 'product' ? <ProductFooter /> : <LegacyFooter />;
+}
+
+function LegacyFooter() {
   const { settings } = useSettings();
   const { openInquiryModal } = useInquiry();
   const brandName = settings?.brand?.name || 'Appnix CRM Pro';
