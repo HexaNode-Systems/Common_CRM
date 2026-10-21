@@ -6,7 +6,7 @@ import { useInquiry } from '../../context/InquiryContext.jsx';
 const links = [['Lead management', '/lead-management'], ['WhatsApp CRM', '/whatsapp-crm'], ['Pricing', '/pricing'], ['Contact', '/contact']];
 
 function ProductBrand() {
-  return <Link to="/" className="mp-brand" aria-label="Appnix CRM Pro home"><img src="/logo-favicon.png" width="34" height="34" alt="" /><span>Appnix</span><i aria-hidden="true" /><span>CRM Pro</span></Link>;
+  return <Link to="/" className="mp-brand" aria-label="Appnix CRM Pro home"><img src="/landing/appnix-mark-34.png" srcSet="/landing/appnix-mark-68.png 2x, /landing/appnix-mark-102.png 3x" width="34" height="34" alt="" /><span>Appnix</span><i aria-hidden="true" /><span>CRM Pro</span></Link>;
 }
 
 export function ProductNavbar() {

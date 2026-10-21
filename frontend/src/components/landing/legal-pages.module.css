@@ -1,0 +1,394 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  /* Use the verified homepage font faces and product accent within these pages. */
+  --color-primary: var(--mp-accent);
+}
+
+.page .hero {
+  padding: 64px 24px 48px;
+  border-bottom: 1px solid var(--mp-line);
+  background: var(--mp-bg);
+  color: var(--mp-ink);
+}
+
+.page .heroInner {
+  max-width: 728px;
+  margin-inline: auto;
+}
+
+.page .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--mp-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page .hero h1 {
+  font-family: 'CRM Brand Space', sans-serif;
+  max-width: 800px;
+  margin-top: 20px;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.page .hero p {
+  max-width: 600px;
+  margin-top: 18px;
+  color: var(--mp-muted);
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.page .metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 24px;
+  color: var(--mp-muted);
+  font-size: 12px;
+  line-height: 1.75;
+}
+
+.page .main {
+  flex: 1;
+  padding: 40px 24px 80px;
+  background: var(--mp-bg);
+}
+
+.page .container {
+  max-width: 840px;
+  margin-inline: auto;
+}
+
+.page .document {
+  padding: 48px 56px;
+  border: 1px solid var(--mp-line);
+  border-radius: 12px;
+  background: white;
+  color: var(--mp-ink);
+  box-shadow: 0 2px 8px rgb(21 45 42 / 3%);
+  overflow-wrap: anywhere;
+}
+
+.page .contents {
+  padding-bottom: 32px;
+  margin-bottom: 40px;
+  border-bottom: 1px solid var(--mp-line);
+}
+
+.page .contents > p {
+  margin-bottom: 16px;
+  color: var(--mp-muted);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page .contentsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 32px;
+}
+
+.page .contentsLink {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+  padding-block: 11px;
+  border-bottom: 1px solid #edf1ee;
+  color: #465750;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.page .contentsLink > span:first-child {
+  min-width: 20px;
+  color: var(--mp-accent);
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.page .contentsLink:hover {
+  color: var(--mp-accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.page .sections > section {
+  scroll-margin-top: 104px;
+}
+
+.page .sections > section + section {
+  padding-top: 36px;
+  margin-top: 36px;
+  border-top: 1px solid var(--mp-line);
+}
+
+.page .sectionHeading {
+  font-family: 'CRM Brand Space', sans-serif;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  color: var(--mp-ink);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.025em;
+}
+
+.page .sectionNumber {
+  flex-shrink: 0;
+  min-width: 24px;
+  color: var(--mp-accent);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.page .body {
+  max-width: 76ch;
+  margin-top: 20px;
+  color: #465750;
+  font-size: 17px;
+  line-height: 1.85;
+}
+
+.page .body h4 {
+  margin-top: 28px;
+  margin-bottom: 12px;
+  color: var(--mp-ink);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.page .body p + p,
+.page .body ul + p,
+.page .body p + ul {
+  margin-top: 16px;
+}
+
+.page .body ul {
+  padding-left: 24px;
+  list-style-type: disc;
+}
+
+.page .body li {
+  padding-left: 4px;
+  margin-block: 10px;
+}
+
+.page .body li::marker {
+  color: #7b8d83;
+}
+
+.page .body strong {
+  color: var(--mp-ink);
+  font-weight: 600;
+}
+
+.page .body a,
+.page .callout a {
+  color: var(--mp-accent);
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.page .main :is(a, button):focus-visible {
+  outline: 2px solid var(--mp-accent);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.page .callout {
+  padding: 24px;
+  margin-top: 40px;
+  border: 1px solid var(--mp-line);
+  border-radius: 8px;
+  background: var(--mp-tint);
+  color: #465750;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.page .callout > p:first-child {
+  margin-bottom: 6px;
+  color: var(--mp-ink);
+  font-weight: 600;
+}
+
+.page .warning {
+  border-color: #eadcc0;
+  background: #fffbf3;
+}
+
+.page .warning > p:first-child {
+  color: #854d0e;
+}
+
+.page .actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 24px;
+  margin-bottom: 36px;
+  border: 1px solid var(--mp-line);
+  border-radius: 8px;
+  background: var(--mp-tint);
+}
+
+.page .actions h2 {
+  font-family: 'CRM Brand Space', sans-serif;
+  color: var(--mp-ink);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.page .actions p {
+  margin-top: 6px;
+  color: #465750;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+.page .actionLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.page .actionLinks a {
+  min-height: 44px;
+}
+
+.page .actionLinks a:first-child {
+  color: white;
+}
+
+.page .methodCard {
+  border: 1px solid var(--mp-line);
+  border-radius: 8px;
+  background: white;
+}
+
+.page .methodCard + .methodCard {
+  margin-top: 16px;
+}
+
+.page .recommended {
+  border-color: var(--mp-accent);
+}
+
+.page .methodCard > button {
+  padding: 20px;
+  border-radius: 8px;
+}
+
+.page .methodCard > button p {
+  color: var(--mp-muted);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.page .methodCard ol {
+  color: #465750;
+  font-size: 15px;
+  line-height: 1.85;
+}
+
+.page .body .timeline {
+  display: grid;
+  gap: 20px;
+  padding-left: 0;
+  list-style: none;
+}
+
+.page .body .timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-left: 20px;
+  margin: 0;
+  border-left: 2px solid var(--mp-line);
+}
+
+@media (max-width: 639px) {
+  .page .hero {
+    padding: 40px 24px 32px;
+  }
+
+  .page .hero p {
+    font-size: 16px;
+  }
+
+  .page .metadata {
+    gap: 4px 8px;
+    font-size: 11px;
+  }
+
+  .page .main {
+    padding: 24px 16px 48px;
+  }
+
+  .page .document {
+    padding: 28px 20px;
+    border-radius: 8px;
+  }
+
+  .page .contentsGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page .contents {
+    padding-bottom: 28px;
+    margin-bottom: 28px;
+  }
+
+  .page .sectionHeading {
+    gap: 10px;
+    font-size: 21px;
+  }
+
+  .page .sectionNumber {
+    min-width: 20px;
+  }
+
+  .page .body {
+    margin-top: 16px;
+    font-size: 16px;
+  }
+
+  .page .callout,
+  .page .actions {
+    padding: 20px;
+  }
+
+  .page .actionLinks,
+  .page .actionLinks a {
+    width: 100%;
+  }
+
+  .page .methodCard > button {
+    padding: 16px;
+    gap: 12px;
+  }
+}

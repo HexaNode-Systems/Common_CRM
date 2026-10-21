@@ -5,6 +5,9 @@ import JsonLd from '../JsonLd.jsx';
 import { createBreadcrumbSchema } from '../../utils/seoSchemas.js';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
+import './public-landing.css';
+import './marketing-pages.css';
+import styles from './legal-pages.module.css';
 
 const METHODS = [
   {
@@ -102,7 +105,7 @@ const SECTIONS = [
     number: '5',
     title: 'Timeline',
     body: () => (
-      <ul className="dd-timeline">
+      <ul className={styles.timeline}>
         <li><strong>Acknowledgment</strong><span>Within 48 hours of your request.</span></li>
         <li><strong>Execution</strong><span>All live records and profile links removed within 30 days of verification.</span></li>
         <li><strong>Final confirmation</strong><span>We email you once purging completes, then remove that address from our records.</span></li>
@@ -128,11 +131,7 @@ function MethodCard({ method, index }) {
 
   return (
     <div
-      className={`rounded-xl border transition-all duration-200 ${
-        method.recommended
-          ? 'border-primary/40 bg-primary/[0.02] shadow-sm'
-          : 'border-slate-200 bg-slate-50/50'
-      }`}
+      className={`${styles.methodCard} ${method.recommended ? styles.recommended : ''}`}
     >
       <button
         type="button"
@@ -207,7 +206,7 @@ export default function DataDeletionRequest() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-theme flex flex-col">
+    <div className={`crm-marketing ${styles.page}`}>
       <Helmet>
         <title>Data Deletion Request | Appnix CRM Pro</title>
         <meta
@@ -223,13 +222,12 @@ export default function DataDeletionRequest() {
       </Helmet>
       <JsonLd schema={breadcrumbSchema} />
 
-      <Navbar />
+      <Navbar variant="product" />
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 py-16 sm:py-20 text-white text-center px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.12),transparent_70%)] pointer-events-none" />
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-300 text-xs font-semibold uppercase tracking-wider mb-4 border border-red-500/30">
+      <div className={styles.hero}>
+        <div className={styles.heroInner}>
+          <div className={styles.eyebrow}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none">
               <path
                 d="M4 7h16M9 7V5a2 2 0 012-2h2a2 2 0 012 2v2m2 0v12a2 2 0 01-2 2H9a2 2 0 01-2-2V7h10z"
@@ -241,13 +239,13 @@ export default function DataDeletionRequest() {
             </svg>
             Right to Erasure
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+          <h1>
             Data Deletion Request
           </h1>
-          <p className="mt-3 text-base sm:text-lg text-slate-300 max-w-xl mx-auto leading-relaxed">
+          <p>
             Request deletion of your account and associated data.
           </p>
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+          <div className={styles.metadata}>
             <span>Last updated: September 10, 2026</span>
             <span>·</span>
             <span>Platform Legal Notice</span>
@@ -256,21 +254,21 @@ export default function DataDeletionRequest() {
       </div>
 
       {/* Main Content Container */}
-      <main className="flex-1 py-12 sm:py-16 px-4 sm:px-6">
-        <div className="mx-auto max-w-4xl">
+      <main className={styles.main}>
+        <div className={styles.container}>
           {/* Document Card */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-10 lg:p-12 shadow-sm text-slate-800">
+          <div className={styles.document}>
             {/* Quick Action Callout Card */}
-            <div className="mb-10 rounded-xl border border-red-100 bg-red-50/60 p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className={styles.actions}>
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
+                <h2>
                   Ready to delete your data?
                 </h2>
-                <p className="text-sm text-slate-600 mt-1 max-w-md">
+                <p>
                   Self-service takes about a minute if you can still sign in to your account.
                 </p>
               </div>
-              <div className="flex items-center gap-3 shrink-0 flex-wrap">
+              <div className={styles.actionLinks}>
                 <a
                   href="#how-to-request"
                   className="inline-flex items-center justify-center px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 shadow-sm transition-colors"
@@ -287,35 +285,35 @@ export default function DataDeletionRequest() {
             </div>
 
             {/* Quick Table of Contents */}
-            <div className="mb-10 rounded-xl border border-slate-100 bg-slate-50/80 p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            <div className={styles.contents}>
+              <p>
                 Table of Contents
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <div className={styles.contentsGrid}>
                 {SECTIONS.map((s) => (
                   <a
                     key={s.id}
                     href={`#${s.id}`}
-                    className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors py-1 truncate"
+                    className={styles.contentsLink}
                   >
-                    <span className="text-xs font-semibold text-primary">{s.number}.</span>
-                    <span className="truncate">{s.title}</span>
+                    <span>{s.number}.</span>
+                    <span>{s.title}</span>
                   </a>
                 ))}
               </div>
             </div>
 
             {/* Sections */}
-            <div className="space-y-12">
+            <div className={styles.sections}>
               {SECTIONS.map((s) => (
                 <section key={s.id} id={s.id} className="scroll-mt-24">
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 pb-3 border-b border-slate-200 flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary text-xs font-bold">
+                  <h2 className={styles.sectionHeading}>
+                    <span className={styles.sectionNumber}>
                       {s.number}
                     </span>
                     <span>{s.title}</span>
                   </h2>
-                  <div className="legal-body mt-4 text-sm sm:text-base leading-relaxed text-slate-600 space-y-3">
+                  <div className={styles.body}>
                     {s.isMethods ? (
                       <div className="space-y-4 pt-1 not-prose">
                         {METHODS.map((m, i) => (
@@ -331,12 +329,12 @@ export default function DataDeletionRequest() {
             </div>
 
             {/* Important Notice Callout */}
-            <div className="mt-12 rounded-xl border border-amber-200/80 bg-amber-50/60 p-5 text-sm text-slate-700">
-              <p className="font-semibold text-amber-900">Permanent and Irreversible</p>
-              <p className="mt-1 text-slate-600">
+            <div className={`${styles.callout} ${styles.warning}`}>
+              <p>Permanent and Irreversible</p>
+              <p>
                 Deletion is permanent and cannot be undone once execution completes. If you're unsure,
                 contact{' '}
-                <a href="mailto:support@appnix.info" className="text-primary font-medium hover:underline">
+                <a href="mailto:support@appnix.info">
                   support@appnix.info
                 </a>{' '}
                 before confirming.
@@ -346,66 +344,7 @@ export default function DataDeletionRequest() {
         </div>
       </main>
 
-      <Footer />
-
-      <style>{`
-        .legal-body h4 {
-          font-size: 1rem;
-          font-weight: 700;
-          color: #0f172a;
-          margin-top: 1.25rem;
-          margin-bottom: 0.5rem;
-        }
-        .legal-body p {
-          margin-bottom: 0.75rem;
-          line-height: 1.65;
-        }
-        .legal-body ul {
-          list-style-type: disc;
-          padding-left: 1.25rem;
-          margin-top: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-        .legal-body li {
-          margin-bottom: 0.375rem;
-          line-height: 1.6;
-        }
-        .legal-body strong {
-          color: #0f172a;
-          font-weight: 600;
-        }
-        .legal-body a {
-          color: #6366f1;
-          font-weight: 500;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
-        .legal-body a:hover {
-          color: #4f46e5;
-        }
-        .legal-body .dd-timeline {
-          list-style: none;
-          padding-left: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-        .legal-body .dd-timeline li {
-          border-left: 2px solid #6366f1;
-          padding-left: 1rem;
-          display: flex;
-          flex-direction: column;
-          gap: 0.25rem;
-        }
-        .legal-body .dd-timeline li strong {
-          font-size: 0.95rem;
-          color: #0f172a;
-        }
-        .legal-body .dd-timeline li span {
-          font-size: 0.875rem;
-          color: #475569;
-        }
-      `}</style>
+      <Footer variant="product" />
     </div>
   );
 }

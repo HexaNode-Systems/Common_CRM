@@ -1,0 +1,2828 @@
+{
+  "label": "baseline",
+  "measuredAt": "2026-10-20T21:00:35.734Z",
+  "browser": "Chrome/155.0.8059.85",
+  "origin": "http://127.0.0.1:4173",
+  "runsPerPageAndProfile": 3,
+  "profiles": {
+    "desktop": {
+      "width": 1440,
+      "height": 1000,
+      "deviceScaleFactor": 1,
+      "cpuRate": 1,
+      "latency": 40,
+      "download": 1250000,
+      "upload": 625000
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "deviceScaleFactor": 1,
+      "cpuRate": 4,
+      "latency": 150,
+      "download": 200000,
+      "upload": 93750
+    }
+  },
+  "methodology": "Cold browser context and disabled cache for every navigation; CDP applied network and CPU throttling; one page at a time; 1.5 seconds of observation after fonts settle. External GET requests receive a fixed settings response after 100 ms; POSTs are blocked. Local production preview, not a deployed-host or Lighthouse score. Bytes are encoded resource response bodies, without HTTP headers. Observed blocking time sums long-task time over 50 ms after FCP until the end of the load observation window; not Lighthouse simulated TBT. Modal timing measures click-to-visible dialog plus two animation frames.",
+  "results": [
+    {
+      "route": "/lead-management",
+      "device": "desktop",
+      "medians": {
+        "fcpMs": 460,
+        "lcpMs": 460,
+        "cls": 0,
+        "heroReadyMs": 423.6,
+        "fontsReadyMs": 596.6,
+        "observedBlockingMs": 0,
+        "modalMs": 30.8,
+        "jsBytes": 122357,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 455683
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 772,
+          "lcpMs": 772,
+          "cls": 0.0005824239848572531,
+          "heroReadyMs": 560,
+          "domContentLoadedMs": 268.10000002384186,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 72.90000003576279,
+              "durationMs": 180.19999998807907
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 73.19999998807907,
+              "durationMs": 180.20000004768372
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 73.40000003576279,
+              "durationMs": 79.89999997615814
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 73.40000003576279,
+              "durationMs": 114.69999998807907
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 287.10000002384186,
+              "durationMs": 66.19999998807907
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 287.30000001192093,
+              "durationMs": 52.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 287.9000000357628,
+              "durationMs": 65.59999996423721
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 294.4000000357628,
+              "durationMs": 202.5999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 360.9000000357628,
+              "durationMs": 250.69999998807907
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 379.9000000357628,
+              "durationMs": 211.69999998807907
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 380.10000002384186,
+              "durationMs": 180
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 632.4000000357628,
+          "modalMs": 18.80000001192093,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 460,
+          "lcpMs": 460,
+          "cls": 0.0005824239848572531,
+          "heroReadyMs": 423.60000002384186,
+          "domContentLoadedMs": 270.4000000357628,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 79.5,
+              "durationMs": 181.10000002384186
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 79.69999998807907,
+              "durationMs": 180.10000002384186
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 79.80000001192093,
+              "durationMs": 92
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 79.90000003576279,
+              "durationMs": 129.0999999642372
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 285.9000000357628,
+              "durationMs": 65.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 286,
+              "durationMs": 65.69999998807907
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 286.4000000357628,
+              "durationMs": 71.79999995231628
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 289.9000000357628,
+              "durationMs": 204.5999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 366.4000000357628,
+              "durationMs": 257.69999998807907
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 379.80000001192093,
+              "durationMs": 195
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 380,
+              "durationMs": 163.60000002384186
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 596.6000000238419,
+          "modalMs": 30.80000001192093,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 424,
+          "lcpMs": 424,
+          "cls": 0.0005824239848572531,
+          "heroReadyMs": 398.19999998807907,
+          "domContentLoadedMs": 255.0999999642372,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 61.39999997615814,
+              "durationMs": 176.30000001192093
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 61.799999952316284,
+              "durationMs": 81.70000004768372
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 61.799999952316284,
+              "durationMs": 175.60000002384186
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 62,
+              "durationMs": 111.69999998807907
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 273.5999999642372,
+              "durationMs": 50
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 273.69999998807907,
+              "durationMs": 46.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 274,
+              "durationMs": 56.799999952316284
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 277.89999997615814,
+              "durationMs": 206.19999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 337.39999997615814,
+              "durationMs": 249.5
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 351.69999998807907,
+              "durationMs": 203.5999999642372
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 351.7999999523163,
+              "durationMs": 169.4000000357628
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 577.5,
+          "modalMs": 31,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/contact",
+      "device": "desktop",
+      "medians": {
+        "fcpMs": 456,
+        "lcpMs": 456,
+        "cls": 0.01,
+        "heroReadyMs": 393.9,
+        "fontsReadyMs": 588.6,
+        "observedBlockingMs": 0,
+        "modalMs": 23.3,
+        "jsBytes": 122872,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 456198
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 496,
+          "lcpMs": 496,
+          "cls": 0.012693162223910108,
+          "heroReadyMs": 393.89999997615814,
+          "domContentLoadedMs": 249.5,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 59.09999996423721,
+              "durationMs": 178.70000004768372
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 59.30000001192093,
+              "durationMs": 178.19999998807907
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 59.5,
+              "durationMs": 84.69999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 59.5,
+              "durationMs": 115.69999998807907
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 259.89999997615814,
+              "durationMs": 70.5
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 260,
+              "durationMs": 62.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 260.39999997615814,
+              "durationMs": 70.90000003576279
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 264.19999998807907,
+              "durationMs": 211.30000001192093
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 337.69999998807907,
+              "durationMs": 251.69999998807907
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 348.89999997615814,
+              "durationMs": 209.60000002384186
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 350.19999998807907,
+              "durationMs": 171.19999998807907
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 579.8999999761581,
+          "modalMs": 49.700000047683716,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 436,
+          "lcpMs": 436,
+          "cls": 0.012693162223910108,
+          "heroReadyMs": 352.89999997615814,
+          "domContentLoadedMs": 249,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 57.09999996423721,
+              "durationMs": 176.80000001192093
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 57.39999997615814,
+              "durationMs": 176.4000000357628
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 57.5,
+              "durationMs": 88.59999996423721
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 57.5,
+              "durationMs": 125.39999997615814
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 264.5,
+              "durationMs": 54.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 264.69999998807907,
+              "durationMs": 54.5
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 265.19999998807907,
+              "durationMs": 69.10000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 269.0999999642372,
+              "durationMs": 182.70000004768372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 342.69999998807907,
+              "durationMs": 247.39999997615814
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 357.80000001192093,
+              "durationMs": 209.89999997615814
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 359.19999998807907,
+              "durationMs": 162.80000001192093
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 589.5999999642372,
+          "modalMs": 22.19999998807907,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 456,
+          "lcpMs": 456,
+          "cls": 0.012693162223910108,
+          "heroReadyMs": 415.89999997615814,
+          "domContentLoadedMs": 267.39999997615814,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 75.69999998807907,
+              "durationMs": 183.0999999642372
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 75.89999997615814,
+              "durationMs": 182.69999998807907
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 76,
+              "durationMs": 93.89999997615814
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 76.09999996423721,
+              "durationMs": 124.30000001192093
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 278.69999998807907,
+              "durationMs": 61.19999998807907
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 278.69999998807907,
+              "durationMs": 67.09999996423721
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 279,
+              "durationMs": 77.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 282,
+              "durationMs": 212.0999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 364,
+              "durationMs": 255.5
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 374.7999999523163,
+              "durationMs": 193.5
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 376.0999999642372,
+              "durationMs": 149.10000002384186
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 588.5999999642372,
+          "modalMs": 23.30000001192093,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/whatsapp-crm",
+      "device": "desktop",
+      "medians": {
+        "fcpMs": 456,
+        "lcpMs": 456,
+        "cls": 0,
+        "heroReadyMs": 403.4,
+        "fontsReadyMs": 602.1,
+        "observedBlockingMs": 0,
+        "modalMs": 29.7,
+        "jsBytes": 122098,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 455424
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 460,
+          "lcpMs": 460,
+          "cls": 0.0004597916214554398,
+          "heroReadyMs": 426.89999997615814,
+          "domContentLoadedMs": 263.69999998807907,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 81.30000001192093,
+              "durationMs": 170.80000001192093
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 81.80000001192093,
+              "durationMs": 161.5999999642372
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 81.89999997615814,
+              "durationMs": 90.5
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 82,
+              "durationMs": 110.60000002384186
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 274.30000001192093,
+              "durationMs": 55.5
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 274.39999997615814,
+              "durationMs": 53.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 274.69999998807907,
+              "durationMs": 69.69999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 280.19999998807907,
+              "durationMs": 192.4000000357628
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 360,
+              "durationMs": 242.5
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 373.89999997615814,
+              "durationMs": 171.20000004768372
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 373.89999997615814,
+              "durationMs": 199.60000002384186
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 602.1000000238419,
+          "modalMs": 19.80000001192093,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 444,
+          "lcpMs": 444,
+          "cls": 0.0004597916214554398,
+          "heroReadyMs": 403.4000000357628,
+          "domContentLoadedMs": 250.70000004768372,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 63.30000001192093,
+              "durationMs": 175.69999998807907
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 63.60000002384186,
+              "durationMs": 87.19999998807907
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 63.60000002384186,
+              "durationMs": 175.19999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 63.80000001192093,
+              "durationMs": 113.5
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 263.9000000357628,
+              "durationMs": 55.59999996423721
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 264,
+              "durationMs": 55.5
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 264.30000001192093,
+              "durationMs": 70.10000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 267.30000001192093,
+              "durationMs": 212.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 341.10000002384186,
+              "durationMs": 259.69999998807907
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 357.10000002384186,
+              "durationMs": 204.30000001192093
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 357.30000001192093,
+              "durationMs": 157.4000000357628
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 581.3000000119209,
+          "modalMs": 30.5,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 456,
+          "lcpMs": 456,
+          "cls": 0.0004597916214554398,
+          "heroReadyMs": 369.2000000476837,
+          "domContentLoadedMs": 263.4000000357628,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 73.80000001192093,
+              "durationMs": 179.30000001192093
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 74.30000001192093,
+              "durationMs": 90.19999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 74.30000001192093,
+              "durationMs": 126.80000001192093
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 74.30000001192093,
+              "durationMs": 178.5
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 280.9000000357628,
+              "durationMs": 68.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 281,
+              "durationMs": 51.700000047683716
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 281.4000000357628,
+              "durationMs": 68.19999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 286.2000000476837,
+              "durationMs": 190.79999995231628
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 357,
+              "durationMs": 258.5
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 372.60000002384186,
+              "durationMs": 211.89999997615814
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 372.7000000476837,
+              "durationMs": 165.5
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 615.2000000476837,
+          "modalMs": 29.69999998807907,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "device": "desktop",
+      "medians": {
+        "fcpMs": 472,
+        "lcpMs": 472,
+        "cls": 0,
+        "heroReadyMs": 392.6,
+        "fontsReadyMs": 637.6,
+        "observedBlockingMs": 0,
+        "modalMs": 32.3,
+        "jsBytes": 122752,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 456078
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 484,
+          "lcpMs": 484,
+          "cls": 0.0030103976402753667,
+          "heroReadyMs": 438.30000001192093,
+          "domContentLoadedMs": 275,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 70.69999998807907,
+              "durationMs": 192.30000001192093
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 71.10000002384186,
+              "durationMs": 191.69999998807907
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 71.19999998807907,
+              "durationMs": 101.90000003576279
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 71.30000001192093,
+              "durationMs": 128.69999998807907
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 294.5,
+              "durationMs": 62.5
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 294.60000002384186,
+              "durationMs": 47.09999996423721
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 295.10000002384186,
+              "durationMs": 62.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 298.80000001192093,
+              "durationMs": 200.60000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 365.19999998807907,
+              "durationMs": 250.80000001192093
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 384.69999998807907,
+              "durationMs": 204.20000004768372
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 384.80000001192093,
+              "durationMs": 165.80000001192093
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 653.3000000119209,
+          "modalMs": 44.200000047683716,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 472,
+          "lcpMs": 472,
+          "cls": 0.0030103976402753667,
+          "heroReadyMs": 392.60000002384186,
+          "domContentLoadedMs": 285.30000001192093,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 72,
+              "durationMs": 184.80000001192093
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 72.40000003576279,
+              "durationMs": 183.89999997615814
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 72.5,
+              "durationMs": 94.20000004768372
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 72.5,
+              "durationMs": 131.80000001192093
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 306.10000002384186,
+              "durationMs": 65.39999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 306.2000000476837,
+              "durationMs": 64.59999996423721
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 306.60000002384186,
+              "durationMs": 66.10000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 310.9000000357628,
+              "durationMs": 213.80000001192093
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 381.60000002384186,
+              "durationMs": 256.30000001192093
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 396,
+              "durationMs": 219.4000000357628
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 396.10000002384186,
+              "durationMs": 172.39999997615814
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 637.6000000238419,
+          "modalMs": 31.19999998807907,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 440,
+          "lcpMs": 440,
+          "cls": 0.0030103976402753667,
+          "heroReadyMs": 357,
+          "domContentLoadedMs": 253.5,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 68.10000002384186,
+              "durationMs": 173.89999997615814
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 68.30000001192093,
+              "durationMs": 173.39999997615814
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 68.40000003576279,
+              "durationMs": 81.09999996423721
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 68.60000002384186,
+              "durationMs": 110
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 270.19999998807907,
+              "durationMs": 63.90000003576279
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 270.4000000357628,
+              "durationMs": 63.299999952316284
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 270.80000001192093,
+              "durationMs": 64.39999997615814
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 275.5,
+              "durationMs": 192.60000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 349,
+              "durationMs": 256.80000001192093
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 361.5,
+              "durationMs": 212.69999998807907
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 361.69999998807907,
+              "durationMs": 180.10000002384186
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 620.3000000119209,
+          "modalMs": 32.30000001192093,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/lead-management",
+      "device": "mobile",
+      "medians": {
+        "fcpMs": 1964,
+        "lcpMs": 1964,
+        "cls": 0,
+        "heroReadyMs": 1664.8,
+        "fontsReadyMs": 3026.5,
+        "observedBlockingMs": 0,
+        "modalMs": 94.5,
+        "jsBytes": 122357,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 455683
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 2016,
+          "lcpMs": 2016,
+          "cls": 0.001276097313753262,
+          "heroReadyMs": 1671.5,
+          "domContentLoadedMs": 1121.4000000357628,
+          "observedBlockingMs": 91,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 206.60000002384186,
+              "durationMs": 874.5
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 208,
+              "durationMs": 857.5
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 208.60000002384186,
+              "durationMs": 323.19999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 209.19999998807907,
+              "durationMs": 498.80000001192093
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1211.800000011921,
+              "durationMs": 1237.3999999761581
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 1241.5,
+              "durationMs": 219.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1242.800000011921,
+              "durationMs": 186.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1245.4000000357628,
+              "durationMs": 262.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1578.5,
+              "durationMs": 1442.199999988079
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1698.9000000357628,
+              "durationMs": 1177.3999999761581
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1700.6000000238419,
+              "durationMs": 930.5
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 3030,
+          "modalMs": 204.5,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 1964,
+          "lcpMs": 1964,
+          "cls": 0.001276097313753262,
+          "heroReadyMs": 1664.7999999523163,
+          "domContentLoadedMs": 1196.2999999523163,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 244.29999995231628,
+              "durationMs": 870.9000000357628
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 248.19999998807907,
+              "durationMs": 866.8000000119209
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 249.5,
+              "durationMs": 327
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 250.5,
+              "durationMs": 495.0999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1294.3999999761581,
+              "durationMs": 1434.699999988079
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 1323.5,
+              "durationMs": 215.5
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1324.8999999761581,
+              "durationMs": 183.10000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1327.3999999761581,
+              "durationMs": 249
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1611.0999999642372,
+              "durationMs": 1485.6000000238419
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1683,
+              "durationMs": 1225.2999999523163
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1683.5,
+              "durationMs": 894.5999999642372
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 3026.5,
+          "modalMs": 94.5,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 1908,
+          "lcpMs": 1908,
+          "cls": 0.001276097313753262,
+          "heroReadyMs": 1610,
+          "domContentLoadedMs": 1142.9000000357628,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 202.60000002384186,
+              "durationMs": 893.8999999761581
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 203.9000000357628,
+              "durationMs": 876.6999999880791
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 204.70000004768372,
+              "durationMs": 334
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 205.60000002384186,
+              "durationMs": 511.69999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1238.9000000357628,
+              "durationMs": 1448.3999999761581
+            },
+            {
+              "path": "/assets/LeadManagementPage--ledhZZV.js",
+              "type": "script",
+              "encodedBytes": 2456,
+              "decodedBytes": 7184,
+              "startMs": 1268.1000000238419,
+              "durationMs": 218.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1269.1000000238419,
+              "durationMs": 184.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1271.300000011921,
+              "durationMs": 249.60000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1566.800000011921,
+              "durationMs": 1483.5
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1625.300000011921,
+              "durationMs": 1223.300000011921
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1626.6000000238419,
+              "durationMs": 912.3999999761581
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2977.5,
+          "modalMs": 87.5,
+          "jsBytes": 122357,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455683,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/contact",
+      "device": "mobile",
+      "medians": {
+        "fcpMs": 1872,
+        "lcpMs": 1872,
+        "cls": 0.04,
+        "heroReadyMs": 1619.5,
+        "fontsReadyMs": 2929.4,
+        "observedBlockingMs": 0,
+        "modalMs": 121.1,
+        "jsBytes": 122872,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 456198
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 1876,
+          "lcpMs": 1876,
+          "cls": 0.038989163281632,
+          "heroReadyMs": 1630.199999988079,
+          "domContentLoadedMs": 1137.1000000238419,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 204.60000002384186,
+              "durationMs": 883.7999999523163
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 206.5,
+              "durationMs": 867
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 207.39999997615814,
+              "durationMs": 329.4000000357628
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 208.19999998807907,
+              "durationMs": 496.19999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1218.199999988079,
+              "durationMs": 1387.5
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 1245.800000011921,
+              "durationMs": 243.30000001192093
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1246.8999999761581,
+              "durationMs": 194.10000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1249,
+              "durationMs": 274.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1571.800000011921,
+              "durationMs": 1447.5999999642372
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1645.300000011921,
+              "durationMs": 1161.3999999761581
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1651,
+              "durationMs": 854.3000000119209
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2932,
+          "modalMs": 121.10000002384186,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 1872,
+          "lcpMs": 1872,
+          "cls": 0.038989163281632,
+          "heroReadyMs": 1577.199999988079,
+          "domContentLoadedMs": 1130,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 203.30000001192093,
+              "durationMs": 878.6999999880791
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 205.4000000357628,
+              "durationMs": 862.5
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 206.4000000357628,
+              "durationMs": 331.2999999523163
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 207,
+              "durationMs": 514.6999999880791
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1203.6000000238419,
+              "durationMs": 1469.699999988079
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 1234.300000011921,
+              "durationMs": 236
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1235.300000011921,
+              "durationMs": 172.10000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1237.9000000357628,
+              "durationMs": 247.5999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1525.6000000238419,
+              "durationMs": 1489.699999988079
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1593.300000011921,
+              "durationMs": 1217
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1599.199999988079,
+              "durationMs": 904.5
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2929.400000035763,
+          "modalMs": 216.69999998807907,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 1864,
+          "lcpMs": 1864,
+          "cls": 0.038989163281632,
+          "heroReadyMs": 1619.5,
+          "domContentLoadedMs": 1155.800000011921,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 229,
+              "durationMs": 883.1000000238419
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 234.10000002384186,
+              "durationMs": 862
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 235.19999998807907,
+              "durationMs": 344.4000000357628
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 235.89999997615814,
+              "durationMs": 500
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1228.300000011921,
+              "durationMs": 1437.3999999761581
+            },
+            {
+              "path": "/assets/ContactPage-txTcr5az.js",
+              "type": "script",
+              "encodedBytes": 2971,
+              "decodedBytes": 7694,
+              "startMs": 1259.800000011921,
+              "durationMs": 231.89999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1260.8999999761581,
+              "durationMs": 184.80000001192093
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1263.300000011921,
+              "durationMs": 260.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1568.699999988079,
+              "durationMs": 1466.5
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1634.300000011921,
+              "durationMs": 1180.0999999642372
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1640.1000000238419,
+              "durationMs": 845.8999999761581
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2920.300000011921,
+          "modalMs": 76,
+          "jsBytes": 122872,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456198,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/whatsapp-crm",
+      "device": "mobile",
+      "medians": {
+        "fcpMs": 1872,
+        "lcpMs": 1872,
+        "cls": 0.04,
+        "heroReadyMs": 1620.2,
+        "fontsReadyMs": 2892.7,
+        "observedBlockingMs": 0,
+        "modalMs": 182,
+        "jsBytes": 122098,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 455424
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 1916,
+          "lcpMs": 1916,
+          "cls": 0.037767982960648365,
+          "heroReadyMs": 1871.6000000238419,
+          "domContentLoadedMs": 1122.199999988079,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 195.19999998807907,
+              "durationMs": 872.4000000357628
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 196.39999997615814,
+              "durationMs": 868.2000000476837
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 197,
+              "durationMs": 335.89999997615814
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 198.10000002384186,
+              "durationMs": 514.5999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1192.6000000238419,
+              "durationMs": 1434.5999999642372
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 1223.199999988079,
+              "durationMs": 215.80000001192093
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1224.3999999761581,
+              "durationMs": 181.70000004768372
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1227.199999988079,
+              "durationMs": 245.4000000357628
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1513.5,
+              "durationMs": 1468.3999999761581
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1575.800000011921,
+              "durationMs": 1218
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1576.199999988079,
+              "durationMs": 939
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2892.699999988079,
+          "modalMs": 206,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 1872,
+          "lcpMs": 1872,
+          "cls": 0.037767982960648365,
+          "heroReadyMs": 1620.2000000476837,
+          "domContentLoadedMs": 1133.9000000357628,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 213.70000004768372,
+              "durationMs": 874.2999999523163
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 215.10000002384186,
+              "durationMs": 872.6999999880791
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 215.5,
+              "durationMs": 335.10000002384186
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 216.10000002384186,
+              "durationMs": 508.80000001192093
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1229.800000011921,
+              "durationMs": 1405.300000011921
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 1264.6000000238419,
+              "durationMs": 237.19999998807907
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1264.7000000476837,
+              "durationMs": 205
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1265,
+              "durationMs": 268.5
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1566.5,
+              "durationMs": 1452.2000000476837
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1632.5,
+              "durationMs": 1168.9000000357628
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1633.1000000238419,
+              "durationMs": 868
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2901.7000000476837,
+          "modalMs": 182,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 1836,
+          "lcpMs": 1836,
+          "cls": 0.037767982960648365,
+          "heroReadyMs": 1588.300000011921,
+          "domContentLoadedMs": 1119.8999999761581,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 202.5999999642372,
+              "durationMs": 864.2000000476837
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 205,
+              "durationMs": 861.3999999761581
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 205.39999997615814,
+              "durationMs": 311.19999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 205.89999997615814,
+              "durationMs": 491.9000000357628
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1207.699999988079,
+              "durationMs": 1424.5
+            },
+            {
+              "path": "/assets/WhatsAppCrmPage-CSFc-1Mt.js",
+              "type": "script",
+              "encodedBytes": 2197,
+              "decodedBytes": 6878,
+              "startMs": 1234.3999999761581,
+              "durationMs": 231.30000001192093
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1235.8999999761581,
+              "durationMs": 196
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1238.5,
+              "durationMs": 261.19999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1537.800000011921,
+              "durationMs": 1459.7999999523163
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1604.0999999642372,
+              "durationMs": 1176.2000000476837
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1604.699999988079,
+              "durationMs": 878
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2883.5,
+          "modalMs": 178.20000004768372,
+          "jsBytes": 122098,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 455424,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    },
+    {
+      "route": "/pricing",
+      "device": "mobile",
+      "medians": {
+        "fcpMs": 1888,
+        "lcpMs": 1888,
+        "cls": 0.04,
+        "heroReadyMs": 1585.3,
+        "fontsReadyMs": 2977.9,
+        "observedBlockingMs": 0,
+        "modalMs": 194.9,
+        "jsBytes": 122752,
+        "cssBytes": 23250,
+        "fontBytes": 70544,
+        "resourceBodyBytes": 456078
+      },
+      "runs": [
+        {
+          "run": 1,
+          "fcpMs": 1900,
+          "lcpMs": 1900,
+          "cls": 0.0388336662889639,
+          "heroReadyMs": 1585.300000011921,
+          "domContentLoadedMs": 1112.5,
+          "observedBlockingMs": 37,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 210.60000002384186,
+              "durationMs": 854.1999999880791
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 211.60000002384186,
+              "durationMs": 852.8999999761581
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 212.10000002384186,
+              "durationMs": 325
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 212.60000002384186,
+              "durationMs": 486.30000001192093
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1198.6000000238419,
+              "durationMs": 1429.199999988079
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 1227.5,
+              "durationMs": 239.70000004768372
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1228.5,
+              "durationMs": 188.20000004768372
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1230.6000000238419,
+              "durationMs": 252.89999997615814
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1528.4000000357628,
+              "durationMs": 1483.0999999642372
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1601.4000000357628,
+              "durationMs": 1229.5999999642372
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1602.1000000238419,
+              "durationMs": 946.5
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2934.300000011921,
+          "modalMs": 210.30000001192093,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 2,
+          "fcpMs": 1888,
+          "lcpMs": 1888,
+          "cls": 0.0388336662889639,
+          "heroReadyMs": 1588.5,
+          "domContentLoadedMs": 1138.5,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 215.79999995231628,
+              "durationMs": 871.8000000119209
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 216.89999997615814,
+              "durationMs": 870.3999999761581
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 217.39999997615814,
+              "durationMs": 335.19999998807907
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 218,
+              "durationMs": 502.5999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1213.3999999761581,
+              "durationMs": 1439.1000000238419
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 1241,
+              "durationMs": 226.89999997615814
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1242.0999999642372,
+              "durationMs": 179.19999998807907
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1243.7999999523163,
+              "durationMs": 240.10000002384186
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1526.5,
+              "durationMs": 1493.199999988079
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1602.3999999761581,
+              "durationMs": 1239.199999988079
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1602.7999999523163,
+              "durationMs": 935
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2991.899999976158,
+          "modalMs": 88.80000001192093,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        },
+        {
+          "run": 3,
+          "fcpMs": 1884,
+          "lcpMs": 1884,
+          "cls": 0.0388336662889639,
+          "heroReadyMs": 1584.199999988079,
+          "domContentLoadedMs": 1128.199999988079,
+          "observedBlockingMs": 0,
+          "resources": [
+            {
+              "path": "/assets/index-CeGg23hc.js",
+              "type": "script",
+              "encodedBytes": 56151,
+              "decodedBytes": 191710,
+              "startMs": 210.39999997615814,
+              "durationMs": 871.5
+            },
+            {
+              "path": "/assets/vendor-CGoSNKT9.js",
+              "type": "other",
+              "encodedBytes": 54522,
+              "decodedBytes": 166967,
+              "startMs": 211.69999998807907,
+              "durationMs": 870.1000000238419
+            },
+            {
+              "path": "/assets/icons-C22IWjpT.js",
+              "type": "other",
+              "encodedBytes": 8088,
+              "decodedBytes": 43136,
+              "startMs": 212.0999999642372,
+              "durationMs": 336.2000000476837
+            },
+            {
+              "path": "/assets/index-J26CkXqn.css",
+              "type": "link",
+              "encodedBytes": 17821,
+              "decodedBytes": 103633,
+              "startMs": 212.80000001192093,
+              "durationMs": 502.19999998807907
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "other",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1197.800000011921,
+              "durationMs": 1434.7999999523163
+            },
+            {
+              "path": "/assets/PricingPage-DRtnZiLs.js",
+              "type": "script",
+              "encodedBytes": 2851,
+              "decodedBytes": 8027,
+              "startMs": 1224.300000011921,
+              "durationMs": 232.5999999642372
+            },
+            {
+              "path": "/assets/MarketingPage-Bk2-iBjg.js",
+              "type": "script",
+              "encodedBytes": 1140,
+              "decodedBytes": 2944,
+              "startMs": 1225.3999999761581,
+              "durationMs": 185.60000002384186
+            },
+            {
+              "path": "/assets/MarketingPage-B849ANLY.css",
+              "type": "link",
+              "encodedBytes": 5429,
+              "decodedBytes": 24938,
+              "startMs": 1228,
+              "durationMs": 260.0999999642372
+            },
+            {
+              "path": "/logo-favicon.png",
+              "type": "img",
+              "encodedBytes": 119766,
+              "decodedBytes": 119766,
+              "startMs": 1520.199999988079,
+              "durationMs": 1491.1000000238419
+            },
+            {
+              "path": "/landing/fonts/Inter-latin.woff2",
+              "type": "css",
+              "encodedBytes": 48256,
+              "decodedBytes": 48256,
+              "startMs": 1598.300000011921,
+              "durationMs": 1221.5999999642372
+            },
+            {
+              "path": "/landing/fonts/SpaceGrotesk-latin.woff2",
+              "type": "css",
+              "encodedBytes": 22288,
+              "decodedBytes": 22288,
+              "startMs": 1598.800000011921,
+              "durationMs": 922.7999999523163
+            }
+          ],
+          "lcpElement": "H1.",
+          "fontsReadyMs": 2977.899999976158,
+          "modalMs": 194.9000000357628,
+          "jsBytes": 122752,
+          "cssBytes": 23250,
+          "fontBytes": 70544,
+          "resourceBodyBytes": 456078,
+          "errors": [
+            "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+          ]
+        }
+      ]
+    }
+  ],
+  "coverage": [
+    {
+      "path": "/assets/icons-C22IWjpT.js",
+      "sourceCharacters": 43136,
+      "executedCharacters": 43111
+    },
+    {
+      "path": "/assets/vendor-CGoSNKT9.js",
+      "sourceCharacters": 166967,
+      "executedCharacters": 81649
+    },
+    {
+      "path": "/assets/index-CeGg23hc.js",
+      "sourceCharacters": 191606,
+      "executedCharacters": 56766
+    },
+    {
+      "path": "/assets/MarketingPage-Bk2-iBjg.js",
+      "sourceCharacters": 2942,
+      "executedCharacters": 2934
+    },
+    {
+      "path": "/assets/LeadManagementPage--ledhZZV.js",
+      "sourceCharacters": 7177,
+      "executedCharacters": 7177
+    }
+  ],
+  "browserErrors": [
+    "Minified React error #419; visit https://reactjs.org/docs/error-decoder.html?invariant=419 for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+  ]
+}

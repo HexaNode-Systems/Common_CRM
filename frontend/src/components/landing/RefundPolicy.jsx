@@ -5,6 +5,9 @@ import JsonLd from '../JsonLd.jsx';
 import { createBreadcrumbSchema } from '../../utils/seoSchemas.js';
 import Navbar from './Navbar.jsx';
 import Footer from './Footer.jsx';
+import './public-landing.css';
+import './marketing-pages.css';
+import styles from './legal-pages.module.css';
 const SECTIONS = [
   {
     id: 'general-principle',
@@ -229,7 +232,7 @@ export default function RefundPolicy() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-50 font-theme flex flex-col">
+    <div className={`crm-marketing ${styles.page}`}>
       <Helmet>
         <title>Refund & Cancellation Policy | Appnix CRM Pro</title>
         <meta
@@ -245,22 +248,21 @@ export default function RefundPolicy() {
       </Helmet>
       <JsonLd schema={breadcrumbSchema} />
 
-      <Navbar />
+      <Navbar variant="product" />
 
       {/* Hero Section */}
-      <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 py-16 sm:py-20 text-white text-center px-4 sm:px-6 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(99,102,241,0.15),transparent_70%)] pointer-events-none" />
-        <div className="relative z-10 max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-primary-light text-xs font-semibold uppercase tracking-wider mb-4 border border-primary/30">
+      <div className={styles.hero}>
+        <div className={styles.heroInner}>
+          <div className={styles.eyebrow}>
             Billing &amp; Refunds
           </div>
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+          <h1>
             Refund and Cancellation Policy
           </h1>
-          <p className="mt-3 text-base sm:text-lg text-slate-300 max-w-xl mx-auto leading-relaxed">
+          <p>
             Understand our refund and cancellation terms.
           </p>
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs text-slate-400">
+          <div className={styles.metadata}>
             <span>Last updated: September 10, 2026</span>
             <span>·</span>
             <span>Platform Legal Notice</span>
@@ -269,40 +271,40 @@ export default function RefundPolicy() {
       </div>
 
       {/* Main Content Container */}
-      <main className="flex-1 py-12 sm:py-16 px-4 sm:px-6">
-        <div className="mx-auto max-w-4xl">
+      <main className={styles.main}>
+        <div className={styles.container}>
           {/* Document Card */}
-          <div className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-10 lg:p-12 shadow-sm text-slate-800">
+          <div className={styles.document}>
             {/* Quick Table of Contents */}
-            <div className="mb-10 rounded-xl border border-slate-100 bg-slate-50/80 p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">
+            <div className={styles.contents}>
+              <p>
                 Table of Contents
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+              <div className={styles.contentsGrid}>
                 {SECTIONS.map((s) => (
                   <a
                     key={s.id}
                     href={`#${s.id}`}
-                    className="flex items-center gap-2 text-slate-600 hover:text-primary transition-colors py-1 truncate"
+                    className={styles.contentsLink}
                   >
-                    <span className="text-xs font-semibold text-primary">{s.number}.</span>
-                    <span className="truncate">{s.title}</span>
+                    <span>{s.number}.</span>
+                    <span>{s.title}</span>
                   </a>
                 ))}
               </div>
             </div>
 
             {/* Legal Sections */}
-            <div className="space-y-12">
+            <div className={styles.sections}>
               {SECTIONS.map((s) => (
                 <section key={s.id} id={s.id} className="scroll-mt-24">
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 pb-3 border-b border-slate-200 flex items-center gap-3">
-                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary text-xs font-bold">
+                  <h2 className={styles.sectionHeading}>
+                    <span className={styles.sectionNumber}>
                       {s.number}
                     </span>
                     <span>{s.title}</span>
                   </h2>
-                  <div className="legal-body mt-4 text-sm sm:text-base leading-relaxed text-slate-600 space-y-3">
+                  <div className={styles.body}>
                     {s.body(brandName)}
                   </div>
                 </section>
@@ -310,11 +312,11 @@ export default function RefundPolicy() {
             </div>
 
             {/* Contact callout */}
-            <div className="mt-12 rounded-xl border border-primary/20 bg-primary/5 p-5 text-sm text-slate-700">
-              <p className="font-semibold text-slate-900">Billing questions?</p>
-              <p className="mt-1 text-slate-600">
+            <div className={styles.callout}>
+              <p>Billing questions?</p>
+              <p>
                 Contact us at{' '}
-                <a href="mailto:support@appnix.info" className="text-primary font-medium hover:underline">
+                <a href="mailto:support@appnix.info">
                   support@appnix.info
                 </a>.
               </p>
@@ -323,61 +325,7 @@ export default function RefundPolicy() {
         </div>
       </main>
 
-      <Footer />
-
-      <style>{`
-        .legal-body h4 {
-          font-size: 1rem;
-          font-weight: 700;
-          color: #0f172a;
-          margin-top: 1.25rem;
-          margin-bottom: 0.5rem;
-        }
-        .legal-body p {
-          margin-bottom: 0.75rem;
-          line-height: 1.65;
-        }
-        .legal-body ul {
-          list-style-type: disc;
-          padding-left: 1.25rem;
-          margin-top: 0.5rem;
-          margin-bottom: 0.75rem;
-        }
-        .legal-body li {
-          margin-bottom: 0.375rem;
-          line-height: 1.6;
-        }
-        .legal-body strong {
-          color: #0f172a;
-          font-weight: 600;
-        }
-        .legal-body a {
-          color: #6366f1;
-          font-weight: 500;
-          text-decoration: underline;
-          text-underline-offset: 2px;
-        }
-        .legal-body a:hover {
-          color: #4f46e5;
-        }
-        .legal-body table {
-          width: 100%;
-          margin: 1rem 0;
-          border-collapse: collapse;
-          border: 1px solid #e2e8f0;
-          font-size: 0.875rem;
-        }
-        .legal-body th, .legal-body td {
-          padding: 0.625rem 0.75rem;
-          border: 1px solid #e2e8f0;
-          text-align: left;
-        }
-        .legal-body th {
-          background-color: #f8fafc;
-          font-weight: 600;
-          color: #0f172a;
-        }
-      `}</style>
+      <Footer variant="product" />
     </div>
   );
 }
