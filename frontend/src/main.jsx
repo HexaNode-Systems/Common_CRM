@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext.jsx';
 import { SettingsProvider } from './context/SettingsContext.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import './styles/index.css';
+// gsfghgsfgg
 
 const rootElement = document.getElementById('root');
 const publicPaths = [
