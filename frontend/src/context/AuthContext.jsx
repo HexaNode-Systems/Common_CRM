@@ -23,6 +23,7 @@ export function AuthProvider({ children }) {
       .catch(() => {
         localStorage.removeItem('crm_token');
         localStorage.removeItem('crm_impersonate_active');
+        localStorage.removeItem('crm_impersonate_id');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -39,17 +40,19 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('crm_super_token');
     localStorage.removeItem('crm_super_user');
     localStorage.removeItem('crm_impersonate_active');
+    localStorage.removeItem('crm_impersonate_id');
     setUser(null);
     setImpersonating(false);
   }
 
-  function impersonate(token, tenantUser) {
+  function impersonate(token, tenantUser, impersonationId) {
     const currentToken = localStorage.getItem('crm_token');
     localStorage.setItem('crm_super_token', currentToken);
     localStorage.setItem('crm_super_user', JSON.stringify(user));
     
     localStorage.setItem('crm_token', token);
     localStorage.setItem('crm_impersonate_active', 'true');
+    if (impersonationId) localStorage.setItem('crm_impersonate_id', impersonationId);
     setUser(tenantUser);
     setImpersonating(true);
   }
@@ -57,6 +60,14 @@ export function AuthProvider({ children }) {
   function exitImpersonation() {
     const superToken = localStorage.getItem('crm_super_token');
     const superUserStr = localStorage.getItem('crm_super_user');
+    const impersonationId = localStorage.getItem('crm_impersonate_id');
+
+    // Close the support session on the server so its token stops working (best effort).
+    if (superToken && impersonationId) {
+      api.post(`/v1/super-admin/impersonations/${impersonationId}/end`, null, {
+        headers: { Authorization: `Bearer ${superToken}` }
+      }).catch(() => {});
+    }
 
     if (superToken && superUserStr) {
       localStorage.setItem('crm_token', superToken);
@@ -69,6 +80,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('crm_super_token');
     localStorage.removeItem('crm_super_user');
     localStorage.removeItem('crm_impersonate_active');
+    localStorage.removeItem('crm_impersonate_id');
     setImpersonating(false);
   }
 

@@ -5,7 +5,11 @@ const attendanceSchema = new mongoose.Schema(
   {
     employee: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: Date, required: true },
-    status: { type: String, enum: ['Present', 'Absent (Unpaid)', 'Approved Paid Leave'], default: 'Present' }
+    status: {
+      type: String,
+      enum: ['Present', 'Absent (Unpaid)', 'Approved Paid Leave', 'Holiday', 'Weekly Off'],
+      required: true
+    }
   },
   { timestamps: true }
 );

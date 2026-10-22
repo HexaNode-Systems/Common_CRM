@@ -12,7 +12,11 @@ const payrollSchema = new mongoose.Schema(
     manualDeduction: { type: Number, default: 0 },
     manualDeductionComment: { type: String, trim: true },
     netPayable: { type: Number, required: true },
-    status: { type: String, enum: ['Draft', 'Paid'], default: 'Draft' }
+    status: { type: String, enum: ['Draft', 'Paid'], default: 'Draft' },
+    // Audit fields, set when the record is frozen as Paid
+    paidAt: { type: Date },
+    paidBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    unmarkedDaysAtPayment: { type: Number, default: 0 }
   },
   { timestamps: true }
 );

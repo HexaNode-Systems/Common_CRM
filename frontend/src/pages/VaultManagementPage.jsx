@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Eye, EyeOff, Plus, RefreshCw, Copy, Check, X } from 'lucide-react';
+import { Eye, EyeOff, Plus, RefreshCw, Copy, Check, X, History, Trash2, AlertTriangle } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import Loader from '../components/Loader.jsx';
 
 const SECRET_VISIBLE_MS = 30_000; // revealed secrets hide again after 30 seconds
 const MASK = '••••••••';
@@ -106,7 +107,7 @@ function LoadingSkeleton() {
 
 /* ---------- Add / edit dialog ---------- */
 
-function VaultModal({ mode, credential, roles, rolesLoading, saving, onClose, onSave }) {
+function VaultModal({ mode, credential, roles, rolesLoading, saving, error, canManage, userRole, onClose, onSave }) {
   const [form, setForm] = useState(emptyForm);
   const [showSecret, setShowSecret] = useState(false);
 
@@ -120,9 +121,20 @@ function VaultModal({ mode, credential, roles, rolesLoading, saving, onClose, on
     });
   }, [credential]);
 
+  const [localError, setLocalError] = useState('');
+  // Only vault managers decide who sees a credential once it exists.
+  const groupsLocked = mode === 'edit' && !canManage;
+
   function submit(event) {
     event.preventDefault();
-    onSave(form);
+    if (mode === 'create' && !form.secret.trim()) return setLocalError('Password / Token Key is required.');
+    if (!canManage && form.accessGroups.length && !form.accessGroups.includes(userRole)) {
+      return setLocalError('Include your own role, or leave every box empty so everyone with Vault access can see it.');
+    }
+    setLocalError('');
+    const payload = { ...form };
+    if (groupsLocked) delete payload.accessGroups;
+    onSave(payload);
   }
 
   function toggleGroup(value) {
@@ -153,13 +165,14 @@ function VaultModal({ mode, credential, roles, rolesLoading, saving, onClose, on
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-4 py-5 sm:px-5">
+          {localError || error ? <p role="alert" className="rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{localError || error}</p> : null}
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Account Title</span>
-            <input className="input" required value={form.title} onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))} />
+            <input className="input" required maxLength={200} value={form.title} onChange={(e) => setForm((current) => ({ ...current, title: e.target.value }))} />
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Platform URL</span>
-            <input className="input" required value={form.platformUrl} onChange={(e) => setForm((current) => ({ ...current, platformUrl: e.target.value }))} placeholder="https://app.example.com" />
+            <input className="input" required value={form.platformUrl} onChange={(e) => setForm((current) => ({ ...current, platformUrl: e.target.value }))} maxLength={500} placeholder="https://app.example.com" />
           </label>
           <label className="block">
             <span className="mb-1 block text-sm font-medium text-slate-700">Username / Email ID</span>
@@ -192,14 +205,17 @@ function VaultModal({ mode, credential, roles, rolesLoading, saving, onClose, on
           </div>
 
           <fieldset>
-            <legend className="mb-2 block text-sm font-medium text-slate-700">Access Group Selection</legend>
+            <legend className="mb-1 block text-sm font-medium text-slate-700">Who can see this</legend>
+            <p className="mb-2 text-xs text-slate-500">
+              {groupsLocked ? 'Only vault managers (Full access) can change this.' : 'Leave every box empty for everyone with Vault access. Super admins and vault managers always have access.'}
+            </p>
             {rolesLoading && roles.length === 0 ? (
-              <p className="text-sm text-slate-500">Loading roles...</p>
+              <Loader label="Loading roles" size="sm" className="!justify-start !px-0" />
             ) : (
               <div className="grid gap-2 sm:grid-cols-2">
                 {roles.map((role) => (
                   <label key={role.slug} className={`flex min-h-[44px] cursor-pointer items-center gap-2 rounded-theme border px-3 py-2 text-sm ${form.accessGroups.includes(role.slug) ? 'border-primary bg-blue-50' : 'border-slate-200'}`}>
-                    <input type="checkbox" className="h-4 w-4 accent-primary" checked={form.accessGroups.includes(role.slug)} onChange={() => toggleGroup(role.slug)} />
+                    <input type="checkbox" className="h-4 w-4 accent-primary" disabled={groupsLocked} checked={form.accessGroups.includes(role.slug)} onChange={() => toggleGroup(role.slug)} />
                     <span className="break-words">{normalizeLabel(role.slug)}</span>
                   </label>
                 ))}
@@ -213,6 +229,45 @@ function VaultModal({ mode, credential, roles, rolesLoading, saving, onClose, on
           <Button type="submit" disabled={saving} className="px-4 py-2.5">{saving ? 'Saving...' : mode === 'create' ? 'Create Credential' : 'Update Credential'}</Button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function HistoryModal({ credential, onClose }) {
+  const [items, setItems] = useState(null);
+  const [error, setError] = useState('');
+  useEffect(() => {
+    api.get('/v1/vault/audit', { params: credential ? { credentialId: credential._id } : {} })
+      .then(({ data }) => setItems(data.items || []))
+      .catch((err) => setError(err.response?.data?.message || 'Unable to load history.'));
+  }, [credential]);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:px-4 sm:py-4">
+      <button type="button" className="absolute inset-0 cursor-default" aria-label="Close history" onClick={onClose} />
+      <div className="relative z-10 flex max-h-[85dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl" role="dialog" aria-modal="true">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-5 py-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Access history</h2>
+            <p className="text-sm text-slate-500">{credential ? credential.title : 'All credentials'} · created, changed, revealed, deleted</p>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Close" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-600 hover:bg-slate-50"><X size={18} /></button>
+        </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {error ? <p className="rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+          {!items && !error ? <Loader label="Loading history" size="sm" /> : null}
+          {items && !items.length ? <p className="py-6 text-center text-sm text-slate-500">Nothing recorded yet.</p> : null}
+          {items?.length ? (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {items.map((item) => (
+                <li key={item._id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
+                  <span className="text-slate-800"><span className="font-semibold">{item.actor?.name || 'Unknown user'}</span> {item.action} {item.metadata?.title ? `"${item.metadata.title}"` : ''}</span>
+                  <span className="text-xs text-slate-500">{new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }).format(new Date(item.createdAt))}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      </div>
     </div>
   );
 }
@@ -231,6 +286,10 @@ export default function VaultManagementPage() {
   const [revealedSecrets, setRevealedSecrets] = useState({});
   const [revealingId, setRevealingId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
+  const [modalError, setModalError] = useState('');
+  const [canManage, setCanManage] = useState(false);
+  const [keyProblem, setKeyProblem] = useState(null);
+  const [history, setHistory] = useState(null); // { credential } or { credential: null } for all
 
   const rolesLoaded = useRef(false);
   const hideTimers = useRef({});
@@ -241,7 +300,8 @@ export default function VaultManagementPage() {
   const activeRoles = useMemo(() => roles.filter((role) => role.slug), [roles]);
 
   const canCreate = useMemo(
-    () => currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('vault:create'),
+    // The server lets "Update" access add credentials too.
+    () => currentUser?.role === 'super_admin' || currentUser?.permissions?.includes('vault:create') || currentUser?.permissions?.includes('vault:update'),
     [currentUser]
   );
   const canUpdate = useMemo(
@@ -258,6 +318,8 @@ export default function VaultManagementPage() {
       const { data } = await api.get('/v1/vault');
       if (current !== requestId.current) return;
       setItems(data.items || []);
+      setCanManage(Boolean(data.canManage));
+      setKeyProblem(data.keyProblem || null);
     } catch (err) {
       if (current !== requestId.current) return;
       setError(err.response?.data?.message || 'Unable to load credentials.');
@@ -293,12 +355,14 @@ export default function VaultManagementPage() {
   }, []);
 
   function openCreate() {
+    setModalError('');
     setEditing(null);
     setModalMode('create');
     loadRoles();
   }
 
   function openEdit(credential) {
+    setModalError('');
     setEditing(credential);
     setModalMode('edit');
     loadRoles();
@@ -311,7 +375,7 @@ export default function VaultManagementPage() {
 
   async function saveCredential(form) {
     setSaving(true);
-    setError('');
+    setModalError('');
     try {
       const payload = { ...form };
       if (!payload.secret) delete payload.secret;
@@ -321,7 +385,7 @@ export default function VaultManagementPage() {
       setItems((current) => (modalMode === 'create' ? [data, ...current] : current.map((item) => (item._id === data._id ? data : item))));
       closeModal();
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to save credential.');
+      setModalError(err.response?.data?.message || 'Unable to save credential.');
     } finally {
       setSaving(false);
     }
@@ -351,6 +415,10 @@ export default function VaultManagementPage() {
   async function ensureSecret(credential) {
     const existing = revealedSecrets[credential._id];
     if (existing) return existing;
+    if (!credential.isActive) {
+      setError(`"${credential.title}" is suspended. Reactivate it to reveal the password.`);
+      return null;
+    }
     setRevealingId(credential._id);
     setError('');
     try {
@@ -365,6 +433,18 @@ export default function VaultManagementPage() {
       return null;
     } finally {
       setRevealingId(null);
+    }
+  }
+
+  async function deleteCredential(credential) {
+    if (!window.confirm(`Delete "${credential.title}" permanently? The password can't be recovered.`)) return;
+    setError('');
+    try {
+      await api.delete(`/v1/vault/${credential._id}`);
+      hideSecret(credential._id);
+      setItems((current) => current.filter((item) => item._id !== credential._id));
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to delete credential.');
     }
   }
 
@@ -395,13 +475,20 @@ export default function VaultManagementPage() {
           <p className="mt-1 text-sm text-slate-600">Encrypted credentials, role-restricted visibility, and reveal auditing.</p>
         </div>
         <div className="flex w-full gap-2 sm:w-auto">
-          <Button onClick={load} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none"><RefreshCw size={16} />Refresh</Button>
+          <Button variant="outline" onClick={load} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none"><RefreshCw size={16} />Refresh</Button>
+          {canManage ? <Button variant="outline" onClick={() => setHistory({ credential: null })} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none"><History size={16} />History</Button> : null}
           {canCreate && (
             <Button onClick={openCreate} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none"><Plus size={16} />Add New</Button>
           )}
         </div>
       </div>
 
+      {keyProblem ? (
+        <div role="alert" className="flex items-start gap-2 rounded-theme border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+          <span><strong>Vault locked.</strong> {keyProblem} Passwords can’t be added, changed or revealed until this is fixed.</span>
+        </div>
+      ) : null}
       {error ? <p role="alert" className="rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
 
       <Card>
@@ -439,11 +526,11 @@ export default function VaultManagementPage() {
                   />
                 </div>
 
-                {canUpdate ? (
-                  <div className="mt-2 flex justify-end">
-                    <button type="button" onClick={() => openEdit(credential)} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-primary hover:bg-slate-50">Edit</button>
-                  </div>
-                ) : null}
+                <div className="mt-2 flex justify-end gap-1">
+                  {canUpdate ? <button type="button" onClick={() => openEdit(credential)} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-primary hover:bg-slate-50">Edit</button> : null}
+                  {canManage ? <button type="button" onClick={() => setHistory({ credential })} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-slate-600 hover:bg-slate-50">History</button> : null}
+                  {canManage ? <button type="button" onClick={() => deleteCredential(credential)} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-red-600 hover:bg-red-50">Delete</button> : null}
+                </div>
               </li>
             ))}
           </ul>
@@ -485,7 +572,11 @@ export default function VaultManagementPage() {
                     </td>
                     <td className="px-4 py-4"><StatusButton credential={credential} canUpdate={canUpdate} onToggle={toggleStatus} /></td>
                     <td className="px-4 py-4 text-right">
-                      {canUpdate && <button type="button" onClick={() => openEdit(credential)} className="font-semibold text-primary hover:underline">Edit</button>}
+                      <div className="flex items-center justify-end gap-3">
+                        {canUpdate && <button type="button" onClick={() => openEdit(credential)} className="font-semibold text-primary hover:underline">Edit</button>}
+                        {canManage ? <button type="button" onClick={() => setHistory({ credential })} className="inline-flex items-center gap-1 font-semibold text-slate-600 hover:underline" aria-label={`History for ${credential.title}`}><History size={14} />History</button> : null}
+                        {canManage ? <button type="button" onClick={() => deleteCredential(credential)} className="inline-flex h-8 w-8 items-center justify-center rounded-full text-red-600 hover:bg-red-50" aria-label={`Delete ${credential.title}`}><Trash2 size={15} /></button> : null}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -502,10 +593,14 @@ export default function VaultManagementPage() {
           roles={activeRoles}
           rolesLoading={rolesLoading}
           saving={saving}
+          error={modalError}
+          canManage={canManage}
+          userRole={currentUser?.role}
           onClose={closeModal}
           onSave={saveCredential}
         />
       ) : null}
+      {history ? <HistoryModal credential={history.credential} onClose={() => setHistory(null)} /> : null}
     </div>
   );
-}
+}

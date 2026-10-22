@@ -1,26 +1,51 @@
 import { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { AlertCircle, ArrowRight, Mail, Lock, Target, MessageSquare, FolderKanban } from 'lucide-react';
 import JsonLd from '../components/JsonLd.jsx';
 import { createBreadcrumbSchema } from '../utils/seoSchemas.js';
-import Button from '../components/Button.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { useSettings } from '../context/SettingsContext.jsx';
-import crmHero from '../assets/crm_login_hero.jpg';
-import { Shield, Sparkles, AlertCircle, Mail, Lock } from 'lucide-react';
+// Same design system as the landing page: fonts, colours, buttons and corners.
+import '../components/landing/public-landing.css';
+import '../components/landing/login.css';
+
+const HIGHLIGHTS = [
+  { icon: Target, title: 'Leads from every channel', text: 'Website forms, Justdial, IndiaMart and Zoho in one pipeline.' },
+  { icon: MessageSquare, title: 'WhatsApp conversations', text: 'Reply, assign and follow up without leaving the CRM.' },
+  { icon: FolderKanban, title: 'Projects and teams', text: 'Tasks, roles and delivery tracked alongside every client.' },
+];
+
+const breadcrumbSchema = createBreadcrumbSchema([
+  { name: 'Home', url: 'https://www.appnix.info/' },
+  { name: 'Sign In', url: 'https://www.appnix.info/login' },
+]);
+
+function Brand({ inverse = false }) {
+  return (
+    <Link to="/" className={`crm-brand ${inverse ? 'crm-login-brand-inverse' : ''}`} aria-label="Appnix CRM Pro home">
+      <img
+        src="/landing/appnix-mark-34.png"
+        srcSet="/landing/appnix-mark-68.png 2x, /landing/appnix-mark-102.png 3x"
+        width="34"
+        height="34"
+        alt=""
+      />
+      <span>
+        Appnix<span className="crm-brand-divider" />
+        <span className="crm-brand-product">CRM Pro</span>
+      </span>
+    </Link>
+  );
+}
 
 export default function Login() {
   const { login } = useAuth();
-  const { settings } = useSettings();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: 'admin@example.com', password: 'Admin@12345' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const breadcrumbSchema = createBreadcrumbSchema([
-    { name: 'Home', url: 'https://www.appnix.info/' },
-    { name: 'Sign In', url: 'https://www.appnix.info/login' },
-  ]);
+  const update = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
 
   async function submit(event) {
     event.preventDefault();
@@ -37,7 +62,7 @@ export default function Login() {
   }
 
   return (
-    <main className="flex min-h-screen w-full bg-slate-50 font-theme">
+    <div className="crm-public crm-login">
       <Helmet>
         <title>Sign In | Appnix CRM Pro</title>
         <meta
@@ -49,201 +74,96 @@ export default function Login() {
       </Helmet>
       <JsonLd schema={breadcrumbSchema} />
 
-      <div className="grid w-full grid-cols-1 lg:grid-cols-12">
-        {/* Left Side: CRM Image Showcase */}
-        <div className="relative hidden flex-col justify-between p-12 lg:col-span-5 lg:flex xl:col-span-6 overflow-hidden">
-          {/* Background image with overlay */}
-          <div className="absolute inset-0 z-0">
-            <img 
-              src={crmHero} 
-              alt="Appnix CRM Pro workspace illustration" 
-              width="1080"
-              height="1080"
-              className="h-full w-full object-cover object-center transition-transform duration-10000 hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-950/95 via-slate-900/85 to-indigo-950/95" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-85" />
-          </div>
+      {/* Left: the landing page's dark green section */}
+      <aside className="crm-login-aside" aria-label="About Appnix CRM Pro">
+        <Brand inverse />
 
-          {/* Logo / Brand Name */}
-          <div className="relative z-10 flex items-center gap-3">
-            {settings?.brand?.logo ? (
-              <img 
-                src={settings.brand.logo} 
-                alt={`${settings?.brand?.name || 'Appnix CRM Pro'} Logo`} 
-                width="40"
-                height="40"
-                className="h-10 w-10 rounded-xl object-contain bg-white/10 p-1 backdrop-blur-sm"
-              />
-            ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white shadow-lg">
-                <Sparkles className="h-5 w-5" />
+        <div className="crm-login-pitch">
+          <p className="crm-eyebrow">YOUR CRM WORKSPACE</p>
+          <h2>
+            Your business.
+            <br />
+            <span>Working together.</span>
+          </h2>
+          <div className="crm-service-list">
+            {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
+              <div key={title}>
+                <Icon size={20} aria-hidden="true" />
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
               </div>
-            )}
-            <span className="text-xl font-bold tracking-tight text-white">
-              {settings?.brand?.name || 'Appnix CRM Pro'}
-            </span>
+            ))}
           </div>
+        </div>
 
-          {/* Testimonial / Features Glassmorphism Card */}
-          <div className="relative z-10 mt-auto max-w-lg">
-            <div className="space-y-6 rounded-2xl border border-white/10 bg-white/5 p-8 backdrop-blur-md shadow-2xl">
+        <p className="crm-login-copy">&copy; {new Date().getFullYear()} Appnix Technologies</p>
+      </aside>
+
+      {/* Right: sign-in form */}
+      <main className="crm-login-main">
+        <div className="crm-login-mobile-brand">
+          <Brand />
+        </div>
+
+        <div className="crm-login-card">
+          <p className="crm-eyebrow">SIGN IN</p>
+          <h1>Welcome back</h1>
+          <p className="crm-login-lead">Enter your credentials to open your workspace.</p>
+
+          {error && (
+            <div role="alert" className="crm-login-error">
+              <AlertCircle size={17} aria-hidden="true" />
               <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-white/90 uppercase tracking-wider backdrop-blur-sm">
-                  <Shield size={12} className="text-indigo-400" /> Secure Admin Portal
-                </span>
-                <h2 className="mt-4 text-3xl font-extrabold tracking-tight text-white md:text-4xl leading-tight">
-                  Elevate Your Business Operations
-                </h2>
-                <p className="mt-3 text-base text-slate-300 leading-relaxed">
-                  Manage leads, distribute tasks, track orders, and automate workflows with our unified CRM workspace.
-                </p>
-              </div>
-
-              {/* CRM Key Metrics/Benefits */}
-              <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-6">
-                <div>
-                  <p className="text-2xl font-bold text-white">100%</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Automated Workflows</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-white">Real-time</p>
-                  <p className="text-xs text-slate-400 mt-0.5">Analytics & Reporting</p>
-                </div>
+                <strong>Sign in failed</strong>
+                <span>{error}</span>
               </div>
             </div>
+          )}
 
-            <p className="mt-8 text-xs text-slate-400">
-              &copy; {new Date().getFullYear()} {settings?.brand?.name || 'Appnix CRM Pro'}. All rights reserved.
+          <form onSubmit={submit} className="crm-login-form">
+            <label className="crm-login-field">
+              <span>Email address</span>
+              <span className="crm-login-input">
+                <Mail size={16} aria-hidden="true" />
+                <input type="email" required autoComplete="email" placeholder="you@company.com" value={form.email} onChange={update('email')} />
+              </span>
+            </label>
+
+            <label className="crm-login-field">
+              <span className="crm-login-field-row">
+                Password
+                <button
+                  type="button"
+                  className="crm-text-link crm-login-forgot"
+                  onClick={() => alert('Please contact the system administrator to reset your password.')}
+                >
+                  Forgot password?
+                </button>
+              </span>
+              <span className="crm-login-input">
+                <Lock size={16} aria-hidden="true" />
+                <input type="password" required autoComplete="current-password" placeholder="••••••••" value={form.password} onChange={update('password')} />
+              </span>
+            </label>
+
+            <p className="crm-login-note">
+              <strong>Demo account:</strong> credentials are prefilled for quick access.
             </p>
-          </div>
+
+            <label className="crm-login-check">
+              <input type="checkbox" defaultChecked />
+              <span>Keep me signed in</span>
+            </label>
+
+            <button type="submit" className="crm-button crm-login-submit" disabled={loading}>
+              {loading ? 'Signing in…' : 'Sign in'}
+              {!loading && <ArrowRight size={17} aria-hidden="true" />}
+            </button>
+          </form>
         </div>
-
-        {/* Right Side: Login Form */}
-        <div className="col-span-12 flex flex-col justify-center px-6 py-12 lg:col-span-7 lg:px-16 xl:col-span-6 xl:px-24 bg-white relative">
-          
-          {/* Logo for mobile view */}
-          <div className="absolute top-8 left-8 flex items-center gap-2 lg:hidden">
-            {settings?.brand?.logo ? (
-              <img 
-                src={settings.brand.logo} 
-                alt={`${settings?.brand?.name || 'Appnix CRM Pro'} Logo`} 
-                width="32"
-                height="32"
-                className="h-8 w-8 rounded-lg object-contain"
-              />
-            ) : (
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-white">
-                <Sparkles className="h-4 w-4" />
-              </div>
-            )}
-            <span className="text-lg font-bold tracking-tight text-slate-900">
-              {settings?.brand?.name || 'Appnix CRM Pro'}
-            </span>
-          </div>
-
-          <div className="mx-auto w-full max-w-md space-y-8">
-            <div className="space-y-2">
-              <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-                Welcome back
-              </h1>
-              <p className="text-sm text-slate-500">
-                Please enter your credentials to access the workspace.
-              </p>
-            </div>
-
-            {/* Error Message */}
-            {error && (
-              <div className="flex items-start gap-3 rounded-xl bg-red-50 p-4 text-sm text-red-800 border border-red-100">
-                <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold">Sign in failed</p>
-                  <p className="text-red-700/90 leading-relaxed">{error}</p>
-                </div>
-              </div>
-            )}
-
-            <form className="space-y-6" onSubmit={submit}>
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">Email Address</label>
-                  <div className="relative rounded-theme shadow-sm">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                      <Mail className="h-5 w-5 text-slate-400" />
-                    </div>
-                    <input
-                      type="email"
-                      required
-                      placeholder="admin@example.com"
-                      className="input pl-11"
-                      value={form.email}
-                      onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <label className="block text-sm font-medium text-slate-700">Password</label>
-                    <a 
-                      href="#" 
-                      onClick={(e) => { e.preventDefault(); alert('Please contact the system administrator to reset your password.'); }} 
-                      className="text-xs font-semibold text-primary hover:underline"
-                    >
-                      Forgot password?
-                    </a>
-                  </div>
-                  <div className="relative rounded-theme shadow-sm">
-                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
-                      <Lock className="h-5 w-5 text-slate-400" />
-                    </div>
-                    <input
-                      type="password"
-                      required
-                      placeholder="••••••••"
-                      className="input pl-11"
-                      value={form.password}
-                      onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Demo Credentials Alert Note */}
-              <div className="rounded-xl bg-slate-50 p-3.5 border border-slate-100 text-xs text-slate-600">
-                <span className="font-semibold text-slate-800">Demo Account:</span> Credentials have been prefilled for quick access. Click Sign In below.
-              </div>
-
-              <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input 
-                    type="checkbox" 
-                    defaultChecked
-                    className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary/20 cursor-pointer"
-                  />
-                  <span className="text-xs text-slate-600">Keep me signed in</span>
-                </label>
-              </div>
-
-              <Button 
-                type="submit" 
-                disabled={loading}
-                className="w-full justify-center py-3 text-sm shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 active:scale-[0.98] transition-all"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Signing in...
-                  </span>
-                ) : 'Sign In'}
-              </Button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

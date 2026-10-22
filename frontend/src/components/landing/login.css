@@ -1,0 +1,237 @@
+/* Sign-in page. Builds on public-landing.css (.crm-public tokens, .crm-brand, .crm-eyebrow,
+   .crm-button, .crm-service-list) so it looks like part of the landing page. */
+
+.crm-login {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  min-height: 100vh;
+}
+
+/* Left: same dark green as the landing page's "people behind the product" section */
+.crm-login-aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 40px 48px;
+  background: #183c32;
+  color: #f5faf5;
+}
+
+.crm-login-brand-inverse,
+.crm-login-brand-inverse .crm-brand-product {
+  color: #f5faf5;
+}
+
+.crm-login-brand-inverse .crm-brand-divider {
+  background: #426354;
+}
+
+.crm-login-pitch .crm-eyebrow {
+  color: #9ed3bc;
+}
+
+.crm-public .crm-login-pitch h2 {
+  margin-top: 19px;
+  font-size: clamp(32px, 3.2vw, 44px);
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.crm-login-pitch h2 > span {
+  color: #9ed3bc;
+}
+
+.crm-login-pitch .crm-service-list {
+  margin-top: 36px;
+  max-width: 440px;
+}
+
+.crm-login-copy {
+  font-size: 11px;
+  color: #c0d0c5;
+}
+
+/* Right: the form on the landing page's warm white */
+.crm-login-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  background: radial-gradient(ellipse at 50% 40%, #eef3ee 0, transparent 70%), var(--crm-bg);
+}
+
+.crm-login-mobile-brand {
+  display: none;
+}
+
+.crm-login-card {
+  width: 100%;
+  max-width: 420px;
+}
+
+.crm-public .crm-login-card h1 {
+  margin-top: 14px;
+  font-size: clamp(34px, 3vw, 42px);
+  line-height: 1.08;
+  letter-spacing: -0.055em;
+}
+
+.crm-public .crm-login-lead {
+  margin-top: 10px;
+  color: var(--crm-muted);
+  font-size: 14px;
+}
+
+.crm-login-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 24px;
+  padding: 12px 14px;
+  border: 1px solid #efd2cc;
+  border-left: 3px solid #b7493e;
+  border-radius: 5px;
+  background: #fff7f5;
+  color: #8f362d;
+  font-size: 13px;
+}
+
+.crm-login-error svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.crm-login-error strong {
+  display: block;
+  font-weight: 600;
+}
+
+.crm-login-form {
+  display: grid;
+  gap: 18px;
+  margin-top: 28px;
+}
+
+.crm-login-field > span:first-child {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.crm-login-field-row {
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.crm-public .crm-login-forgot {
+  padding-bottom: 2px;
+  font-size: 11px;
+}
+
+.crm-login-input {
+  position: relative;
+  display: block;
+}
+
+.crm-login-input svg {
+  position: absolute;
+  top: 50%;
+  left: 15px;
+  transform: translateY(-50%);
+  color: #85958a;
+  pointer-events: none;
+}
+
+.crm-login-input input {
+  width: 100%;
+  min-height: 50px;
+  padding: 0 16px 0 42px;
+  border: 1px solid var(--crm-line);
+  border-radius: 5px;
+  background: var(--crm-paper);
+  color: var(--crm-ink);
+  font: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+.crm-login-input input::placeholder {
+  color: #94a39a;
+}
+
+.crm-login-input input:hover {
+  border-color: #bdcbc3;
+}
+
+.crm-login-input input:focus {
+  border-color: var(--crm-accent);
+  box-shadow: 0 0 0 3px #176a5714;
+}
+
+.crm-public .crm-login-note {
+  padding: 11px 14px;
+  border: 1px solid var(--crm-line);
+  border-radius: 5px;
+  background: var(--crm-tint);
+  color: var(--crm-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.crm-login-note strong {
+  color: var(--crm-ink);
+  font-weight: 600;
+}
+
+.crm-login-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+  color: var(--crm-muted);
+  cursor: pointer;
+}
+
+.crm-login-check input {
+  width: 15px;
+  height: 15px;
+  accent-color: var(--crm-accent);
+}
+
+.crm-public .crm-login-submit {
+  width: 100%;
+  margin-top: 4px;
+  font-size: 14px;
+}
+
+.crm-public .crm-login-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+@media (max-width: 900px) {
+  .crm-login {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-login-aside {
+    display: none;
+  }
+
+  .crm-login-main {
+    justify-content: flex-start;
+    padding-top: 32px;
+  }
+
+  .crm-login-mobile-brand {
+    display: block;
+    width: 100%;
+    max-width: 420px;
+    margin-bottom: 48px;
+  }
+}

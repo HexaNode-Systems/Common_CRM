@@ -3,6 +3,8 @@ import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import Input from '../components/Input.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { hasPermission } from '../utils/permissions.js';
 
 export default function GeneralSettings({ title }) {
   const { settings, updateSettings } = useSettings();
@@ -10,6 +12,11 @@ export default function GeneralSettings({ title }) {
   const [contact, setContact] = useState({});
   const [social, setSocial] = useState({});
   const [seo, setSeo] = useState({});
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { user } = useAuth();
+  const canEdit = hasPermission(user, 'settings', 'update');
 
   useEffect(() => {
     setContent(settings?.content || {});
@@ -20,16 +27,30 @@ export default function GeneralSettings({ title }) {
 
   async function submit(event) {
     event.preventDefault();
-    await updateSettings({ content, contact, social, seo });
+    if (!canEdit) return;
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      await updateSettings({ content, contact, social, seo });
+      setMessage('Settings saved.');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to save settings.');
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <form onSubmit={submit}>
       <div className="mb-5 flex items-center justify-between">
         <h1 className="text-2xl font-bold">{title}</h1>
-        <Button type="submit" className="px-4 py-2">Save Settings</Button>
+        {canEdit ? <Button type="submit" disabled={saving} className="px-4 py-2">{saving ? 'Saving...' : 'Save Settings'}</Button> : null}
       </div>
-      <div className="grid gap-4 lg:grid-cols-2">
+      {error ? <p role="alert" className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {message ? <p role="status" className="mb-4 rounded-theme bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{message}</p> : null}
+      <fieldset disabled={!canEdit || saving} className="grid gap-4 lg:grid-cols-2">
         <Card title="Website Content">
           <div className="space-y-4">
             <Input label="Home Title" value={content.homeTitle || ''} onChange={(e) => setContent({ ...content, homeTitle: e.target.value })} />
@@ -58,7 +79,7 @@ export default function GeneralSettings({ title }) {
             <Input label="SEO Keywords" value={seo.keywords || ''} onChange={(e) => setSeo({ ...seo, keywords: e.target.value })} />
           </div>
         </Card>
-      </div>
+      </fieldset>
     </form>
   );
 }

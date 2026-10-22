@@ -4,10 +4,31 @@ import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import Input from '../components/Input.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
-import { Upload, Image as ImageIcon, CheckCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
+import { hasPermission } from '../utils/permissions.js';
+import { Upload, Image as ImageIcon, CheckCircle, RotateCcw } from 'lucide-react';
+
+const HEX = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i;
+const IMAGE_TYPES = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'ico'];
+
+// Same checks as the server, so mistakes show before saving.
+function themeProblem(theme) {
+  for (const key of ['primaryColor', 'secondaryColor', 'accentColor']) {
+    if (theme[key] && !HEX.test(theme[key])) return `${key} must be a colour like #2563eb.`;
+  }
+  if (theme.borderRadius && !/^\d{1,2}(px)?$/.test(String(theme.borderRadius).trim())) return 'Corner radius must be a number of pixels, like 6px.';
+  if (theme.borderRadius && Number(String(theme.borderRadius).replace('px', '')) > 24) return 'Corner radius can be at most 24px.';
+  if (theme.fontFamily && !/^[\w\s,'"-]+$/.test(theme.fontFamily)) return 'Font can only contain font names separated by commas.';
+  if (theme.splashDuration !== undefined && theme.splashDuration !== '' && (Number(theme.splashDuration) < 0 || Number(theme.splashDuration) > 10000)) return 'Splash duration must be 0 to 10000 ms.';
+  return '';
+}
 
 export default function ThemeSettings() {
   const { settings, updateSettings } = useSettings();
+  const { user } = useAuth();
+  const canEdit = hasPermission(user, 'settings', 'update');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const [theme, setTheme] = useState({});
   const [brand, setBrand] = useState({});
   const [seo, setSeo] = useState({});
@@ -24,7 +45,18 @@ export default function ThemeSettings() {
 
   const handleFileUpload = async (event, field) => {
     const file = event.target.files[0];
+    event.target.value = '';
     if (!file) return;
+    setError('');
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!IMAGE_TYPES.includes(ext)) {
+      setError('Upload a PNG, JPG, WEBP, GIF or ICO image.');
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      setError('Images can be at most 2 MB.');
+      return;
+    }
 
     if (field === 'logo') setUploadingLogo(true);
     if (field === 'favicon') setUploadingFavicon(true);
@@ -45,8 +77,7 @@ export default function ThemeSettings() {
         setBrand(prev => ({ ...prev, [field]: res.data.url }));
       }
     } catch (err) {
-      console.error('File upload failed', err);
-      alert('Upload failed: ' + (err.response?.data?.message || err.message));
+      setError(`Upload failed: ${err.response?.data?.message || err.message}`);
     } finally {
       if (field === 'logo') setUploadingLogo(false);
       if (field === 'favicon') setUploadingFavicon(false);
@@ -56,14 +87,38 @@ export default function ThemeSettings() {
 
   async function submit(event) {
     event.preventDefault();
+    if (!canEdit) return;
+    const problem = themeProblem(theme);
+    if (problem) {
+      setError(problem);
+      return;
+    }
+    setSaving(true);
+    setError('');
+    setMessage('');
     try {
-      setMessage('');
       await updateSettings({ brand, theme, seo });
-      setMessage('✅ Theme settings saved successfully!');
+      setMessage('Theme settings saved.');
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error(err);
-      setMessage('❌ Failed to save theme settings.');
+      setError(err.response?.data?.message || 'Failed to save theme settings.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function resetTheme() {
+    if (!window.confirm('Reset colours, corners, font, button and card style, and the splash screen to the defaults? Logo, favicon and brand name stay.')) return;
+    setSaving(true);
+    setError('');
+    try {
+      await updateSettings({ reset: 'theme' });
+      setMessage('Theme reset to defaults.');
+      setTimeout(() => setMessage(''), 3000);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to reset the theme.');
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -73,12 +128,26 @@ export default function ThemeSettings() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Theme & Branding</h1>
           <p className="text-sm text-slate-500">Customize the colors, typography, logos, and general layout of the CRM.</p>
+          <p className="mt-1 text-xs text-slate-500">Colours apply to the public website and the admin panel in light mode; dark mode keeps its own high-contrast colours.</p>
         </div>
-        <Button type="submit" className="bg-primary text-white flex items-center gap-2">
-          <CheckCircle size={16} />
-          Save Theme
-        </Button>
+        {canEdit ? (
+          <div className="flex items-center gap-2">
+            <Button type="button" variant="outline" disabled={saving} onClick={resetTheme} className="flex items-center gap-2">
+              <RotateCcw size={16} />
+              Reset
+            </Button>
+            <Button type="submit" disabled={saving} className="bg-primary text-white flex items-center gap-2">
+              <CheckCircle size={16} />
+              {saving ? 'Saving...' : 'Save Theme'}
+            </Button>
+          </div>
+        ) : null}
       </div>
+
+      {!canEdit ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">View only. You need Settings update access to change the theme.</div>
+      ) : null}
+      {error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
 
       {message && (
         <div className="rounded-xl bg-slate-900 text-white p-3 text-sm font-semibold flex items-center justify-between shadow-md">
@@ -86,7 +155,7 @@ export default function ThemeSettings() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <fieldset disabled={!canEdit || saving} className="grid gap-6 lg:grid-cols-2">
         {/* Brand & Assets Card */}
         <Card title="Brand & Identity">
           <div className="space-y-6">
@@ -375,7 +444,7 @@ export default function ThemeSettings() {
             </div>
           </div>
         </Card>
-      </div>
+      </fieldset>
     </form>
   );
 }

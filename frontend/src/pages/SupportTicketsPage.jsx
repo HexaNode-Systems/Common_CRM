@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
 import Input from '../components/Input.jsx';
-import {
+import { X, 
   MessageSquare,
   Search,
   Plus,
@@ -25,8 +25,13 @@ export default function SupportTicketsPage() {
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [activeTab, setActiveTab] = useState('all');
 
-  // Filters and Search
+  // Filters and Search (search waits until typing pauses)
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
+  const [error, setError] = useState('');
+  const [createError, setCreateError] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [canManage, setCanManage] = useState(false);
   const [statusFilter, setStatusFilter] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
@@ -48,12 +53,13 @@ export default function SupportTicketsPage() {
   const [staffUsers, setStaffUsers] = useState([]);
   const chatEndRef = useRef(null);
 
-  const isStaff = ['super_admin', 'admin', 'support_agent', 'support'].includes(user?.role);
+  // Support staff = Full access on Support Desk; the server says who that is.
+  const isStaff = canManage;
 
   // Fetch Tickets
-  const fetchTickets = async () => {
+  const fetchTickets = async ({ quiet = false } = {}) => {
     try {
-      setLoading(true);
+      if (!quiet) setLoading(true);
       const params = {};
       if (search) params.search = search;
       if (statusFilter) params.status = statusFilter;
@@ -62,31 +68,54 @@ export default function SupportTicketsPage() {
 
       const res = await api.get('/support/tickets', { params });
       setTickets(res.data.items || []);
+      setCanManage(Boolean(res.data.canManage));
+      if (!quiet) setError('');
     } catch (err) {
-      console.error('Failed to fetch support tickets', err);
+      if (!quiet) setError(err.response?.data?.message || 'Unable to load support tickets.');
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   };
 
   // Fetch staff users for assignment dropdown
+  // People with Support Desk access who can take tickets (loaded once, staff only).
   const fetchStaff = async () => {
-    if (!isStaff) return;
     try {
-      const res = await api.get('/users?limit=100');
-      // Filter out customers from the list of assignees
-      const staffList = (res.data.items || []).filter(u =>
-        ['super_admin', 'admin', 'support_agent', 'support', 'regular_employee'].includes(u.role)
-      );
-      setStaffUsers(staffList);
-    } catch (err) {
-      console.error('Failed to fetch staff list', err);
+      const res = await api.get('/support/tickets/agents');
+      setStaffUsers(res.data.items || []);
+    } catch {
+      setStaffUsers([]);
     }
   };
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setSearch(searchInput.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [searchInput]);
+
+  useEffect(() => {
     fetchTickets();
-    fetchStaff();
+  }, [search, statusFilter, priorityFilter, categoryFilter]);
+
+  useEffect(() => {
+    if (canManage && !staffUsers.length) fetchStaff();
+  }, [canManage]);
+
+  // Live updates: refresh the list and the open ticket every 15 seconds while the tab is visible.
+  const selectedIdRef = useRef(null);
+  selectedIdRef.current = selectedTicket?._id || null;
+  useEffect(() => {
+    const timer = window.setInterval(async () => {
+      if (document.visibilityState !== 'visible') return;
+      fetchTickets({ quiet: true });
+      const id = selectedIdRef.current;
+      if (!id) return;
+      try {
+        const res = await api.get(`/support/tickets/${id}`);
+        if (selectedIdRef.current === id) setSelectedTicket(res.data);
+      } catch { /* keep what is shown */ }
+    }, 15000);
+    return () => window.clearInterval(timer);
   }, [search, statusFilter, priorityFilter, categoryFilter]);
 
   // Scroll to bottom when new messages load or selected ticket changes
@@ -99,17 +128,23 @@ export default function SupportTicketsPage() {
     try {
       const res = await api.get(`/support/tickets/${ticketId}`);
       setSelectedTicket(res.data);
+      setError('');
     } catch (err) {
-      console.error('Failed to load ticket details', err);
+      setError(err.response?.data?.message || 'Unable to open this ticket.');
     }
   };
 
   // Handle Create Ticket
   const handleCreateTicket = async (e) => {
     e.preventDefault();
-    if (!newTicket.title || !newTicket.description) return;
+    if (!newTicket.title.trim() || !newTicket.description.trim()) {
+      setCreateError('Title and description are required.');
+      return;
+    }
 
     try {
+      setCreating(true);
+      setCreateError('');
       const res = await api.post('/support/tickets', newTicket);
       setTickets([res.data, ...tickets]);
       setIsCreateOpen(false);
@@ -121,7 +156,9 @@ export default function SupportTicketsPage() {
       });
       setSelectedTicket(res.data);
     } catch (err) {
-      console.error('Failed to create ticket', err);
+      setCreateError(err.response?.data?.message || 'Unable to create the ticket.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -131,8 +168,9 @@ export default function SupportTicketsPage() {
       const res = await api.patch(`/support/tickets/${ticketId}/status`, { status: nextStatus });
       setSelectedTicket(res.data);
       setTickets(tickets.map(t => (t._id === ticketId ? res.data : t)));
+      setError('');
     } catch (err) {
-      console.error('Failed to update ticket status', err);
+      setError(err.response?.data?.message || 'Unable to change the status.');
     }
   };
 
@@ -142,8 +180,9 @@ export default function SupportTicketsPage() {
       const res = await api.patch(`/support/tickets/${ticketId}/assign`, { assignedTo: staffId || null });
       setSelectedTicket(res.data);
       setTickets(tickets.map(t => (t._id === ticketId ? res.data : t)));
+      setError('');
     } catch (err) {
-      console.error('Failed to assign ticket', err);
+      setError(err.response?.data?.message || 'Unable to assign the ticket.');
     }
   };
 
@@ -158,8 +197,9 @@ export default function SupportTicketsPage() {
       setSelectedTicket(res.data);
       setReplyMessage('');
       setTickets(tickets.map(t => (t._id === selectedTicket._id ? res.data : t)));
+      setError('');
     } catch (err) {
-      console.error('Failed to send reply', err);
+      setError(err.response?.data?.message || 'Unable to send the reply.');
     } finally {
       setReplyLoading(false);
     }
@@ -201,13 +241,20 @@ export default function SupportTicketsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Support Desk</h1>
-          <p className="text-sm text-slate-500">Raise support tickets and track progress in real-time.</p>
+          <p className="text-sm text-slate-500">Raise support tickets and track progress. Updates refresh every 15 seconds.</p>
         </div>
-        <Button onClick={() => setIsCreateOpen(true)} className="flex items-center gap-2 bg-primary text-white">
+        <Button onClick={() => { setCreateError(''); setIsCreateOpen(true); }} className="flex items-center gap-2 bg-primary text-white">
           <Plus size={16} />
           Create Support Ticket
         </Button>
       </div>
+
+      {error ? (
+        <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError('')} className="text-xs font-semibold underline">Dismiss</button>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Left Side: Tickets List */}
@@ -219,8 +266,9 @@ export default function SupportTicketsPage() {
               <input
                 type="text"
                 placeholder="Search ticket ID or details..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                maxLength={100}
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 py-2 pl-9 pr-4 text-sm focus:border-primary focus:outline-none"
               />
             </div>
@@ -322,33 +370,39 @@ export default function SupportTicketsPage() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  {/* Status Dropdown */}
-                  {isStaff ? (
-                    <select
-                      value={selectedTicket.status}
-                      onChange={(e) => handleUpdateStatus(selectedTicket._id, e.target.value)}
-                      className={`rounded-xl border px-3 py-1.5 text-xs font-medium focus:outline-none ${getStatusBadgeClass(selectedTicket.status)}`}
-                    >
-                      <option value="Open">Open</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
-                      <option value="Closed">Closed</option>
-                    </select>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <span className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusBadgeClass(selectedTicket.status)}`}>
-                        {selectedTicket.status}
-                      </span>
-                      {selectedTicket.status !== 'Closed' && (
-                        <button
-                          onClick={() => handleUpdateStatus(selectedTicket._id, 'Closed')}
-                          className="text-xs text-red-600 hover:text-red-800 font-semibold px-2 py-1"
+                  {/* Status: only the changes this person is allowed to make */}
+                  {(() => {
+                    const allowed = (selectedTicket.allowedStatuses || []).filter((st) => st !== selectedTicket.status);
+                    if (isStaff) {
+                      return (
+                        <select
+                          value={selectedTicket.status}
+                          onChange={(e) => handleUpdateStatus(selectedTicket._id, e.target.value)}
+                          aria-label="Ticket status"
+                          className={`rounded-xl border px-3 py-1.5 text-xs font-medium focus:outline-none ${getStatusBadgeClass(selectedTicket.status)}`}
                         >
-                          Close Ticket
-                        </button>
-                      )}
-                    </div>
-                  )}
+                          {['Open', 'In Progress', 'Resolved', 'Closed'].map((st) => <option key={st} value={st}>{st}</option>)}
+                        </select>
+                      );
+                    }
+                    return (
+                      <div className="flex items-center gap-2">
+                        <span className={`rounded-full border px-3 py-1 text-xs font-medium ${getStatusBadgeClass(selectedTicket.status)}`}>
+                          {selectedTicket.status}
+                        </span>
+                        {allowed.map((st) => (
+                          <button
+                            key={st}
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedTicket._id, st)}
+                            className={`px-2 py-1 text-xs font-semibold ${st === 'Closed' ? 'text-red-600 hover:text-red-800' : 'text-primary hover:underline'}`}
+                          >
+                            {st === 'Closed' ? 'Close Ticket' : st === 'Open' ? 'Reopen' : `Mark ${st}`}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  })()}
 
                   {/* Assignment dropdown for Staff */}
                   {isStaff && (
@@ -381,11 +435,10 @@ export default function SupportTicketsPage() {
 
                 {/* Conversation Thread */}
                 {selectedTicket.messages?.map((msg, index) => {
-                  const isStaffSender = ['super_admin', 'admin', 'support_agent', 'support'].includes(msg.sender?.role);
                   const isMe = String(msg.sender?._id || msg.sender) === String(user?._id);
 
                   // Check if it's a status notification message (status updates/assign notifications don't look like chat bubbles)
-                  const isNotification = msg.message.startsWith('Status updated to:') || msg.message.startsWith('Ticket assigned to:') || msg.message.startsWith('Ticket created:');
+                  const isNotification = msg.message.startsWith('Status updated to:') || msg.message.startsWith('Ticket assigned to:') || msg.message.startsWith('Ticket created');
 
                   if (isNotification) {
                     return (
@@ -425,15 +478,17 @@ export default function SupportTicketsPage() {
               </div>
 
               {/* Chat Footer Reply Box */}
-              {selectedTicket.status === 'Closed' ? (
+              {selectedTicket.status === 'Closed' && selectedTicket.canReply ? (
                 <div className="bg-slate-100 border-t border-slate-200 py-4 px-6 text-center text-xs font-medium text-slate-500">
-                  This ticket has been closed. Reopen by sending a reply.
+                  This ticket has been closed. Sending a reply reopens it.
                 </div>
               ) : null}
 
+              {selectedTicket.canReply ? (
               <form onSubmit={handleSendReply} className="border-t border-slate-200 bg-white p-4 flex gap-3 items-center">
                 <input
                   type="text"
+                  maxLength={5000}
                   placeholder={selectedTicket.status === 'Closed' ? "Type a message to reopen and reply..." : "Type your message here..."}
                   value={replyMessage}
                   onChange={(e) => setReplyMessage(e.target.value)}
@@ -447,6 +502,7 @@ export default function SupportTicketsPage() {
                   <Send size={16} />
                 </Button>
               </form>
+              ) : null}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center rounded-2xl bg-white border border-slate-200 shadow-sm p-12 text-center h-[75vh]">
@@ -468,19 +524,22 @@ export default function SupportTicketsPage() {
               <h2 className="text-lg font-semibold text-slate-900">Raise Support Ticket</h2>
               <button
                 onClick={() => setIsCreateOpen(false)}
-                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 text-sm font-bold"
+                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                aria-label="Close"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleCreateTicket} className="p-5 space-y-4">
+              {createError ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-medium text-red-700">{createError}</div> : null}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Subject / Issue Title</label>
                 <input
                   type="text"
                   required
                   placeholder="e.g. Cannot log in to account, billing discrepancy..."
+                  maxLength={200}
                   value={newTicket.title}
                   onChange={(e) => setNewTicket({ ...newTicket, title: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
@@ -524,6 +583,7 @@ export default function SupportTicketsPage() {
                   required
                   rows={4}
                   placeholder="Describe your concern or issue in detail..."
+                  maxLength={5000}
                   value={newTicket.description}
                   onChange={(e) => setNewTicket({ ...newTicket, description: e.target.value })}
                   className="w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none"
@@ -531,11 +591,11 @@ export default function SupportTicketsPage() {
               </div>
 
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                <Button onClick={() => setIsCreateOpen(false)} className="bg-slate-100 text-slate-700">
+                <Button type="button" onClick={() => setIsCreateOpen(false)} className="bg-slate-100 text-slate-700">
                   Cancel
                 </Button>
-                <Button type="submit" className="bg-primary text-white">
-                  Submit Ticket
+                <Button type="submit" disabled={creating} className="bg-primary text-white">
+                  {creating ? 'Submitting...' : 'Submit Ticket'}
                 </Button>
               </div>
             </form>

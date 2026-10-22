@@ -28,7 +28,10 @@ const tenantSchema = new mongoose.Schema(
       of: mongoose.Schema.Types.Mixed,
       default: {}
     },
-    storageUsage: { type: Number, default: 0 } // in bytes
+    storageUsage: { type: Number, default: 0 }, // in bytes
+    // Secret in the lead webhook URL. Identifies the company for IndiaMart / Justdial / Zoho / website
+    // pushes, which cannot send a login token. Rotating it breaks the old URL.
+    leadWebhookToken: { type: String, unique: true, sparse: true, select: false }
   },
   { timestamps: true }
 );

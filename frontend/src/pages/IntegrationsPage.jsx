@@ -22,12 +22,16 @@ import {
   Database
 } from 'lucide-react';
 
+// Pausing a source makes its webhook refuse leads (the sender keeps them and retries later).
+// Nothing is paused unless someone switches it off here.
 const DEFAULT_INTEGRATIONS = {
-  justdial: { isActive: false, pollUrl: '', apiToken: '', pollIntervalMs: 300000 },
-  indiamart: { isActive: false, apiKey: '' },
-  zoho: { isActive: false, clientClientId: '', clientSecret: '', redirectUri: '' },
-  website: { isActive: true, webhookSecret: 'secret_key' }
+  justdial: { isActive: false, paused: false, pollUrl: '', apiToken: '', apiTokenSet: false, pollIntervalMs: 300000 },
+  indiamart: { paused: false },
+  zoho: { paused: false },
+  website: { paused: false }
 };
+
+const WEBHOOK_KEYS = { justdial: 'justdial', indiamart: 'indiamart', zoho: 'zoho', website: 'website_form' };
 
 const inputCls =
   'w-full rounded-xl border border-slate-200 px-4 py-2 text-sm focus:border-primary focus:outline-none';
@@ -98,27 +102,29 @@ function CopyField({ label, value }) {
 }
 
 // Real switch (keyboard focusable) instead of a clickable <span>
-function Toggle({ provider, active, titleId, onToggle }) {
+// Switch for "accepting leads" (on) / "paused" (off).
+function Toggle({ provider, active, titleId, onToggle, disabled, onLabel = 'Accepting leads', offLabel = 'Paused' }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={!!active}
       aria-labelledby={titleId}
+      disabled={disabled}
       onClick={() => onToggle(provider)}
-      className={`flex select-none items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition ${
+      className={`flex shrink-0 select-none items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-70 ${
         active
           ? 'border border-emerald-200 bg-emerald-50 text-emerald-700'
           : 'border border-slate-200 bg-slate-100 text-slate-500'
       }`}
     >
       {active ? <CheckCircle size={12} aria-hidden="true" /> : <XCircle size={12} aria-hidden="true" />}
-      {active ? 'Active' : 'Inactive'}
+      {active ? onLabel : offLabel}
     </button>
   );
 }
 
-function CardShell({ id, icon, iconClass, title, subtitle, provider, active, onToggle, note, children }) {
+function CardShell({ id, icon, iconClass, title, subtitle, provider, active, onToggle, disabled, note, children }) {
   const titleId = `${id}-title`;
   return (
     <section
@@ -138,7 +144,7 @@ function CardShell({ id, icon, iconClass, title, subtitle, provider, active, onT
               <p className="text-xs text-slate-500">{subtitle}</p>
             </div>
           </div>
-          <Toggle provider={provider} active={active} titleId={titleId} onToggle={onToggle} />
+          <Toggle provider={provider} active={active} titleId={titleId} onToggle={onToggle} disabled={disabled} />
         </div>
         <div className="mt-6 space-y-4">{children}</div>
       </div>
@@ -150,168 +156,72 @@ function CardShell({ id, icon, iconClass, title, subtitle, provider, active, onT
   );
 }
 
+// The real webhook URL (with the company's secret key) from Lead Distribution, or why it isn't shown.
+function WebhookUrl({ webhook, provider }) {
+  if (webhook?.error) {
+    return <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{webhook.error}</p>;
+  }
+  if (!webhook) return <p className="text-xs text-slate-500">Loading webhook URL…</p>;
+  const source = webhook.sources?.find((s) => s.value === WEBHOOK_KEYS[provider]);
+  if (!webhook.token || !source) {
+    return <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">{webhook.message || 'Webhooks are not set up on this server yet.'}</p>;
+  }
+  return <CopyField label="Webhook URL (keep private)" value={webhook.base + source.path} />;
+}
+
 /* ---------- Provider cards (memoized: typing in one card doesn't re-render the others) ---------- */
 
-const JustdialCard = memo(function JustdialCard({ config, onChange, onToggle, webhookBaseUrl }) {
+const JustdialCard = memo(function JustdialCard({ config, onChange, onToggle, webhook, canEdit }) {
+  const id = useId();
   return (
     <CardShell
-      id="justdial"
-      icon={<Globe size={24} />}
-      iconClass="bg-orange-50 text-orange-600 border-orange-100"
-      title="Justdial Integration"
-      subtitle="Poll or push real-time Justdial campaign leads"
+      id={id}
+      icon={<Globe size={20} />}
+      iconClass="border-orange-100 bg-orange-50 text-orange-600"
+      title="Justdial"
+      subtitle="Receive Justdial enquiries by webhook or polling"
       provider="justdial"
-      active={config?.isActive}
+      active={!config?.paused}
       onToggle={onToggle}
-      note="Copy the Webhook URL and paste it into your Justdial campaign dashboard to receive leads in real-time."
+      disabled={!canEdit}
+      note="Paste the webhook URL into your Justdial dashboard, or switch on polling if Justdial gives you a lead feed URL. Repeat enquiries from a known number are added to that lead's history."
     >
-      <CopyField label="Webhook Target URL" value={`${webhookBaseUrl}/justdial`} />
-
-      <div className="space-y-3">
-        <Labeled label="Polling Endpoint API URL">
-          {(id) => (
-            <input
-              id={id}
-              className={inputCls}
-              placeholder="https://api.justdial.com/leads..."
-              value={config?.pollUrl || ''}
-              onChange={(e) => onChange('justdial', 'pollUrl', e.target.value)}
-            />
-          )}
-        </Labeled>
-        <div className="grid grid-cols-2 gap-4">
-          <Labeled label="Client / API Token">
-            {(id) => (
-              <input
-                id={id}
-                className={inputCls}
-                type="password"
-                autoComplete="off"
-                value={config?.apiToken || ''}
-                onChange={(e) => onChange('justdial', 'apiToken', e.target.value)}
-              />
-            )}
-          </Labeled>
-          <Labeled label="Interval (Minutes)">
-            {(id) => (
-              <select
-                id={id}
-                className={inputCls}
-                value={config?.pollIntervalMs || 300000}
-                onChange={(e) => onChange('justdial', 'pollIntervalMs', Number(e.target.value))}
-              >
-                <option value={60000}>1 Min</option>
-                <option value={300000}>5 Min</option>
-                <option value={900000}>15 Min</option>
-              </select>
-            )}
-          </Labeled>
+      <WebhookUrl webhook={webhook} provider="justdial" />
+      <div className="space-y-3 rounded-xl border border-slate-100 p-3">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold uppercase text-slate-500">Polling</span>
+          <Toggle provider="justdial-poll" active={config?.isActive} titleId={`${id}-title`} onToggle={() => onChange('justdial', 'isActive', !config?.isActive)} disabled={!canEdit} onLabel="On" offLabel="Off" />
         </div>
-      </div>
-    </CardShell>
-  );
-});
-
-const IndiaMartCard = memo(function IndiaMartCard({ config, onChange, onToggle, webhookBaseUrl }) {
-  return (
-    <CardShell
-      id="indiamart"
-      icon={<ShoppingBag size={24} />}
-      iconClass="bg-teal-50 text-teal-600 border-teal-100"
-      title="IndiaMart Integration"
-      subtitle="Capture IndiaMart leads automatically via webhook"
-      provider="indiamart"
-      active={config?.isActive}
-      onToggle={onToggle}
-      note="Provides direct webhook integration for IndiaMart inquiries. IndiaMart fields (SENDER_NAME, SENDER_MOBILE) are auto-mapped."
-    >
-      <CopyField label="Webhook URL" value={`${webhookBaseUrl}/indiamart`} />
-      <Labeled label="IndiaMart CRM API Key (Optional)" upper>
-        {(id) => (
-          <input
-            id={id}
-            type="password"
-            autoComplete="off"
-            placeholder="Enter IndiaMart API Key"
-            value={config?.apiKey || ''}
-            onChange={(e) => onChange('indiamart', 'apiKey', e.target.value)}
-            className={inputCls}
-          />
-        )}
-      </Labeled>
-    </CardShell>
-  );
-});
-
-const WebsiteCard = memo(function WebsiteCard({ config, onChange, onToggle, webhookBaseUrl }) {
-  return (
-    <CardShell
-      id="website"
-      icon={<Code size={24} />}
-      iconClass="bg-purple-50 text-purple-600 border-purple-100"
-      title="Website Form Integration"
-      subtitle="Ingest contact forms directly into CRM"
-      provider="website"
-      active={config?.isActive}
-      onToggle={onToggle}
-      note="Connect landing pages or business websites. Submit forms directly via JSON POST request payloads."
-    >
-      <CopyField label="Webhook POST Endpoint" value={`${webhookBaseUrl}/website`} />
-      <Labeled label="Secure Request Secret (Optional)" upper>
-        {(id) => (
-          <input
-            id={id}
-            type="password"
-            autoComplete="off"
-            placeholder="Enter Secret Key Header"
-            value={config?.webhookSecret || ''}
-            onChange={(e) => onChange('website', 'webhookSecret', e.target.value)}
-            className={inputCls}
-          />
-        )}
-      </Labeled>
-    </CardShell>
-  );
-});
-
-const ZohoCard = memo(function ZohoCard({ config, onChange, onToggle, webhookBaseUrl }) {
-  return (
-    <CardShell
-      id="zoho"
-      icon={<Database size={24} />}
-      iconClass="bg-blue-50 text-blue-600 border-blue-100"
-      title="Zoho CRM Integration"
-      subtitle="Map Zoho CRM module leads"
-      provider="zoho"
-      active={config?.isActive}
-      onToggle={onToggle}
-      note="Map modules from your Zoho CRM panel. Set up a workflow rule in Zoho CRM to push HTTP Post webhooks to this endpoint."
-    >
-      <CopyField label="Webhook URL" value={`${webhookBaseUrl}/zoho`} />
-      <div className="grid grid-cols-2 gap-4">
-        <Labeled label="Client ID" upper>
-          {(id) => (
+        <Labeled label="Lead feed URL">
+          {(fid) => (
+            <input id={fid} type="url" className={inputCls} placeholder="https://..." disabled={!canEdit} value={config?.pollUrl || ''} onChange={(e) => onChange('justdial', 'pollUrl', e.target.value)} />
+          )}
+        </Labeled>
+        <Labeled label="API token">
+          {(fid) => (
             <input
-              id={id}
+              id={fid}
               type="password"
-              autoComplete="off"
-              placeholder="Zoho Client ID"
-              value={config?.clientClientId || ''}
-              onChange={(e) => onChange('zoho', 'clientClientId', e.target.value)}
+              autoComplete="new-password"
               className={inputCls}
+              disabled={!canEdit}
+              placeholder={config?.apiTokenSet ? 'Saved. Type a new token to replace it.' : 'Token from Justdial (optional)'}
+              value={config?.apiToken || ''}
+              onChange={(e) => onChange('justdial', 'apiToken', e.target.value)}
             />
           )}
         </Labeled>
-        <Labeled label="Client Secret" upper>
-          {(id) => (
+        <Labeled label="Check every (minutes)">
+          {(fid) => (
             <input
-              id={id}
-              type="password"
-              autoComplete="off"
-              placeholder="Zoho Client Secret"
-              value={config?.clientSecret || ''}
-              onChange={(e) => onChange('zoho', 'clientSecret', e.target.value)}
+              id={fid}
+              type="number"
+              min="1"
+              max="1440"
               className={inputCls}
+              disabled={!canEdit}
+              value={Math.round((config?.pollIntervalMs || 300000) / 60000)}
+              onChange={(e) => onChange('justdial', 'pollIntervalMs', Math.max(1, Number(e.target.value) || 1) * 60000)}
             />
           )}
         </Labeled>
@@ -319,6 +229,17 @@ const ZohoCard = memo(function ZohoCard({ config, onChange, onToggle, webhookBas
     </CardShell>
   );
 });
+
+const SimpleSourceCard = memo(function SimpleSourceCard({ provider, title, subtitle, icon, iconClass, note, config, onToggle, webhook, canEdit, children }) {
+  const id = useId();
+  return (
+    <CardShell id={id} icon={icon} iconClass={iconClass} title={title} subtitle={subtitle} provider={provider} active={!config?.paused} onToggle={onToggle} disabled={!canEdit} note={note}>
+      <WebhookUrl webhook={webhook} provider={provider} />
+      {children}
+    </CardShell>
+  );
+});
+
 
 /* ---------- WhatsApp card: owns ALL its state, so socket/QR updates never re-render other cards ---------- */
 
@@ -373,6 +294,30 @@ const WhatsAppCard = memo(function WhatsAppCard({ userId, canUpdate }) {
       socket.off('whatsapp:status', onStatus);
     };
   }, [userId]);
+
+  // Safety net for production: while a QR code is on screen or the session is starting, also ask
+  // the server for the status every 3 seconds. WhatsApp replaces the QR code about every 20 seconds;
+  // if a live socket update is missed (proxy without WebSocket support, dropped connection), the page
+  // would keep showing an expired QR code and the phone would fail to link.
+  useEffect(() => {
+    if (!['INITIALIZING', 'LOADING', 'QR_RECEIVED'].includes(waStatus)) return undefined;
+    const timer = setInterval(() => {
+      api
+        .get('/v1/whatsapp/status')
+        .then(({ data }) => {
+          setWaStatus(data.status);
+          setWaQrCode(data.qrCode || '');
+          if (data.status === 'CONNECTED') {
+            setWaSuccess('WhatsApp connected successfully!');
+            setWaError('');
+          }
+        })
+        .catch(() => {
+          /* keep the current state; the next tick retries */
+        });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [waStatus]);
 
   const handleConnect = async () => {
     setWaLoading(true);
@@ -621,59 +566,69 @@ const WhatsAppCard = memo(function WhatsAppCard({ userId, canUpdate }) {
   );
 });
 
+
 /* ---------- Page ---------- */
 
 export default function IntegrationsPage() {
-  const { settings, updateSettings } = useSettings();
+  const { updateSettings } = useSettings();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [integrations, setIntegrations] = useState(DEFAULT_INTEGRATIONS);
+  const [webhook, setWebhook] = useState(null);
 
-  const [integrations, setIntegrations] = useState(() => ({
-    ...DEFAULT_INTEGRATIONS,
-    ...(settings?.integrations || {})
-  }));
-
-  // Settings may load after first render; keep local state in sync
-  useEffect(() => {
-    if (settings?.integrations) {
-      setIntegrations({ ...DEFAULT_INTEGRATIONS, ...settings.integrations });
-    }
-  }, [settings?.integrations]);
-
-  const webhookBaseUrl = useMemo(
-    () => window.location.origin.replace('3000', '5000').replace('5173', '5000') + '/api/leads/webhook',
-    []
-  );
-
+  const canReadSettings = hasPermission(user, 'settings', 'read');
   const canEdit = hasPermission(user, 'settings', 'update');
   const canReadWa = hasPermission(user, 'whatsapp_integration', 'read');
   const canUpdateWa = hasPermission(user, 'whatsapp_integration', 'update');
+  const apiBase = String(api.defaults.baseURL || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+
+  // Integration settings (secrets come back masked) and the real webhook URLs.
+  useEffect(() => {
+    if (!canReadSettings) return;
+    api.get('/settings/integrations')
+      .then(({ data }) => setIntegrations({ ...DEFAULT_INTEGRATIONS, ...(data.integrations || {}) }))
+      .catch((err) => setError(err.response?.data?.message || 'Unable to load integration settings.'));
+    api.get('/leads/webhook-info')
+      .then(({ data }) => setWebhook({ ...data, base: apiBase.startsWith('http') ? apiBase : `${window.location.origin}${apiBase}` }))
+      .catch((err) => setWebhook({
+        error: err.response?.status === 403
+          ? 'Webhook URLs contain a secret key, so only Leads managers (Full access) can see them. Ask one to copy it from Leads → Lead Distribution.'
+          : err.response?.data?.message || 'Unable to load the webhook URL.'
+      }));
+  }, [canReadSettings, apiBase]);
 
   const handleToggle = useCallback((provider) => {
-    setIntegrations((prev) => ({
-      ...prev,
-      [provider]: { ...prev[provider], isActive: !prev[provider]?.isActive }
-    }));
+    setIntegrations((prev) => ({ ...prev, [provider]: { ...prev[provider], paused: !prev[provider]?.paused } }));
   }, []);
 
   const handleChange = useCallback((provider, field, value) => {
-    setIntegrations((prev) => ({
-      ...prev,
-      [provider]: { ...prev[provider], [field]: value }
-    }));
+    setIntegrations((prev) => ({ ...prev, [provider]: { ...prev[provider], [field]: value } }));
   }, []);
 
   const handleSave = async () => {
+    const jd = integrations.justdial || {};
+    if (jd.isActive && !/^https?:\/\//i.test(jd.pollUrl || '')) {
+      setError('Justdial polling needs a lead feed URL starting with https://');
+      return;
+    }
     try {
       setSaving(true);
       setMessage('');
-      await updateSettings({ integrations });
-      setMessage('Integrations settings updated successfully!');
+      setError('');
+      const payload = {
+        justdial: { isActive: !!jd.isActive, paused: !!jd.paused, pollUrl: jd.pollUrl || '', pollIntervalMs: jd.pollIntervalMs || 300000, ...(jd.apiToken ? { apiToken: jd.apiToken } : {}) },
+        indiamart: { paused: !!integrations.indiamart?.paused },
+        zoho: { paused: !!integrations.zoho?.paused },
+        website: { paused: !!integrations.website?.paused }
+      };
+      const data = await updateSettings({ integrations: payload });
+      setIntegrations({ ...DEFAULT_INTEGRATIONS, ...(data.integrations || {}) });
+      setMessage('Integration settings saved.');
       setTimeout(() => setMessage(''), 3000);
     } catch (err) {
-      console.error(err);
-      setMessage('Failed to update integration settings.');
+      setError(err.response?.data?.message || 'Failed to update integration settings.');
     } finally {
       setSaving(false);
     }
@@ -685,52 +640,69 @@ export default function IntegrationsPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Third-Party Integrations</h1>
           <p className="text-sm text-slate-500">
-            Configure webhooks and API credentials to ingest leads from external platforms.
+            Connect lead sources and WhatsApp. Lead routing rules live in Leads → Lead Distribution.
           </p>
         </div>
-        <Button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary text-white">
-          <Save size={16} aria-hidden="true" />
-          {saving ? 'Saving...' : 'Save Configuration'}
-        </Button>
+        {canEdit ? (
+          <Button onClick={handleSave} disabled={saving} className="flex items-center gap-2 bg-primary text-white">
+            <Save size={16} aria-hidden="true" />
+            {saving ? 'Saving...' : 'Save Configuration'}
+          </Button>
+        ) : null}
       </div>
 
-      {/* Always in the DOM so screen readers announce changes */}
       <div role="status" aria-live="polite">
-        {message && (
-          <div className="rounded-xl bg-slate-900 p-3 text-sm font-semibold text-white shadow-md">{message}</div>
-        )}
+        {message && <div className="rounded-xl bg-emerald-50 p-3 text-sm font-semibold text-emerald-800">{message}</div>}
       </div>
+      {error ? <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      {canReadSettings && !canEdit ? (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">View only. You need Settings update access to change integrations.</div>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {canEdit && (
+        {canReadSettings && (
           <>
-            <JustdialCard
-              config={integrations.justdial}
-              onChange={handleChange}
-              onToggle={handleToggle}
-              webhookBaseUrl={webhookBaseUrl}
-            />
-            <IndiaMartCard
+            <JustdialCard config={integrations.justdial} onChange={handleChange} onToggle={handleToggle} webhook={webhook} canEdit={canEdit} />
+            <SimpleSourceCard
+              provider="indiamart"
+              title="IndiaMart"
+              subtitle="Capture IndiaMart enquiries by webhook"
+              icon={<ShoppingBag size={20} />}
+              iconClass="border-emerald-100 bg-emerald-50 text-emerald-600"
+              note="Paste this URL as the Push API / CRM integration URL in IndiaMart. SENDER_NAME, SENDER_MOBILE, SENDER_EMAIL and QUERY_MESSAGE are mapped automatically."
               config={integrations.indiamart}
-              onChange={handleChange}
               onToggle={handleToggle}
-              webhookBaseUrl={webhookBaseUrl}
+              webhook={webhook}
+              canEdit={canEdit}
             />
-            <WebsiteCard
+            <SimpleSourceCard
+              provider="website"
+              title="Website Forms"
+              subtitle="Send your contact form submissions here"
+              icon={<Code size={20} />}
+              iconClass="border-blue-100 bg-blue-50 text-blue-600"
+              note="POST JSON or form data with name, phone, email and message. One lead or a list of up to 100."
               config={integrations.website}
-              onChange={handleChange}
               onToggle={handleToggle}
-              webhookBaseUrl={webhookBaseUrl}
-            />
-            <ZohoCard
+              webhook={webhook}
+              canEdit={canEdit}
+            >
+              <pre className="overflow-x-auto rounded-xl bg-slate-900 p-3 text-2xs text-slate-100">{`{ "name": "Asha", "phone": "+91 98765 43210",\n  "email": "asha@example.com", "message": "Need a quote" }`}</pre>
+            </SimpleSourceCard>
+            <SimpleSourceCard
+              provider="zoho"
+              title="Zoho CRM"
+              subtitle="Push Zoho leads with a workflow webhook"
+              icon={<Database size={20} />}
+              iconClass="border-purple-100 bg-purple-50 text-purple-600"
+              note="In Zoho CRM: Setup → Automation → Workflow Rules → Webhook, method POST, this URL. Send First_Name, Last_Name, Company, Phone, Email and Description."
               config={integrations.zoho}
-              onChange={handleChange}
               onToggle={handleToggle}
-              webhookBaseUrl={webhookBaseUrl}
+              webhook={webhook}
+              canEdit={canEdit}
             />
           </>
         )}
-
         {canReadWa && <WhatsAppCard userId={user?._id} canUpdate={canUpdateWa} />}
       </div>
     </div>

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom'; // FIX: Link was used below but never imported
+import { Link } from 'react-router-dom';
 import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
+import PageHeader from '../components/layout/PageHeader.jsx';
 import {
   GitFork,
   Plus,
@@ -17,17 +18,21 @@ import {
   Database,
   FileSpreadsheet,
   UserPlus,
-  Zap,
+  Inbox,
   ChevronDown,
   AlertCircle,
   ShieldAlert,
   Sliders,
   CheckCircle,
+  Copy,
+  KeyRound,
+  Webhook,
   X
 } from 'lucide-react';
+import Loader from '../components/Loader.jsx';
 
 const triggerSources = [
-  { value: 'all', label: 'All Sources', icon: Zap, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
+  { value: 'all', label: 'All Sources', icon: Inbox, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
   { value: 'website_form', label: 'Website Form', icon: Globe, color: 'text-blue-600 bg-blue-50 border-blue-100' },
   { value: 'justdial', label: 'Justdial', icon: Phone, color: 'text-orange-600 bg-orange-50 border-orange-100' },
   { value: 'indiamart', label: 'IndiaMart', icon: ShoppingBag, color: 'text-emerald-600 bg-emerald-50 border-emerald-100' },
@@ -63,7 +68,8 @@ function SourceBadge({ sourceValue }) {
 
 export default function LeadDistributionPage() {
   const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'super_admin';
+  // Managing routing needs Full access on Leads (or super admin), same as the server.
+  const isSuperAdmin = user?.role === 'super_admin' || Boolean(user?.permissions?.includes('leads:delete'));
 
   const [rules, setRules] = useState([]);
   const [salespersons, setSalespersons] = useState([]);
@@ -78,6 +84,11 @@ export default function LeadDistributionPage() {
   const [error, setError] = useState('');         // errors inside the form dialog
   const [pageError, setPageError] = useState(''); // errors for the whole page (load, delete, toggle)
   const [successMsg, setSuccessMsg] = useState('');
+
+  const [webhook, setWebhook] = useState(null);
+  const [webhookError, setWebhookError] = useState('');
+  const [copied, setCopied] = useState('');
+  const [removedNotice, setRemovedNotice] = useState('');
 
   const salespersonsLoaded = useRef(false);
   const successTimer = useRef(null);
@@ -103,8 +114,9 @@ export default function LeadDistributionPage() {
     salespersonsLoaded.current = true;
     setSalespersonsLoading(true);
     try {
-      const res = await api.get('/users?limit=100');
-      setSalespersons((res.data.items || []).filter((u) => u.isActive && u.role !== 'super_admin'));
+      // Active staff who can own leads (no customers, no inactive users).
+      const res = await api.get('/leads/assignees');
+      setSalespersons(res.data.items || []);
     } catch {
       salespersonsLoaded.current = false; // allow a retry next time
       setError('Unable to load the salespersons list.');
@@ -114,9 +126,47 @@ export default function LeadDistributionPage() {
   }, []);
 
   // Depends on a simple true/false value, so it does not reload when the user object is only re-created
+  const fetchWebhook = useCallback(async () => {
+    setWebhookError('');
+    try {
+      const res = await api.get('/leads/webhook-info');
+      setWebhook(res.data);
+    } catch (err) {
+      setWebhookError(err.response?.data?.message || 'Unable to load webhook URLs.');
+    }
+  }, []);
+
   useEffect(() => {
-    if (isSuperAdmin) fetchRules();
-  }, [isSuperAdmin, fetchRules]);
+    if (isSuperAdmin) {
+      fetchRules();
+      fetchWebhook();
+    }
+  }, [isSuperAdmin, fetchRules, fetchWebhook]);
+
+  const apiBase = String(api.defaults.baseURL || '').replace(/\/+$/, '').replace(/\/v1$/, '');
+  const webhookUrl = (path) => `${apiBase.startsWith('http') ? apiBase : `${window.location.origin}${apiBase}`}${path}`;
+
+  async function copyUrl(value) {
+    try {
+      await navigator.clipboard.writeText(webhookUrl(value));
+      setCopied(value);
+      setTimeout(() => setCopied(''), 2000);
+    } catch {
+      setWebhookError('Copy failed. Select the URL and copy it manually.');
+    }
+  }
+
+  async function rotateKey() {
+    if (!window.confirm('Create a new secret key? Every current webhook URL stops working until you paste the new URLs into IndiaMart, Justdial, Zoho and your website.')) return;
+    setWebhookError('');
+    try {
+      const res = await api.post('/leads/webhook-info/rotate');
+      setWebhook(res.data);
+      showSuccess('New webhook key created. Update the URLs in every lead source.');
+    } catch (err) {
+      setWebhookError(err.response?.data?.message || 'Unable to create a new key.');
+    }
+  }
 
   // Clear the success message timer when leaving the page
   useEffect(() => () => clearTimeout(successTimer.current), []);
@@ -128,6 +178,7 @@ export default function LeadDistributionPage() {
   };
 
   const handleOpenCreate = () => {
+    setRemovedNotice('');
     setError('');
     setSuccessMsg('');
     setEditingRule(null);
@@ -140,13 +191,16 @@ export default function LeadDistributionPage() {
     setError('');
     setSuccessMsg('');
     setEditingRule(rule);
+    // Inactive / removed people can't receive leads, so they are taken out of the form up front.
+    const inactive = new Set((rule.inactiveMembers || []).map((m) => String(m._id)));
+    setRemovedNotice(rule.inactiveMembers?.length ? `${rule.inactiveMembers.map((m) => m.name).join(', ')} can no longer receive leads and will be removed when you save.` : '');
     setForm({
       name: rule.name,
       isActive: rule.isActive,
       triggerSource: rule.triggerSource,
       distributionType: rule.distributionType,
-      salespersons: rule.salespersons?.map((s) => s._id) || [],
-      singleAssignee: rule.singleAssignee?._id || ''
+      salespersons: (rule.salespersons || []).map((s) => String(s._id)).filter((id) => !inactive.has(id)),
+      singleAssignee: rule.singleAssignee && !inactive.has(String(rule.singleAssignee._id)) ? String(rule.singleAssignee._id) : ''
     });
     setIsModalOpen(true);
     loadSalespersons();
@@ -248,7 +302,7 @@ export default function LeadDistributionPage() {
         </div>
         <h2 className="text-xl font-extrabold text-slate-900">Access Denied</h2>
         <p className="mt-2 text-sm text-slate-500">
-          Only administrators with supervisor access are permitted to configure automatic Lead Distribution rules.
+          Lead routing needs Full access on Leads. Ask an administrator to change your role.
         </p>
         <Link to="/dashboard" className="mt-6 inline-block">
           <Button>Return to Dashboard</Button>
@@ -258,42 +312,33 @@ export default function LeadDistributionPage() {
   }
 
   const agentsPlaceholder = salespersonsLoading ? (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">Loading agents...</div>
+    <Loader label="Loading agents" size="sm" />
   ) : (
     <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs text-yellow-800">
-      No active agents found. Please create/activate staff in Users Management first.
+      No active staff who can own leads. Add or activate employees in Users first.
     </div>
   );
 
   return (
     <div className="space-y-5 sm:space-y-6">
-      {/* Header: stacks on phones */}
-      <div className="flex flex-col gap-4 border-b border-slate-100 pb-5 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">Lead Distribution</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Automate lead allocation to sales agents from incoming APIs, webhooks, form submissions, and files.
-          </p>
-        </div>
-        <div className="flex w-full items-center gap-2.5 sm:w-auto">
-          <Button
-            onClick={fetchRules}
-            variant="outline"
-            className="inline-flex flex-1 items-center justify-center gap-2 border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 sm:flex-none"
-            title="Refresh Flows List"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            Sync
-          </Button>
-          <Button
-            onClick={handleOpenCreate}
-            className="inline-flex flex-1 items-center justify-center gap-2 bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-800 sm:flex-none"
-          >
-            <Plus size={15} />
-            New Flow
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        label="Routing"
+        title="Lead Distribution"
+        description="Automate lead allocation to sales agents from incoming APIs, webhooks, form submissions, and files."
+        className=""
+        actions={
+          <>
+            <Button variant="outline" onClick={fetchRules} className="gap-2" title="Refresh flows list">
+              <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+              Sync
+            </Button>
+            <Button onClick={handleOpenCreate} className="gap-2">
+              <Plus size={15} />
+              New Flow
+            </Button>
+          </>
+        }
+      />
 
       {successMsg && (
         <div role="status" className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 shadow-sm">
@@ -312,6 +357,36 @@ export default function LeadDistributionPage() {
           <button type="button" onClick={fetchRules} className="shrink-0 text-xs font-bold text-red-700 underline">Retry</button>
         </div>
       )}
+
+      <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" aria-label="Webhook URLs">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900"><Webhook size={16} className="text-slate-500" /> Webhook URLs</h2>
+            <p className="mt-1 text-xs text-slate-500">Paste these into each lead source. The secret key in the URL identifies your company; keep it private.</p>
+          </div>
+          {webhook?.canRotate ? (
+            <button type="button" onClick={rotateKey} className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-50">
+              <KeyRound size={13} /> New key
+            </button>
+          ) : null}
+        </div>
+        {webhookError ? <p className="mt-3 text-xs font-semibold text-red-700" role="alert">{webhookError}</p> : null}
+        {webhook?.message ? <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">{webhook.message}</p> : null}
+        {webhook?.token ? (
+          <div className="mt-3 space-y-2">
+            {webhook.sources.map((src) => (
+              <div key={src.value} className="flex flex-col gap-1.5 rounded-lg border border-slate-100 bg-slate-50 p-2 sm:flex-row sm:items-center">
+                <span className="w-28 shrink-0 text-xs font-semibold text-slate-700">{src.label}</span>
+                <code className="min-w-0 flex-1 truncate text-[11px] text-slate-600" title={webhookUrl(src.path)}>{webhookUrl(src.path)}</code>
+                <button type="button" onClick={() => copyUrl(src.path)} className="inline-flex shrink-0 items-center gap-1 rounded-md border border-slate-200 bg-white px-2 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100">
+                  {copied === src.path ? <CheckCircle size={12} className="text-emerald-600" /> : <Copy size={12} />}{copied === src.path ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+            ))}
+            <p className="text-[11px] text-slate-500">Accepts JSON or form posts, one lead or a list (up to 100). A repeat enquiry from a known number is added to that lead's history instead of creating a duplicate.</p>
+          </div>
+        ) : null}
+      </section>
 
       {loading ? (
         <div className="grid grid-cols-1 gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" aria-busy="true" aria-label="Loading rules">
@@ -383,6 +458,19 @@ export default function LeadDistributionPage() {
                     </button>
                   </div>
 
+                  {rule.inactiveMembers?.length > 0 && (
+                    <div className="mt-3 flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800">
+                      <AlertCircle size={12} className="shrink-0 text-amber-600" />
+                      <span>Skipped (inactive): {rule.inactiveMembers.map((m) => m.name).join(', ')}</span>
+                    </div>
+                  )}
+                  {rule.isActive && !rule.nextAssignee && (
+                    <div className="mt-3 flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-2 py-1 text-[11px] font-semibold text-red-700">
+                      <AlertCircle size={12} className="shrink-0" />
+                      <span>No active agent. Leads fall through to the All Sources flow (or stay unassigned).</span>
+                    </div>
+                  )}
+
                   {hasOverlappingActiveRules && (
                     <div className="mt-3 flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-800">
                       <AlertCircle size={12} className="shrink-0 text-amber-600" />
@@ -403,6 +491,13 @@ export default function LeadDistributionPage() {
                         {rule.distributionType === 'round_robin' ? 'Round Robin Queue' : 'Single Owner'}
                       </span>
                     </div>
+
+                    {rule.nextAssignee ? (
+                      <div className="flex items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Next Lead Goes To</span>
+                        <span className="font-semibold text-slate-800">{rule.nextAssignee.name}</span>
+                      </div>
+                    ) : null}
                   </div>
 
                   <div className="mt-5 border-t border-slate-100 pt-4">
@@ -420,7 +515,7 @@ export default function LeadDistributionPage() {
                       <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto pr-1">
                         {rule.salespersons && rule.salespersons.length > 0 ? (
                           rule.salespersons.map((sp) => (
-                            <span key={sp._id} className="inline-flex items-center gap-1 rounded border border-slate-200/40 bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-700">
+                            <span key={sp._id} className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs font-semibold ${rule.inactiveMembers?.some((m) => String(m._id) === String(sp._id)) ? 'border-amber-200 bg-amber-50 text-amber-700 line-through' : 'border-slate-200/40 bg-slate-100 text-slate-700'}`}>
                               {sp.name}
                             </span>
                           ))
@@ -476,7 +571,7 @@ export default function LeadDistributionPage() {
                 <h2 id="distribution-dialog-title" className="text-lg font-bold text-slate-900">
                   {editingRule ? 'Edit Distribution Rule' : 'Create Distribution Rule'}
                 </h2>
-                <p className="mt-0.5 text-xs text-slate-500">Define trigger conditions and destination salespersons.</p>
+                <p className="mt-0.5 text-xs text-slate-500">Pick the source and who receives its leads. If this flow has no active agent, the All Sources flow is used.</p>
               </div>
               <button
                 type="button"
@@ -489,6 +584,12 @@ export default function LeadDistributionPage() {
             </div>
 
             <form onSubmit={handleSave} className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4 sm:p-6">
+              {removedNotice && (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs font-semibold text-amber-800">
+                  <AlertCircle size={15} className="mt-0.5 shrink-0 text-amber-600" />
+                  <span>{removedNotice}</span>
+                </div>
+              )}
               {error && (
                 <div role="alert" className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-xs font-semibold text-red-700">
                   <AlertCircle size={15} className="mt-0.5 shrink-0 text-red-600" />
@@ -634,4 +735,4 @@ export default function LeadDistributionPage() {
       )}
     </div>
   );
-}
+}

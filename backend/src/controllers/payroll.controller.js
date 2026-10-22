@@ -3,177 +3,178 @@ import { User } from '../models/User.js';
 import { Attendance } from '../models/Attendance.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
+import {
+  computePayroll,
+  joinedBy,
+  netPayable,
+  parseAmount,
+  parseComment,
+  parseMonthYear,
+} from '../utils/payrollCalc.js';
 
-function getDaysInMonth(monthYearStr) {
-  const [year, month] = monthYearStr.split('-').map(Number);
-  return new Date(year, month, 0).getDate();
-}
+const EMPLOYEE_FIELDS = 'name email role isActive joiningDate employmentClassification baseSalary monthlyLeaveQuota';
+const NON_EMPLOYEE_ROLES = ['customer', 'super_admin'];
 
-function calculateTenure(joiningDate, monthYearStr) {
+function calculateTenure(joiningDate, monthYear) {
   if (!joiningDate) return '-';
   const join = new Date(joiningDate);
-  const [year, month] = monthYearStr.split('-').map(Number);
-  const targetDate = new Date(year, month - 1, 1);
-
-  let diffMonths = (targetDate.getFullYear() - join.getFullYear()) * 12 + (targetDate.getMonth() - join.getMonth());
+  const { year, month } = parseMonthYear(monthYear);
+  let diffMonths = (year - join.getUTCFullYear()) * 12 + (month - 1 - join.getUTCMonth());
   if (diffMonths < 0) diffMonths = 0;
-
   const years = Math.floor(diffMonths / 12);
   const remainingMonths = diffMonths % 12;
-
   if (years > 0) {
     return `${years} yr${years > 1 ? 's' : ''} ${remainingMonths} mo${remainingMonths > 1 ? 's' : ''}`;
   }
   return `${remainingMonths} mo${remainingMonths !== 1 ? 's' : ''}`;
 }
 
-async function getAttendanceStats(employeeId, monthYearStr) {
-  const [year, month] = monthYearStr.split('-').map(Number);
-  const totalDays = getDaysInMonth(monthYearStr);
-  const start = new Date(`${monthYearStr}-01T00:00:00.000Z`);
-  const end = new Date(`${monthYearStr}-${totalDays}T23:59:59.999Z`);
-
-  const records = await Attendance.find({
-    employee: employeeId,
-    date: { $gte: start, $lte: end }
-  });
-
-  let presentDays = 0;
-  let absentDays = 0;
-  let approvedLeaves = 0;
-
+async function loadAttendance(employeeIds, monthYear) {
+  const { start, end } = parseMonthYear(monthYear);
+  const records = await Attendance.find({ employee: { $in: employeeIds }, date: { $gte: start, $lte: end } }).lean();
+  const byEmployee = new Map();
   for (const record of records) {
-    if (record.status === 'Absent (Unpaid)') {
-      absentDays += 1;
-    } else if (record.status === 'Approved Paid Leave') {
-      approvedLeaves += 1;
-    } else {
-      presentDays += 1;
-    }
+    const key = String(record.employee);
+    if (!byEmployee.has(key)) byEmployee.set(key, []);
+    byEmployee.get(key).push(record);
   }
+  return byEmployee;
+}
 
-  return {
-    presentDays,
-    absentDays,
-    approvedLeaves,
-    totalWorkingDays: totalDays
-  };
+async function loadEmployee(employeeId) {
+  const employee = await User.findById(employeeId).select(EMPLOYEE_FIELDS);
+  if (!employee || NON_EMPLOYEE_ROLES.includes(employee.role)) throw new ApiError(404, 'Employee not found.');
+  return employee;
+}
+
+// Fresh salary figures for one employee and month, always from the server's own data.
+async function calculateFor(employee, monthYear) {
+  const attendance = await loadAttendance([employee._id], monthYear);
+  return computePayroll({ employee, monthYear, records: attendance.get(String(employee._id)) || [] });
 }
 
 export const getPayrollList = asyncHandler(async (req, res) => {
   const { monthYear } = req.query;
-  if (!monthYear) throw new ApiError(400, 'Month-Year (YYYY-MM) is required.');
+  parseMonthYear(monthYear);
 
-  // Find all active employees who are not customers or super admin
+  const payrolls = await Payroll.find({ monthYear }).lean();
+  const payrollMap = new Map(payrolls.map((p) => [String(p.employee), p]));
+
+  // Active employees, plus anyone (including people who have since left) with a saved
+  // payroll record for this month, so past paid months stay visible.
   const employees = await User.find({
-    isActive: true,
-    role: { $nin: ['customer', 'super_admin'] }
-  }).select('name email role joiningDate employmentClassification baseSalary monthlyLeaveQuota');
+    role: { $nin: NON_EMPLOYEE_ROLES },
+    $or: [{ isActive: true }, { _id: { $in: payrolls.map((p) => p.employee) } }],
+  })
+    .select(EMPLOYEE_FIELDS)
+    .lean();
 
-  const payrolls = await Payroll.find({ monthYear });
-  const payrollMap = new Map(payrolls.map(p => [String(p.employee), p]));
+  const eligible = employees.filter((emp) => payrollMap.has(String(emp._id)) || joinedBy(emp, monthYear));
+  const attendance = await loadAttendance(eligible.map((emp) => emp._id), monthYear);
 
-  const items = [];
-  for (const emp of employees) {
-    const stats = await getAttendanceStats(emp._id, monthYear);
-    const tenure = calculateTenure(emp.joiningDate, monthYear);
-
+  const items = eligible.map((emp) => {
+    const calc = computePayroll({ employee: emp, monthYear, records: attendance.get(String(emp._id)) || [] });
     const existing = payrollMap.get(String(emp._id));
-    if (existing) {
-      items.push({
-        ...existing.toObject(),
-        employee: emp,
-        tenure,
-        attendanceStats: stats
-      });
-    } else {
-      // Create transient draft
-      const baseSalary = emp.baseSalary || 0;
-      const leaveQuota = emp.monthlyLeaveQuota ?? 2;
-      const excessLeaves = Math.max(0, stats.approvedLeaves - leaveQuota);
-      const totalDeductionDays = stats.absentDays + excessLeaves;
+    const base = { employee: emp, monthYear, tenure: calculateTenure(emp.joiningDate, monthYear), attendanceStats: calc.stats };
 
-      const perDaySalary = baseSalary / stats.totalWorkingDays;
-      const leaveDeductions = Math.round(totalDeductionDays * perDaySalary * 100) / 100;
-      const netPayable = Math.max(0, baseSalary - leaveDeductions);
+    // Paid months are frozen: show exactly what was paid.
+    if (existing?.status === 'Paid') return { ...existing, ...base };
 
-      items.push({
-        employee: emp,
-        monthYear,
-        baseSalary,
-        leaveDeductions,
-        rebate: 0,
-        rebateComment: '',
-        manualDeduction: 0,
-        manualDeductionComment: '',
-        netPayable,
-        status: 'Draft',
-        tenure,
-        attendanceStats: stats
-      });
-    }
-  }
+    // Drafts (saved or not) are always recalculated from current salary and attendance,
+    // keeping only the HR-entered rebate and manual deduction.
+    const rebate = existing?.rebate || 0;
+    const manualDeduction = existing?.manualDeduction || 0;
+    return {
+      ...(existing || {}),
+      ...base,
+      baseSalary: calc.baseSalary,
+      leaveDeductions: calc.leaveDeductions,
+      rebate,
+      rebateComment: existing?.rebateComment || '',
+      manualDeduction,
+      manualDeductionComment: existing?.manualDeductionComment || '',
+      netPayable: netPayable({ baseSalary: calc.baseSalary, leaveDeductions: calc.leaveDeductions, rebate, manualDeduction }),
+      status: 'Draft',
+    };
+  });
 
   res.json({ items });
 });
 
+// Saves a draft. Only the rebate, manual deduction and their comments come from the request;
+// base salary and attendance deductions are always calculated on the server.
 export const savePayrollRecord = asyncHandler(async (req, res) => {
-  const {
-    employeeId,
-    monthYear,
-    baseSalary,
-    leaveDeductions,
-    rebate,
-    rebateComment,
-    manualDeduction,
-    manualDeductionComment,
-    status
-  } = req.body;
+  const { employeeId, monthYear } = req.body;
+  if (!employeeId) throw new ApiError(400, 'Employee ID is required.');
+  parseMonthYear(monthYear);
 
-  if (!employeeId || !monthYear) {
-    throw new ApiError(400, 'Employee ID and Month-Year are required.');
+  const rebate = parseAmount(req.body.rebate, 'Rebate');
+  const manualDeduction = parseAmount(req.body.manualDeduction, 'Manual deduction');
+
+  const employee = await loadEmployee(employeeId);
+  if (!joinedBy(employee, monthYear)) throw new ApiError(400, 'This employee had not joined yet in that month.');
+
+  const calc = await calculateFor(employee, monthYear);
+
+  try {
+    const updated = await Payroll.findOneAndUpdate(
+      { employee: employee._id, monthYear, status: { $ne: 'Paid' } },
+      {
+        baseSalary: calc.baseSalary,
+        leaveDeductions: calc.leaveDeductions,
+        rebate,
+        rebateComment: parseComment(req.body.rebateComment),
+        manualDeduction,
+        manualDeductionComment: parseComment(req.body.manualDeductionComment),
+        netPayable: netPayable({ baseSalary: calc.baseSalary, leaveDeductions: calc.leaveDeductions, rebate, manualDeduction }),
+        status: 'Draft',
+      },
+      { upsert: true, new: true, runValidators: true }
+    );
+    res.json(updated);
+  } catch (err) {
+    // A Paid record exists: the filter didn't match, so the upsert hit the unique index.
+    if (err?.code === 11000) throw new ApiError(400, 'This salary cycle is already paid and locked.');
+    throw err;
   }
-
-  // Freeze state check
-  const existing = await Payroll.findOne({ employee: employeeId, monthYear });
-  if (existing && existing.status === 'Paid') {
-    throw new ApiError(400, 'This salary cycle is already paid and locked.');
-  }
-
-  const cleanBase = Number(baseSalary || 0);
-  const cleanLeaves = Number(leaveDeductions || 0);
-  const cleanRebate = Number(rebate || 0);
-  const cleanManual = Number(manualDeduction || 0);
-  const netPayable = Math.max(0, cleanBase - cleanLeaves + cleanRebate - cleanManual);
-
-  const updated = await Payroll.findOneAndUpdate(
-    { employee: employeeId, monthYear },
-    {
-      baseSalary: cleanBase,
-      leaveDeductions: cleanLeaves,
-      rebate: cleanRebate,
-      rebateComment: rebateComment || '',
-      manualDeduction: cleanManual,
-      manualDeductionComment: manualDeductionComment || '',
-      netPayable,
-      status: status || 'Draft'
-    },
-    { upsert: true, new: true }
-  );
-
-  res.json(updated);
 });
 
+// Marks a draft as paid. Recalculates from the latest salary and attendance first, so what is
+// frozen is always current. Unmarked attendance days need { acknowledgeUnmarked: true }.
 export const freezePayrollRecord = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const payroll = await Payroll.findById(id);
+  const payroll = await Payroll.findById(req.params.id);
   if (!payroll) throw new ApiError(404, 'Payroll record not found');
+  if (payroll.status === 'Paid') throw new ApiError(400, 'This payroll is already frozen.');
 
-  if (payroll.status === 'Paid') {
-    throw new ApiError(400, 'This payroll is already frozen.');
+  const employee = await loadEmployee(payroll.employee);
+  const calc = await calculateFor(employee, payroll.monthYear);
+
+  if (calc.stats.unmarkedDays > 0 && req.body?.acknowledgeUnmarked !== true) {
+    return res.status(409).json({
+      message: `${calc.stats.unmarkedDays} working day(s) have no attendance marked. They will be paid as present days.`,
+      code: 'UNMARKED_ATTENDANCE',
+      unmarkedDays: calc.stats.unmarkedDays,
+    });
   }
 
-  payroll.status = 'Paid';
-  await payroll.save();
-  res.json(payroll);
+  const paid = await Payroll.findOneAndUpdate(
+    { _id: payroll._id, status: 'Draft' },
+    {
+      baseSalary: calc.baseSalary,
+      leaveDeductions: calc.leaveDeductions,
+      netPayable: netPayable({
+        baseSalary: calc.baseSalary,
+        leaveDeductions: calc.leaveDeductions,
+        rebate: payroll.rebate,
+        manualDeduction: payroll.manualDeduction,
+      }),
+      status: 'Paid',
+      paidAt: new Date(),
+      paidBy: req.user?._id,
+      unmarkedDaysAtPayment: calc.stats.unmarkedDays,
+    },
+    { new: true }
+  );
+  if (!paid) throw new ApiError(400, 'This payroll is already frozen.');
+  res.json(paid);
 });

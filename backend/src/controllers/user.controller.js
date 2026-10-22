@@ -3,14 +3,19 @@ import { Role } from '../models/Role.js';
 import { ApiError } from '../utils/apiError.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 import { sendWhatsAppMessage } from '../services/whatsapp.service.js';
+import { hasAccess } from '../middleware/auth.middleware.js';
+import { parseLeaveQuota } from '../utils/payrollCalc.js';
+
+// Salary is only shown to, and only changed by, people with the "Payroll & Salary" permission.
 
 function normalizeEmail(value) {
   return String(value || '').trim().toLowerCase();
 }
 
-function serializeUser(user, roleMap = new Map()) {
+function serializeUser(user, roleMap = new Map(), { showSalary = true } = {}) {
   const plain = typeof user.toObject === 'function' ? user.toObject() : { ...user };
   const role = roleMap.get(plain.role) || null;
+  if (!showSalary) delete plain.baseSalary;
 
   return {
     ...plain,
@@ -25,11 +30,28 @@ async function buildRoleMap() {
   return new Map(roles.map((role) => [role.slug, role]));
 }
 
-async function resolveRole(roleValue) {
-  const role = await Role.findOne({ slug: roleValue });
+function parseSalary(value) {
+  const amount = Number(value || 0);
+  if (!Number.isFinite(amount) || amount < 0) throw new ApiError(400, 'Salary must be a positive amount.');
+  return Math.round(amount * 100) / 100;
+}
+
+async function resolveRole(roleValue, actor) {
+  const role = await Role.findOne({ slug: roleValue, isDeleted: { $ne: true } });
   if (!role) throw new ApiError(400, 'Selected role is not available.');
   if (!role.isActive) throw new ApiError(400, 'Selected role is inactive.');
+  // Super Admin bypasses every permission check, so only a Super Admin may hand it out.
+  if (role.slug === 'super_admin' && actor?.role !== 'super_admin') {
+    throw new ApiError(403, 'Only a Super Admin can give someone the Super Admin role.');
+  }
   return role;
+}
+
+// Someone with Users access must not be able to reset a Super Admin's password or switch them off.
+function assertCanManage(actor, target) {
+  if (target.role === 'super_admin' && actor?.role !== 'super_admin') {
+    throw new ApiError(403, 'Only a Super Admin can change a Super Admin account.');
+  }
 }
 
 async function ensureUniqueEmail(email, userId = null) {
@@ -42,7 +64,7 @@ export async function bumpUserPermissionVersion(user, shouldPersist = true) {
   if (shouldPersist) await user.save();
 }
 
-async function mutateUser(user, body) {
+async function mutateUser(user, body, { canEditPay = false, actor = null } = {}) {
   let invalidatesTokens = false;
 
   if (body.name !== undefined) user.name = String(body.name || '').trim();
@@ -55,7 +77,7 @@ async function mutateUser(user, body) {
   }
 
   if (body.role !== undefined) {
-    const role = await resolveRole(String(body.role || '').trim());
+    const role = await resolveRole(String(body.role || '').trim(), actor);
     if (user.role !== role.slug) invalidatesTokens = true;
     user.role = role.slug;
   }
@@ -66,10 +88,12 @@ async function mutateUser(user, body) {
     user.isActive = nextActive;
   }
 
-  if (body.joiningDate !== undefined) user.joiningDate = body.joiningDate ? new Date(body.joiningDate) : null;
-  if (body.employmentClassification !== undefined) user.employmentClassification = body.employmentClassification;
-  if (body.baseSalary !== undefined) user.baseSalary = Number(body.baseSalary || 0);
-  if (body.monthlyLeaveQuota !== undefined) user.monthlyLeaveQuota = Number(body.monthlyLeaveQuota || 2);
+  if (canEditPay) {
+    if (body.joiningDate !== undefined) user.joiningDate = body.joiningDate ? new Date(body.joiningDate) : null;
+    if (body.employmentClassification !== undefined) user.employmentClassification = body.employmentClassification;
+    if (body.baseSalary !== undefined) user.baseSalary = parseSalary(body.baseSalary);
+    if (body.monthlyLeaveQuota !== undefined) user.monthlyLeaveQuota = parseLeaveQuota(body.monthlyLeaveQuota);
+  }
   
   if (body.profilePhoto !== undefined) user.profilePhoto = String(body.profilePhoto || '').trim();
   if (body.city !== undefined) user.city = String(body.city || '').trim();
@@ -97,14 +121,15 @@ export const listUsers = asyncHandler(async (req, res) => {
   const limit = Math.min(Number(req.query.limit || 20), 100);
   const skip = (page - 1) * limit;
 
-  const [roleMap, items, total] = await Promise.all([
+  const [roleMap, items, total, showSalary] = await Promise.all([
     buildRoleMap(),
     User.find().sort({ createdAt: -1 }).skip(skip).limit(limit).select('-password'),
-    User.countDocuments()
+    User.countDocuments(),
+    hasAccess(req.user, 'payroll:read')
   ]);
 
   res.json({
-    items: items.map((item) => serializeUser(item, roleMap)),
+    items: items.map((item) => serializeUser(item, roleMap, { showSalary })),
     pagination: { page, limit, total, pages: Math.ceil(total / limit) }
   });
 });
@@ -122,7 +147,8 @@ export const createUser = asyncHandler(async (req, res) => {
   if (!roleValue) throw new ApiError(400, 'Role is required.');
 
   await ensureUniqueEmail(email);
-  const role = await resolveRole(roleValue);
+  const role = await resolveRole(roleValue, req.user);
+  const canEditPay = await hasAccess(req.user, 'payroll:update');
 
   const user = await User.create({
     name,
@@ -131,10 +157,10 @@ export const createUser = asyncHandler(async (req, res) => {
     phone: req.body.phone ? String(req.body.phone).trim() : undefined,
     role: role.slug,
     isActive,
-    joiningDate: req.body.joiningDate ? new Date(req.body.joiningDate) : undefined,
-    employmentClassification: req.body.employmentClassification || 'regular_employee',
-    baseSalary: Number(req.body.baseSalary || 0),
-    monthlyLeaveQuota: Number(req.body.monthlyLeaveQuota || 2),
+    joiningDate: canEditPay && req.body.joiningDate ? new Date(req.body.joiningDate) : undefined,
+    employmentClassification: (canEditPay && req.body.employmentClassification) || 'regular_employee',
+    baseSalary: canEditPay ? parseSalary(req.body.baseSalary) : 0,
+    monthlyLeaveQuota: canEditPay ? parseLeaveQuota(req.body.monthlyLeaveQuota) : 2,
     profilePhoto: req.body.profilePhoto ? String(req.body.profilePhoto).trim() : undefined,
     city: req.body.city ? String(req.body.city).trim() : undefined,
     location: req.body.location ? String(req.body.location).trim() : undefined,
@@ -150,33 +176,37 @@ export const createUser = asyncHandler(async (req, res) => {
   }
 
   const roleMap = await buildRoleMap();
-  res.status(201).json(serializeUser(user, roleMap));
+  res.status(201).json(serializeUser(user, roleMap, { showSalary: canEditPay }));
 });
 
 export const getUser = asyncHandler(async (req, res) => {
-  const [roleMap, user] = await Promise.all([
+  const [roleMap, user, showSalary] = await Promise.all([
     buildRoleMap(),
-    User.findById(req.params.id).select('-password')
+    User.findById(req.params.id).select('-password'),
+    hasAccess(req.user, 'payroll:read')
   ]);
 
   if (!user) throw new ApiError(404, 'User not found');
-  res.json(serializeUser(user, roleMap));
+  res.json(serializeUser(user, roleMap, { showSalary }));
 });
 
 export const updateUser = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('+password');
   if (!user) throw new ApiError(404, 'User not found');
+  assertCanManage(req.user, user);
 
-  await mutateUser(user, req.body);
+  const canEditPay = await hasAccess(req.user, 'payroll:update');
+  await mutateUser(user, req.body, { canEditPay, actor: req.user });
 
   const roleMap = await buildRoleMap();
   const updatedUser = await User.findById(user._id).select('-password');
-  res.json(serializeUser(updatedUser, roleMap));
+  res.json(serializeUser(updatedUser, roleMap, { showSalary: await hasAccess(req.user, 'payroll:read') }));
 });
 
 export const updateUserStatus = asyncHandler(async (req, res) => {
   const user = await User.findById(req.params.id).select('+password');
   if (!user) throw new ApiError(404, 'User not found');
+  assertCanManage(req.user, user);
 
   const nextActive = req.body.isActive === true || req.body.isActive === 'true';
   if (user.isActive !== nextActive) {
@@ -187,5 +217,5 @@ export const updateUserStatus = asyncHandler(async (req, res) => {
 
   const roleMap = await buildRoleMap();
   const updatedUser = await User.findById(user._id).select('-password');
-  res.json(serializeUser(updatedUser, roleMap));
+  res.json(serializeUser(updatedUser, roleMap, { showSalary: await hasAccess(req.user, 'payroll:read') }));
 });

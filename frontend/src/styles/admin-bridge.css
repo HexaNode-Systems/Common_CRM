@@ -1,0 +1,857 @@
+
+/* ================================================================== */
+/* Theme bridge for older pages                                        */
+/* ------------------------------------------------------------------ */
+/* Pages written with Tailwind's light slate palette (bg-white,        */
+/* text-slate-900, rounded-xl, shadow-sm …) are remapped here to the   */
+/* admin tokens, so they follow the landing-page palette, dark/light    */
+/* mode and 5px corners without rewriting their markup. Active across  */
+/* the admin panel (.ax-themed on AdminLayout). Generated; change the  */
+/* tokens in admin.css rather than these rules.                        */
+/* ================================================================== */
+
+.ax-admin.ax-themed {
+  --radius-theme: var(--ax-radius, 5px);
+  --color-primary: var(--ax-accent);
+}
+.ax-admin.ax-themed[data-mode='dark'] {
+  --color-primary: var(--ax-btn);
+}
+
+.ax-admin.ax-themed .card {
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: var(--ax-radius, 5px);
+  box-shadow: none;
+  color: var(--ax-text);
+}
+
+.ax-admin.ax-themed .input {
+  font-size: 14px;
+  border-color: var(--ax-line-2);
+  border-radius: var(--ax-radius, 5px);
+  background: var(--ax-surface);
+  color: var(--ax-text);
+}
+
+.ax-admin.ax-themed .input:focus {
+  border-color: var(--ax-accent);
+  background: var(--ax-surface-2);
+  box-shadow: none;
+}
+
+.ax-admin.ax-themed .input::placeholder,
+.ax-admin.ax-themed input::placeholder,
+.ax-admin.ax-themed textarea::placeholder {
+  color: var(--ax-muted);
+}
+
+.ax-admin.ax-themed .bg-white,
+.ax-admin.ax-themed .hover\:bg-white:hover {
+  background-color: var(--ax-surface);
+}
+
+.ax-admin.ax-themed .bg-slate-50,
+.ax-admin.ax-themed .bg-slate-50\/50,
+.ax-admin.ax-themed .bg-slate-50\/40,
+.ax-admin.ax-themed .bg-slate-100,
+.ax-admin.ax-themed .hover\:bg-slate-50:hover,
+.ax-admin.ax-themed .hover\:bg-slate-100:hover,
+.ax-admin.ax-themed .active\:bg-slate-100:active {
+  background-color: var(--ax-surface-2);
+}
+
+.ax-admin.ax-themed .bg-slate-200,
+.ax-admin.ax-themed .bg-slate-300,
+.ax-admin.ax-themed .hover\:bg-slate-200:hover,
+.ax-admin.ax-themed .hover\:bg-slate-200\/80:hover,
+.ax-admin.ax-themed .active\:bg-slate-200:active,
+.ax-admin.ax-themed .active\:bg-slate-200\/50:active {
+  background-color: var(--ax-line-2);
+}
+
+.ax-admin.ax-themed .bg-slate-400 {
+  background-color: var(--ax-muted);
+}
+
+.ax-admin.ax-themed .bg-slate-900 {
+  background-color: var(--ax-btn);
+  color: var(--ax-on-btn);
+}
+
+.ax-admin.ax-themed .hover\:bg-slate-800:hover,
+.ax-admin.ax-themed .active\:bg-slate-950:active {
+  background-color: var(--ax-btn-hover);
+  color: var(--ax-on-btn);
+}
+
+.ax-admin.ax-themed .ring-slate-900 {
+  --tw-ring-color: var(--ax-accent);
+}
+
+.ax-admin.ax-themed .text-slate-950,
+.ax-admin.ax-themed .text-slate-900,
+.ax-admin.ax-themed .text-slate-850,
+.ax-admin.ax-themed .text-slate-800,
+.ax-admin.ax-themed .hover\:text-slate-950:hover,
+.ax-admin.ax-themed .hover\:text-slate-900:hover,
+.ax-admin.ax-themed .hover\:text-slate-800:hover {
+  color: var(--ax-text);
+}
+
+.ax-admin.ax-themed .text-slate-700,
+.ax-admin.ax-themed .text-slate-600 {
+  color: var(--ax-text-2);
+}
+
+.ax-admin.ax-themed .text-slate-500,
+.ax-admin.ax-themed .text-slate-400,
+.ax-admin.ax-themed .text-slate-300 {
+  color: var(--ax-muted);
+}
+
+.ax-admin.ax-themed .placeholder-slate-400::placeholder,
+.ax-admin.ax-themed .placeholder\:text-slate-400::placeholder {
+  color: var(--ax-muted);
+}
+
+.ax-admin.ax-themed .text-primary,
+.ax-admin.ax-themed .hover\:text-primary:hover {
+  color: var(--ax-accent);
+}
+
+.ax-admin.ax-themed .border-slate-100,
+.ax-admin.ax-themed .border-slate-200,
+.ax-admin.ax-themed .border-slate-200\/80,
+.ax-admin.ax-themed .border-slate-200\/60,
+.ax-admin.ax-themed .border-slate-200\/40,
+.ax-admin.ax-themed .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+.ax-admin.ax-themed .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--ax-line);
+}
+
+.ax-admin.ax-themed .border-slate-300,
+.ax-admin.ax-themed .hover\:border-slate-300:hover {
+  border-color: var(--ax-line-2);
+}
+
+.ax-admin.ax-themed .border-white {
+  border-color: var(--ax-surface);
+}
+
+.ax-admin.ax-themed .focus\:border-slate-400:focus,
+.ax-admin.ax-themed .border-primary {
+  border-color: var(--ax-accent);
+}
+
+.ax-admin.ax-themed .bg-primary\/10 {
+  background-color: var(--ax-accent-dim);
+}
+
+.ax-admin.ax-themed .rounded:not(.animate-spin),
+.ax-admin.ax-themed .rounded-sm:not(.animate-spin),
+.ax-admin.ax-themed .rounded-md:not(.animate-spin),
+.ax-admin.ax-themed .rounded-lg:not(.animate-spin),
+.ax-admin.ax-themed .rounded-xl:not(.animate-spin),
+.ax-admin.ax-themed .rounded-2xl:not(.animate-spin),
+.ax-admin.ax-themed .rounded-3xl:not(.animate-spin),
+.ax-admin.ax-themed .rounded-theme:not(.animate-spin) {
+  border-radius: var(--ax-radius, 5px);
+}
+
+.ax-admin.ax-themed .rounded-t-xl,
+.ax-admin.ax-themed .rounded-t-lg,
+.ax-admin.ax-themed .rounded-t-2xl {
+  border-top-left-radius: var(--ax-radius, 5px);
+  border-top-right-radius: var(--ax-radius, 5px);
+}
+
+.ax-admin.ax-themed .shadow,
+.ax-admin.ax-themed .shadow-sm,
+.ax-admin.ax-themed .shadow-md,
+.ax-admin.ax-themed .shadow-lg,
+.ax-admin.ax-themed .shadow-xl,
+.ax-admin.ax-themed .hover\:shadow-md:hover,
+.ax-admin.ax-themed .hover\:shadow-lg:hover {
+  box-shadow: none;
+}
+
+.ax-admin.ax-themed .shadow-2xl {
+  box-shadow: var(--ax-shadow);
+}
+
+.ax-admin.ax-themed .bg-gradient-to-r,
+.ax-admin.ax-themed .bg-gradient-to-b,
+.ax-admin.ax-themed .bg-gradient-to-br {
+  background-image: none;
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-red-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-red-100 {
+  background-color: rgb(240 138 138 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-red-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-red-100:hover {
+  background-color: rgb(240 138 138 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-red-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-red-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-red-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-red-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-red-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-red-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-red-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-red-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-red-800:hover {
+  color: rgb(240 138 138);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-red-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-red-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-red-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-red-300:hover {
+  border-color: rgb(240 138 138 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-rose-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-rose-100 {
+  background-color: rgb(240 138 168 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-rose-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-rose-100:hover {
+  background-color: rgb(240 138 168 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-rose-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-rose-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-rose-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-rose-800:hover {
+  color: rgb(240 138 168);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-rose-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-rose-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-rose-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-rose-300:hover {
+  border-color: rgb(240 138 168 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-emerald-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-emerald-100 {
+  background-color: rgb(111 211 160 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-emerald-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-emerald-100:hover {
+  background-color: rgb(111 211 160 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-emerald-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-emerald-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-emerald-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-emerald-800:hover {
+  color: rgb(111 211 160);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-emerald-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-emerald-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-emerald-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-emerald-300:hover {
+  border-color: rgb(111 211 160 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-green-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-green-100 {
+  background-color: rgb(111 211 160 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-green-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-green-100:hover {
+  background-color: rgb(111 211 160 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-green-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-green-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-green-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-green-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-green-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-green-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-green-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-green-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-green-800:hover {
+  color: rgb(111 211 160);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-green-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-green-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-green-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-green-300:hover {
+  border-color: rgb(111 211 160 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-amber-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-amber-100 {
+  background-color: rgb(230 180 80 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-amber-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-amber-100:hover {
+  background-color: rgb(230 180 80 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-amber-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-amber-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-amber-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-amber-800:hover {
+  color: rgb(230 180 80);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-amber-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-amber-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-amber-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-amber-300:hover {
+  border-color: rgb(230 180 80 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-yellow-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-yellow-100 {
+  background-color: rgb(230 196 80 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-yellow-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-yellow-100:hover {
+  background-color: rgb(230 196 80 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-yellow-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-yellow-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-yellow-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-yellow-800:hover {
+  color: rgb(230 196 80);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-yellow-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-yellow-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-yellow-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-yellow-300:hover {
+  border-color: rgb(230 196 80 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-orange-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-orange-100 {
+  background-color: rgb(240 163 111 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-orange-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-orange-100:hover {
+  background-color: rgb(240 163 111 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-orange-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-orange-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-orange-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-orange-800:hover {
+  color: rgb(240 163 111);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-orange-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-orange-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-orange-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-orange-300:hover {
+  border-color: rgb(240 163 111 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-blue-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-blue-100 {
+  background-color: rgb(122 162 255 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-blue-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-blue-100:hover {
+  background-color: rgb(122 162 255 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-blue-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-blue-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-blue-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-blue-800:hover {
+  color: rgb(122 162 255);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-blue-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-blue-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-blue-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-blue-300:hover {
+  border-color: rgb(122 162 255 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-sky-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-sky-100 {
+  background-color: rgb(124 196 240 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-sky-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-sky-100:hover {
+  background-color: rgb(124 196 240 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-sky-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-sky-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-sky-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-sky-800:hover {
+  color: rgb(124 196 240);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-sky-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-sky-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-sky-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-sky-300:hover {
+  border-color: rgb(124 196 240 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-indigo-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-indigo-100 {
+  background-color: rgb(154 168 255 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-indigo-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-indigo-100:hover {
+  background-color: rgb(154 168 255 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-indigo-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-indigo-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-indigo-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-indigo-800:hover {
+  color: rgb(154 168 255);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-indigo-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-indigo-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-indigo-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-indigo-300:hover {
+  border-color: rgb(154 168 255 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-purple-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-purple-100 {
+  background-color: rgb(185 163 255 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-purple-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-purple-100:hover {
+  background-color: rgb(185 163 255 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-purple-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-purple-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-purple-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-purple-800:hover {
+  color: rgb(185 163 255);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-purple-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-purple-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-purple-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-purple-300:hover {
+  border-color: rgb(185 163 255 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-violet-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-violet-100 {
+  background-color: rgb(185 163 255 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-violet-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-violet-100:hover {
+  background-color: rgb(185 163 255 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-violet-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-violet-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-violet-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-violet-800:hover {
+  color: rgb(185 163 255);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-violet-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-violet-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-violet-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-violet-300:hover {
+  border-color: rgb(185 163 255 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-pink-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-pink-100 {
+  background-color: rgb(240 163 196 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-pink-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-pink-100:hover {
+  background-color: rgb(240 163 196 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-pink-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-pink-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-pink-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-pink-800:hover {
+  color: rgb(240 163 196);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-pink-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-pink-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-pink-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-pink-300:hover {
+  border-color: rgb(240 163 196 / 0.30);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-teal-50,
+.ax-admin.ax-themed[data-mode='dark'] .bg-teal-100 {
+  background-color: rgb(111 211 193 / 0.10);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-teal-50:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:bg-teal-100:hover {
+  background-color: rgb(111 211 193 / 0.16);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-400,
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-500,
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-600,
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-700,
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-800,
+.ax-admin.ax-themed[data-mode='dark'] .text-teal-900,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-teal-600:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-teal-700:hover,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:text-teal-800:hover {
+  color: rgb(111 211 193);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-teal-100,
+.ax-admin.ax-themed[data-mode='dark'] .border-teal-200,
+.ax-admin.ax-themed[data-mode='dark'] .border-teal-300,
+.ax-admin.ax-themed[data-mode='dark'] .hover\:border-teal-300:hover {
+  border-color: rgb(111 211 193 / 0.30);
+}
+
+:where(.ax-admin.ax-themed) *,
+:where(.ax-admin.ax-themed) ::before,
+:where(.ax-admin.ax-themed) ::after {
+  border-color: var(--ax-line);
+}
+
+.ax-admin.ax-themed main h1 {
+  font-family: var(--ax-display);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  color: var(--ax-text);
+}
+
+.ax-admin.ax-themed .bg-slate-50\/30,
+.ax-admin.ax-themed .bg-slate-50\/75,
+.ax-admin.ax-themed .bg-slate-50\/20,
+.ax-admin.ax-themed .hover\:bg-slate-50\/50:hover,
+.ax-admin.ax-themed .hover\:bg-slate-50\/60:hover,
+.ax-admin.ax-themed .disabled\:bg-slate-100:disabled {
+  background-color: var(--ax-surface-2);
+}
+
+.ax-admin.ax-themed .disabled\:bg-slate-200:disabled {
+  background-color: var(--ax-line-2);
+}
+
+.ax-admin.ax-themed .hover\:text-slate-700:hover,
+.ax-admin.ax-themed .hover\:text-slate-600:hover {
+  color: var(--ax-text-2);
+}
+
+.ax-admin.ax-themed .placeholder\:text-slate-500::placeholder,
+.ax-admin.ax-themed .disabled\:text-slate-400:disabled,
+.ax-admin.ax-themed .disabled\:text-slate-600:disabled,
+.ax-admin.ax-themed .disabled\:text-slate-700:disabled {
+  color: var(--ax-muted);
+}
+
+.ax-admin.ax-themed .border-slate-50,
+.ax-admin.ax-themed .border-slate-150,
+.ax-admin.ax-themed .border-slate-250 {
+  border-color: var(--ax-line);
+}
+
+.ax-admin.ax-themed .border-slate-400,
+.ax-admin.ax-themed .group:hover .group-hover\:border-slate-300 {
+  border-color: var(--ax-line-2);
+}
+
+.ax-admin.ax-themed .focus\:border-primary:focus,
+.ax-admin.ax-themed .focus\:border-blue-500:focus,
+.ax-admin.ax-themed .hover\:border-primary:hover,
+.ax-admin.ax-themed .focus-within\:border-blue-500:focus-within,
+.ax-admin.ax-themed .focus-within\:border-slate-400:focus-within,
+.ax-admin.ax-themed .border-t-primary {
+  border-color: var(--ax-accent);
+}
+
+.ax-admin.ax-themed .focus\:ring-blue-500\/20:focus,
+.ax-admin.ax-themed .focus\:ring-primary:focus,
+.ax-admin.ax-themed .focus-within\:ring-blue-500\/20:focus-within {
+  --tw-ring-color: var(--ax-accent-dim);
+}
+
+.ax-admin.ax-themed .bg-primary\/5,
+.ax-admin.ax-themed .hover\:bg-primary\/5:hover {
+  background-color: var(--ax-accent-dim);
+}
+
+.ax-admin.ax-themed .hover\:bg-primary\/15:hover,
+.ax-admin.ax-themed .hover\:bg-primary\/20:hover {
+  background-color: color-mix(in srgb, var(--ax-accent) 20%, transparent);
+}
+
+.ax-admin.ax-themed .border-primary\/20,
+.ax-admin.ax-themed .border-primary\/30 {
+  border-color: color-mix(in srgb, var(--ax-accent) 35%, transparent);
+}
+
+.ax-admin.ax-themed .shadow-xs,
+.ax-admin.ax-themed .shadow-2xs,
+.ax-admin.ax-themed .shadow-inner,
+.ax-admin.ax-themed .hover\:shadow-sm:hover {
+  box-shadow: none;
+}
+
+.ax-admin.ax-themed .rounded-tl-xs,
+.ax-admin.ax-themed .rounded-tr-xs,
+.ax-admin.ax-themed .rounded-bl-xs,
+.ax-admin.ax-themed .rounded-br-xs {
+  border-radius: 3px;
+}
+
+.ax-admin.ax-themed .from-slate-900 {
+  background-color: #183c32;
+  border: 1px solid #244d40;
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-red-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-red-50\/50 {
+  background-color: rgb(240 138 138 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-red-100\/50 {
+  border-color: rgb(240 138 138 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-rose-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-rose-50\/50 {
+  background-color: rgb(240 138 168 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-rose-100\/50 {
+  border-color: rgb(240 138 168 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-emerald-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-emerald-50\/50 {
+  background-color: rgb(111 211 160 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-emerald-100\/50 {
+  border-color: rgb(111 211 160 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-green-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-green-50\/50 {
+  background-color: rgb(111 211 160 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-green-100\/50 {
+  border-color: rgb(111 211 160 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-amber-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-amber-50\/50 {
+  background-color: rgb(230 180 80 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-amber-100\/50 {
+  border-color: rgb(230 180 80 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-yellow-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-yellow-50\/50 {
+  background-color: rgb(230 196 80 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-yellow-100\/50 {
+  border-color: rgb(230 196 80 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-orange-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-orange-50\/50 {
+  background-color: rgb(240 163 111 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-orange-100\/50 {
+  border-color: rgb(240 163 111 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-blue-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-blue-50\/50 {
+  background-color: rgb(122 162 255 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-blue-100\/50 {
+  border-color: rgb(122 162 255 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-sky-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-sky-50\/50 {
+  background-color: rgb(124 196 240 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-sky-100\/50 {
+  border-color: rgb(124 196 240 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-indigo-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-indigo-50\/50 {
+  background-color: rgb(154 168 255 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-indigo-100\/50 {
+  border-color: rgb(154 168 255 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-purple-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-purple-50\/50 {
+  background-color: rgb(185 163 255 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-purple-100\/50 {
+  border-color: rgb(185 163 255 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-violet-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-violet-50\/50 {
+  background-color: rgb(185 163 255 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-violet-100\/50 {
+  border-color: rgb(185 163 255 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-pink-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-pink-50\/50 {
+  background-color: rgb(240 163 196 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-pink-100\/50 {
+  border-color: rgb(240 163 196 / 0.22);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .bg-teal-50\/20,
+.ax-admin.ax-themed[data-mode='dark'] .bg-teal-50\/50 {
+  background-color: rgb(111 211 193 / 0.08);
+}
+
+.ax-admin.ax-themed[data-mode='dark'] .border-teal-100\/50 {
+  border-color: rgb(111 211 193 / 0.22);
+}
+
+.ax-admin.ax-themed .bg-primary {
+  background-color: var(--ax-btn);
+  color: var(--ax-on-btn);
+}
+
+.ax-admin.ax-themed .hover\:bg-primary\/95:hover,
+.ax-admin.ax-themed .hover\:bg-primary-dark:hover,
+.ax-admin.ax-themed .hover\:bg-primary\/90:hover {
+  background-color: var(--ax-btn-hover);
+}
+
+
+
+/* ------------------------------------------------------------------ */
+/* Theme page: button and card style                                   */
+/* ------------------------------------------------------------------ */
+html[data-button-style='outline'] .ax-admin.ax-themed :is(.bg-slate-900, .bg-primary, .ax-btn--primary) {
+  background-color: transparent;
+  background: transparent;
+  color: var(--ax-btn);
+  border: 1px solid var(--ax-btn);
+}
+html[data-button-style='outline'] .ax-admin.ax-themed[data-mode='dark'] :is(.bg-slate-900, .bg-primary, .ax-btn--primary) {
+  color: var(--ax-accent);
+  border-color: var(--ax-accent);
+}
+html[data-button-style='soft'] .ax-admin.ax-themed :is(.bg-slate-900, .bg-primary, .ax-btn--primary) {
+  background-color: var(--ax-accent-dim);
+  background: var(--ax-accent-dim);
+  color: var(--ax-accent);
+  border-color: transparent;
+}
+html[data-card-style='elevated'] .ax-admin.ax-themed .card {
+  border-color: transparent;
+  box-shadow: 0 6px 20px rgb(15 23 42 / 0.08);
+}
+html[data-card-style='elevated'] .ax-admin.ax-themed[data-mode='dark'] .card {
+  box-shadow: 0 6px 20px rgb(0 0 0 / 0.35);
+}

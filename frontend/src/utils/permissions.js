@@ -18,11 +18,13 @@ export function hasPermission(user, moduleName, action = 'read') {
     );
   }
 
+  // Settings: "read" means the page can be opened (view or update access);
+  // any other action needs real update access.
   if (moduleName === 'settings') {
-    return (
-      user.permissions?.includes('settings:read') ||
-      user.permissions?.includes('settings:update')
-    );
+    if (action === 'read') {
+      return user.permissions?.includes('settings:read') || user.permissions?.includes('settings:update');
+    }
+    return user.permissions?.includes('settings:update');
   }
 
   return user.permissions?.includes(`${moduleName}:${action}`);

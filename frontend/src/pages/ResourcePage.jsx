@@ -3,6 +3,7 @@ import { Plus, RefreshCw } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import Loader from '../components/Loader.jsx';
 
 export default function ResourcePage({ title, endpoint }) {
   const [items, setItems] = useState([]);
@@ -47,7 +48,7 @@ export default function ResourcePage({ title, endpoint }) {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-3 py-4" colSpan="4">Loading...</td></tr>
+                <tr><td colSpan="4"><Loader /></td></tr>
               ) : items.length ? (
                 items.map((item) => (
                   <tr key={item._id}>

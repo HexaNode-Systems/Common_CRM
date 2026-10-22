@@ -65,6 +65,8 @@ const catalogItemSchema = new mongoose.Schema(
     assignedTeam: [assignedTeamSchema],
     documents: [projectDocumentSchema],
     storagePath: String,
+    // Who created the project; they can always see it, like team members
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     seo: {
       title: String,
       description: String,
@@ -74,5 +76,6 @@ const catalogItemSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+catalogItemSchema.index({ type: 1, 'assignedTeam.user': 1 });
 
 export const CatalogItem = makeTenantModel('CatalogItem', catalogItemSchema);

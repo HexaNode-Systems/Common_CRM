@@ -17,6 +17,7 @@ const leadDistributionRuleSchema = new mongoose.Schema(
     },
     salespersons: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     singleAssignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    // Leads handed out so far. Increased atomically; the next agent is (currentIndex % active agents).
     currentIndex: { type: Number, default: 0 }
   },
   { timestamps: true }

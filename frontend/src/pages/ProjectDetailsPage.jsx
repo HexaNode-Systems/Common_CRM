@@ -1,35 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { 
-  ArrowLeft, Calendar, CheckCircle2, FileText, AlertCircle, Clock, 
-  DollarSign, Users, Tag, Package, Hash, Layers, RefreshCw, Mail, Phone, ExternalLink 
+  ArrowLeft, Calendar, CheckCircle2, FileText, AlertCircle, Clock,
+  Wallet, Users, Tag, Package, Hash, Layers, Mail, Phone, Download, Pencil
 } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
-
-const DOC_CATEGORIES = [
-  { value: 'agreement', label: 'Agreement / Contract' },
-  { value: 'prd', label: 'PRD (Product Requirement Document)' },
-  { value: 'invoice', label: 'Invoice / Financial Record' },
-  { value: 'other', label: 'Other Attachments' }
-];
+import Loader from '../components/Loader.jsx';
+import { formatMoney, initials, categoryLabel, downloadProjectDocument, blobErrorMessage } from '../utils/projects.js';
 
 function formatDate(value) {
   if (!value) return '-';
-  return new Intl.DateTimeFormat('en-GB', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric'
-  }).format(new Date(value));
-}
-
-function formatMoney(amount, currency = 'INR') {
-  return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
-    style: 'currency',
-    currency,
-    maximumFractionDigits: 0
-  }).format(Number(amount || 0));
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 
 function getStatusBadge(status) {
@@ -49,16 +34,26 @@ function getStatusIcon(status) {
   return null;
 }
 
-function initials(name = '') {
-  return name.split(' ').filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'U';
-}
-
 export default function ProjectDetailsPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [docError, setDocError] = useState('');
+  const [downloading, setDownloading] = useState('');
+
+  async function openDocument(doc) {
+    setDocError('');
+    setDownloading(doc.filename);
+    try {
+      await downloadProjectDocument(project._id, doc);
+    } catch (err) {
+      setDocError(await blobErrorMessage(err));
+    } finally {
+      setDownloading('');
+    }
+  }
 
   async function loadProjectDetails() {
     setLoading(true);
@@ -79,12 +74,7 @@ export default function ProjectDetailsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <RefreshCw className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm font-medium text-slate-600">Loading catalog item details...</p>
-        </div>
-      </div>
+      <Loader label="Loading project details" fill />
     );
   }
 
@@ -97,7 +87,7 @@ export default function ProjectDetailsPage() {
         <h2 className="text-xl font-bold text-slate-900">Failed to Load Details</h2>
         <p className="mt-2 text-sm text-slate-600">{error || 'Project not found.'}</p>
         <div className="mt-6 flex justify-center gap-3">
-          <Button variant="outline" onClick={() => navigate('/catalog')}>Back to Catalog</Button>
+          <Button variant="outline" onClick={() => navigate('/catalog')}>Back to Projects</Button>
           <Button onClick={loadProjectDetails}>Try Again</Button>
         </div>
       </div>
@@ -117,8 +107,6 @@ export default function ProjectDetailsPage() {
     }
   }
 
-  const baseUrl = api.defaults.baseURL.replace('/api', '');
-
   return (
     <div className="space-y-6">
       {/* Top Bar Navigation */}
@@ -127,21 +115,21 @@ export default function ProjectDetailsPage() {
           <Link
             to="/catalog"
             className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
-            title="Back to Catalog"
+            title="Back to Projects"
           >
             <ArrowLeft size={18} />
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <span className="rounded bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase text-slate-600">
-                {project.type || 'project'}
-              </span>
               <span className="text-xs text-slate-400">ID: {project._id}</span>
             </div>
             <h1 className="mt-1 text-2xl font-bold text-slate-900">{project.title}</h1>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          {project.canEdit && (
+            <Button variant="outline" onClick={() => navigate(`/catalog/edit/${project._id}`)} className="gap-2"><Pencil size={14} />Edit</Button>
+          )}
           {project.projectStatus && (
             <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ${getStatusBadge(project.projectStatus)}`}>
               {getStatusIcon(project.projectStatus)}
@@ -161,7 +149,7 @@ export default function ProjectDetailsPage() {
           <Card className="p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Description & Scope</h2>
             <div className="prose prose-slate max-w-none text-sm leading-relaxed text-slate-600 whitespace-pre-line">
-              {project.description || 'No detailed description provided for this item.'}
+              {project.description || 'No description provided for this project.'}
             </div>
             
             {project.shortDescription && (
@@ -281,7 +269,7 @@ export default function ProjectDetailsPage() {
             ) : (
               <div className="rounded-xl border-2 border-dashed border-slate-200 py-8 text-center text-slate-500 bg-slate-50/30">
                 <Users className="mx-auto mb-2 text-slate-400" size={24} />
-                <p className="text-sm font-medium">No team members assigned to this item.</p>
+                <p className="text-sm font-medium">No team members assigned to this project.</p>
               </div>
             )}
           </Card>
@@ -289,40 +277,39 @@ export default function ProjectDetailsPage() {
           {/* Project Documents Card */}
           <Card className="p-6">
             <h2 className="text-lg font-bold text-slate-900 mb-4">Project Attachments & Documents</h2>
+            {docError && <p className="mb-3 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{docError}</p>}
             
             {project.documents && project.documents.length > 0 ? (
               <div className="divide-y divide-slate-100 rounded-xl border border-slate-100 bg-slate-50/20">
-                {project.documents.map((doc, idx) => (
-                  <div key={idx} className="flex items-center justify-between p-3.5 transition hover:bg-slate-50/60">
+                {project.documents.map((doc) => (
+                  <div key={doc.filename} className="flex items-center justify-between p-3.5 transition hover:bg-slate-50/60">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 flex-shrink-0">
                         <FileText size={18} />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <a 
-                          href={`${baseUrl}${doc.url}`} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="block truncate text-sm font-semibold text-slate-800 hover:text-primary transition hover:underline"
+                        <button
+                          type="button"
+                          onClick={() => openDocument(doc)}
+                          className="block max-w-full truncate text-left text-sm font-semibold text-slate-800 hover:text-primary transition hover:underline"
                         >
                           {doc.originalName || doc.filename}
-                        </a>
+                        </button>
                         <div className="mt-1 flex items-center gap-2 text-xs text-slate-400">
-                          <span>{DOC_CATEGORIES.find((c) => c.value === doc.category)?.label || doc.category}</span>
-                          <span>•</span>
-                          <span>{(doc.size / 1024).toFixed(1)} KB</span>
+                          <span>{categoryLabel(doc.category)}</span>
+                          {Number(doc.size) > 0 && (<><span>•</span><span>{(doc.size / 1024).toFixed(1)} KB</span></>)}
                         </div>
                       </div>
                     </div>
-                    <a 
-                      href={`${baseUrl}${doc.url}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition"
-                      title="Open Document"
+                    <button
+                      type="button"
+                      onClick={() => openDocument(doc)}
+                      disabled={downloading === doc.filename}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800 transition disabled:opacity-50"
+                      title="Download"
                     >
-                      <ExternalLink size={14} />
-                    </a>
+                      <Download size={14} />
+                    </button>
                   </div>
                 ))}
               </div>
@@ -344,10 +331,10 @@ export default function ProjectDetailsPage() {
             <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-800 px-6 py-6 text-white">
               <div className="flex items-center justify-between opacity-85">
                 <span className="text-xs font-semibold uppercase tracking-wider">Financial Statement</span>
-                <DollarSign size={16} />
+                <Wallet size={16} />
               </div>
               <h3 className="mt-3 text-3xl font-extrabold tracking-tight">
-                {formatMoney(project.budget || project.price, project.currency)}
+                {formatMoney(project.budget ?? project.price, project.currency)}
               </h3>
               
               {project.salePrice !== undefined && project.salePrice > 0 && (
@@ -361,11 +348,11 @@ export default function ProjectDetailsPage() {
                 Created on {formatDate(project.createdAt)}
               </p>
             </div>
-            
+
             <div className="bg-white px-6 py-4">
               <div className="flex items-center justify-between text-xs text-slate-500">
-                <span>Payment Plan Type:</span>
-                <span className="font-semibold text-slate-700 capitalize">{project.type || 'Project Contract'}</span>
+                <span>Currency</span>
+                <span className="font-semibold text-slate-700">{project.currency || 'INR'}</span>
               </div>
             </div>
           </Card>
@@ -407,11 +394,11 @@ export default function ProjectDetailsPage() {
                 <div className="rounded-lg border border-slate-100 bg-slate-50 p-2.5 text-center text-xs text-slate-600">
                   {new Date(project.deadline).getTime() > Date.now() ? (
                     <span className="font-medium">
-                      ⏳ {Math.ceil((new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days Remaining
+                      {Math.ceil((new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))} Days Remaining
                     </span>
                   ) : (
                     <span className="font-medium text-red-600">
-                      ⚠️ Deadline Passed {Math.abs(Math.ceil((new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Days Ago
+                      Deadline passed {Math.abs(Math.ceil((new Date(project.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} Days Ago
                     </span>
                   )}
                 </div>

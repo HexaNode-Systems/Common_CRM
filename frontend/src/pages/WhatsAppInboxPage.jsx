@@ -10,6 +10,7 @@ import { socket } from '../services/socket.js';
 import Button from '../components/Button.jsx';
 import Input from '../components/Input.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import Loader from '../components/Loader.jsx';
 
 
 const API_BASE = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
@@ -757,10 +758,7 @@ export default function WhatsAppInboxPage() {
                 className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-5 py-4 space-y-3 sm:space-y-4"
               >
                 {loadingMessages && messages.length === 0 ? (
-                  <div className="flex h-full items-center justify-center text-slate-600 gap-2">
-                    <Loader2 className="motion-safe:animate-spin" size={20} aria-hidden="true" />
-                    <span className="text-sm">Loading messages…</span>
-                  </div>
+                  <Loader label="Loading messages" className="h-full" />
                 ) : (
                   <>
                     {hasMoreMessages && (

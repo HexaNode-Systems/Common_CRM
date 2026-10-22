@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
-import { AlertCircle, Paperclip, Plus, RefreshCw, X } from 'lucide-react';
+import { AlertCircle, Download, Paperclip, Plus, RefreshCw, Trash2, X } from 'lucide-react';
 import { api } from '../api/client.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import PageHeader from '../components/layout/PageHeader.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
+import { downloadError, downloadFile } from '../utils/download.js';
 
 const PRIORITIES = ['High', 'Medium', 'Low'];
 const STATUSES = ['Backlog', 'In Progress', 'In Review', 'Completed', 'On Hold'];
@@ -21,16 +24,23 @@ const emptyTaskForm = {
 };
 
 // Create the date formatter once (not on every row)
-const dateFormatter = new Intl.DateTimeFormat('en-GB');
+// Due dates are calendar days stored at 00:00 UTC, so they are shown in UTC to avoid a day shift.
+const dateFormatter = new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC' });
+const dateTimeFormatter = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
 function formatDate(value) {
   if (!value) return '-';
   return dateFormatter.format(new Date(value));
 }
 
+function formatDateTime(value) {
+  return value ? dateTimeFormatter.format(new Date(value)) : '-';
+}
+
 function isOverdue(task) {
   if (!task?.dueDate || task.status === 'Completed') return false;
-  return new Date(task.dueDate).getTime() < Date.now();
+  // Overdue from the day after the due date.
+  return new Date(task.dueDate).getTime() + 24 * 60 * 60 * 1000 < Date.now();
 }
 
 function getPriorityClasses(priority) {
@@ -69,12 +79,24 @@ function getProjectLabel(project) {
 
 /* ---------- Task create / edit form ---------- */
 
-function TaskSurface({ mode, task, projects, users, tasks, activities, saving, lookupsLoading, onClose, onSave }) {
+function todayInput() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const NEEDS_DEPENDENCY_DONE = ['In Progress', 'In Review', 'Completed'];
+const ATTACHMENT_TYPES = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt', 'log', 'json', 'png', 'jpg', 'jpeg', 'webp', 'gif', 'zip'];
+
+function TaskSurface({ mode, task, projects, activities, saving, lookupsLoading, error, onClose, onSave, onStatusOnly, onDelete, onTaskChange }) {
   const [form, setForm] = useState(emptyTaskForm);
   const [files, setFiles] = useState([]);
   const [dragActive, setDragActive] = useState(false);
   const [assigneeQuery, setAssigneeQuery] = useState('');
-  const [showDependencyNote, setShowDependencyNote] = useState(false);
+  const [assignees, setAssignees] = useState([]);
+  const [teamOnly, setTeamOnly] = useState(false);
+  const [projectTasks, setProjectTasks] = useState([]);
+  const [localError, setLocalError] = useState('');
+  const [busyFile, setBusyFile] = useState('');
 
   useEffect(() => {
     if (task) {
@@ -94,29 +116,61 @@ function TaskSurface({ mode, task, projects, users, tasks, activities, saving, l
     }
     setFiles([]);
     setAssigneeQuery('');
+    setLocalError('');
   }, [task, mode]);
 
-  const selectedProject = useMemo(() => projects.find((projectItem) => String(projectItem._id) === String(form.projectId)), [projects, form.projectId]);
-  const dependencyOptions = useMemo(() => (
-    tasks.filter((item) => String(item.project?._id || item.project) === String(form.projectId) && String(item._id) !== String(task?._id))
-  ), [tasks, form.projectId, task]);
-  const filteredUsers = useMemo(() => (
-    users.filter((user) => [user.name, user.email, user.roleLabel, user.role].join(' ').toLowerCase().includes(assigneeQuery.toLowerCase()))
-  ), [users, assigneeQuery]);
-  const selectedDependency = useMemo(() => dependencyOptions.find((item) => String(item._id) === String(form.dependencyId)), [dependencyOptions, form.dependencyId]);
-
+  // People on the chosen project's team, and every task of that project (any status) for dependencies.
   useEffect(() => {
-    setShowDependencyNote(Boolean(form.dependencyId) && form.status === 'In Progress');
-  }, [form.dependencyId, form.status]);
+    if (!form.projectId) {
+      setAssignees([]);
+      setProjectTasks([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api.get('/v1/tasks/assignees', { params: { projectId: form.projectId } })
+      .then(({ data }) => { if (!cancelled) { setAssignees(data.items || []); setTeamOnly(Boolean(data.teamOnly)); } })
+      .catch((err) => { if (!cancelled) { setAssignees([]); setLocalError(err.response?.data?.message || 'Unable to load the project team.'); } });
+    api.get('/v1/tasks', { params: { projectId: form.projectId, status: 'all', limit: 100 } })
+      .then(({ data }) => { if (!cancelled) setProjectTasks(data.items || []); })
+      .catch(() => { if (!cancelled) setProjectTasks([]); });
+    return () => { cancelled = true; };
+  }, [form.projectId]);
+
+  const readOnly = mode === 'edit' && task?.canEdit === false;
+  const canMove = mode === 'create' || task?.canMove !== false;
+
+  const dependencyOptions = useMemo(() => projectTasks.filter((item) => String(item._id) !== String(task?._id)), [projectTasks, task]);
+  const selectedDependency = useMemo(
+    () => dependencyOptions.find((item) => String(item._id) === String(form.dependencyId)) || (task?.dependency?._id && String(task.dependency._id) === String(form.dependencyId) ? task.dependency : null),
+    [dependencyOptions, form.dependencyId, task]
+  );
+  const filteredUsers = useMemo(() => (
+    assignees.filter((user) => [user.name, user.email, user.role].join(' ').toLowerCase().includes(assigneeQuery.toLowerCase()))
+  ), [assignees, assigneeQuery]);
+  // Keep the current assignee selectable even if they have since left the team or the company.
+  const assigneeOptions = useMemo(() => {
+    const list = filteredUsers.length ? filteredUsers : assignees;
+    const current = task?.assignee;
+    if (current?._id && !list.some((u) => String(u._id) === String(current._id))) return [{ ...current, left: true }, ...list];
+    return list;
+  }, [filteredUsers, assignees, task]);
+  // Keep the task's own project selectable even if it is Finished or Blocked.
+  const projectOptions = useMemo(() => {
+    const current = task?.project;
+    if (current?._id && !projects.some((p) => String(p._id) === String(current._id))) return [current, ...projects];
+    return projects;
+  }, [projects, task]);
 
   if (!mode) return null;
 
-  function updateField(field, value) {
-    setForm((current) => ({ ...current, [field]: value }));
-  }
+  const dependencyLocked = Boolean(selectedDependency && selectedDependency.status !== 'Completed');
+  const updateField = (field, value) => setForm((current) => ({ ...current, [field]: value, ...(field === 'projectId' ? { assigneeId: '', dependencyId: '' } : {}) }));
 
   function handleFiles(list) {
-    setFiles((current) => [...current, ...Array.from(list || [])]);
+    const incoming = Array.from(list || []);
+    const bad = incoming.find((f) => !ATTACHMENT_TYPES.includes(f.name.split('.').pop().toLowerCase()) || f.size > 10 * 1024 * 1024);
+    if (bad) setLocalError(`"${bad.name}" can't be attached. Use documents, images, logs or ZIP up to 10 MB.`);
+    setFiles((current) => [...current, ...incoming.filter((f) => f !== bad)].slice(0, 10));
   }
 
   function handleDrop(event) {
@@ -125,29 +179,62 @@ function TaskSurface({ mode, task, projects, users, tasks, activities, saving, l
     handleFiles(event.dataTransfer.files);
   }
 
-  async function submit(event) {
+  async function downloadAttachment(att) {
+    setBusyFile(att.filename);
+    try {
+      await downloadFile(`/v1/tasks/${task._id}/attachments/${encodeURIComponent(att.filename)}`, att.originalName || att.filename);
+    } catch (err) {
+      setLocalError(await downloadError(err));
+    } finally {
+      setBusyFile('');
+    }
+  }
+
+  async function removeAttachment(att) {
+    if (!window.confirm(`Remove "${att.originalName || att.filename}"?`)) return;
+    setBusyFile(att.filename);
+    try {
+      const { data } = await api.delete(`/v1/tasks/${task._id}/attachments/${encodeURIComponent(att.filename)}`);
+      onTaskChange(data);
+    } catch (err) {
+      setLocalError(err.response?.data?.message || 'Unable to remove the attachment.');
+    } finally {
+      setBusyFile('');
+    }
+  }
+
+  function submit(event) {
     event.preventDefault();
-    // Block "In Progress" while the dependency is not completed
-    if (form.status === 'In Progress' && selectedDependency && selectedDependency.status !== 'Completed') {
+    setLocalError('');
+    if (readOnly) {
+      if (canMove && form.status !== task.status) onStatusOnly(form.status);
       return;
     }
+    if (NEEDS_DEPENDENCY_DONE.includes(form.status) && dependencyLocked) {
+      setLocalError(`Finish "${selectedDependency.title}" first. This task can't be ${form.status} until its dependency is Completed.`);
+      return;
+    }
+    const originalDue = task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : '';
+    if (form.dueDate && form.dueDate !== originalDue && form.dueDate < todayInput()) {
+      setLocalError('Due date can’t be in the past.');
+      return;
+    }
+    // Every field is sent, so clearing one (description, dependency, hours) really clears it.
     const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => {
-      if (value !== '' && value != null) payload.append(key, String(value));
-    });
+    Object.entries(form).forEach(([key, value]) => payload.append(key, value == null ? '' : String(value)));
     files.forEach((file) => payload.append('attachments', file));
     onSave(payload, mode);
   }
 
-  const dependencyLocked = Boolean(selectedDependency && selectedDependency.status !== 'Completed');
-  const assigneeOptions = filteredUsers.length ? filteredUsers : users;
+  const shownError = localError || error;
+  const attachments = task?.attachments || [];
 
   const content = (
     <form onSubmit={submit} className="flex h-full max-h-[92dvh] w-full min-w-0 flex-col sm:max-h-[88dvh]">
       <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-4 py-4 sm:px-5">
         <div className="min-w-0">
-          <h2 className="break-words text-lg font-semibold text-slate-900">{mode === 'create' ? '+ Add New Task' : `Edit Task: ${task?.title || ''}`}</h2>
-          <p className="mt-1 text-sm text-slate-500">Define scope, project linkage, ownership, urgency, and dependencies.</p>
+          <h2 className="break-words text-lg font-semibold text-slate-900">{mode === 'create' ? 'New Task' : readOnly ? task?.title : `Edit Task: ${task?.title || ''}`}</h2>
+          <p className="mt-1 text-sm text-slate-500">{readOnly ? (canMove ? 'You can change the status of your task. Other details are view only.' : 'View only.') : 'Scope, project, owner, urgency and dependencies.'}</p>
         </div>
         <button type="button" onClick={onClose} aria-label="Close" className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50">
           <X size={18} />
@@ -155,129 +242,143 @@ function TaskSurface({ mode, task, projects, users, tasks, activities, saving, l
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-5 sm:px-5">
+        {shownError ? (
+          <div role="alert" className="mb-4 flex items-start gap-2 rounded-theme border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            <AlertCircle size={16} className="mt-0.5 shrink-0" /><span>{shownError}</span>
+          </div>
+        ) : null}
         <div className="grid gap-5">
-          <section className="rounded-2xl border border-slate-200 p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Core Content & Scope</h3>
-            <div className="grid gap-4">
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Task Title</span>
-                <input required value={form.title} onChange={(e) => updateField('title', e.target.value)} className="input" placeholder="Task title" />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Description</span>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => updateField('description', e.target.value)}
-                  className="input min-h-36"
-                  placeholder="Markdown supported: scope, checklist items, technical expectations, links..."
-                />
-              </label>
-            </div>
-          </section>
-
-          <section className="rounded-2xl border border-slate-200 p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Ownership & Linking Logic</h3>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block sm:col-span-2">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Parent Project</span>
-                <select required value={form.projectId} onChange={(e) => updateField('projectId', e.target.value)} className="input">
-                  <option value="">{lookupsLoading ? 'Loading projects...' : 'Select a project'}</option>
-                  {projects.map((projectItem) => (
-                    <option key={projectItem._id} value={projectItem._id}>{projectItem.title} ({projectItem.projectStatus})</option>
-                  ))}
-                </select>
-              </label>
-
-              <div className="sm:col-span-2">
-                <label htmlFor="assignee-search" className="mb-1 block text-sm font-medium text-slate-700">Assignee</label>
-                <input id="assignee-search" value={assigneeQuery} onChange={(e) => setAssigneeQuery(e.target.value)} className="input mb-2" placeholder="Search active users..." />
-                <select aria-label="Select assignee" required value={form.assigneeId} onChange={(e) => updateField('assigneeId', e.target.value)} className="input">
-                  <option value="">{lookupsLoading ? 'Loading users...' : 'Select active assignee'}</option>
-                  {assigneeOptions.map((user) => (
-                    <option key={user._id} value={user._id}>{user.name} - {user.roleLabel || user.role}</option>
-                  ))}
-                </select>
+          <fieldset disabled={readOnly} className="grid gap-5">
+            <section className="rounded-theme border border-slate-200 p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Task</h3>
+              <div className="grid gap-4">
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Title *</span>
+                  <input required maxLength={200} value={form.title} onChange={(e) => updateField('title', e.target.value)} className="input" placeholder="Task title" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Description</span>
+                  <textarea value={form.description} maxLength={10000} onChange={(e) => updateField('description', e.target.value)} className="input min-h-32" placeholder="Scope, checklist, links..." />
+                </label>
               </div>
-            </div>
-          </section>
+            </section>
 
-          <section className="rounded-2xl border border-slate-200 p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Urgency & Parameters</h3>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="sm:col-span-2 lg:col-span-3" role="radiogroup" aria-label="Priority">
-                <span className="mb-2 block text-sm font-medium text-slate-700">Priority Matrix</span>
-                <div className="grid grid-cols-3 gap-3">
-                  {PRIORITIES.map((priority) => (
-                    <label key={priority} className={`cursor-pointer rounded-2xl border p-3 text-center transition sm:text-left ${form.priority === priority ? 'border-primary bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
-                      <input type="radio" name="priority" className="sr-only" checked={form.priority === priority} onChange={() => updateField('priority', priority)} />
-                      <div className="text-sm font-semibold text-slate-900">{priority}</div>
-                    </label>
-                  ))}
+            <section className="rounded-theme border border-slate-200 p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Project & Owner</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Project *</span>
+                  <select required value={form.projectId} onChange={(e) => updateField('projectId', e.target.value)} className="input">
+                    <option value="">{lookupsLoading ? 'Loading projects...' : 'Select a project'}</option>
+                    {projectOptions.map((p) => <option key={p._id} value={p._id}>{p.title} ({p.projectStatus})</option>)}
+                  </select>
+                </label>
+                <div className="sm:col-span-2">
+                  <label htmlFor="assignee-search" className="mb-1 block text-sm font-medium text-slate-700">Assignee *</label>
+                  <input id="assignee-search" value={assigneeQuery} onChange={(e) => setAssigneeQuery(e.target.value)} className="input mb-2" placeholder="Search the team..." disabled={!form.projectId} />
+                  <select aria-label="Select assignee" required value={form.assigneeId} onChange={(e) => updateField('assigneeId', e.target.value)} className="input" disabled={!form.projectId}>
+                    <option value="">{form.projectId ? 'Select assignee' : 'Select a project first'}</option>
+                    {assigneeOptions.map((user) => <option key={user._id} value={user._id}>{user.name} - {user.role}{user.left ? ' (no longer on the team)' : ''}</option>)}
+                  </select>
+                  {teamOnly ? <p className="mt-1 text-xs text-slate-500">Only people on this project's team are listed. Add someone to the project to assign them.</p> : null}
                 </div>
               </div>
+            </section>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Task Status</span>
-                <select value={form.status} onChange={(e) => updateField('status', e.target.value)} className="input">
-                  {STATUSES.map((status) => (
-                    <option key={status} value={status} disabled={status === 'In Progress' && dependencyLocked}>{status}</option>
-                  ))}
-                </select>
-                {dependencyLocked ? <p className="mt-1 text-xs text-amber-700">Dependency is not complete, so In Progress is locked.</p> : null}
-              </label>
+            <section className="rounded-theme border border-slate-200 p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Priority, Dates & Dependency</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="sm:col-span-2" role="radiogroup" aria-label="Priority">
+                  <span className="mb-2 block text-sm font-medium text-slate-700">Priority</span>
+                  <div className="grid grid-cols-3 gap-3">
+                    {PRIORITIES.map((priority) => (
+                      <label key={priority} className={`cursor-pointer rounded-theme border p-3 text-center transition sm:text-left ${form.priority === priority ? 'border-primary bg-blue-50' : 'border-slate-200 hover:bg-slate-50'}`}>
+                        <input type="radio" name="priority" className="sr-only" checked={form.priority === priority} onChange={() => updateField('priority', priority)} />
+                        <div className="text-sm font-semibold text-slate-900">{priority}</div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Due Date *</span>
+                  <input required type="date" min={mode === 'create' ? todayInput() : undefined} value={form.dueDate} onChange={(e) => updateField('dueDate', e.target.value)} className="input" />
+                </label>
+                <label className="block">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Estimated Hours</span>
+                  <input type="number" min="0" max="10000" step="0.5" value={form.estimatedHours} onChange={(e) => updateField('estimatedHours', e.target.value)} className="input" placeholder="4.5" />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="mb-1 block text-sm font-medium text-slate-700">Depends on</span>
+                  <select value={form.dependencyId} onChange={(e) => updateField('dependencyId', e.target.value)} className="input" disabled={!form.projectId}>
+                    <option value="">No dependency</option>
+                    {dependencyOptions.map((item) => <option key={item._id} value={item._id}>{item.title} ({item.status})</option>)}
+                  </select>
+                </label>
+              </div>
+            </section>
+          </fieldset>
 
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Target Due Date</span>
-                <input required type="date" value={form.dueDate} onChange={(e) => updateField('dueDate', e.target.value)} className="input" />
-              </label>
-
-              <label className="block">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Estimated Hours</span>
-                <input type="number" min="0" step="0.5" value={form.estimatedHours} onChange={(e) => updateField('estimatedHours', e.target.value)} className="input" placeholder="4.5" />
-              </label>
-
-              <label className="block sm:col-span-2 lg:col-span-3">
-                <span className="mb-1 block text-sm font-medium text-slate-700">Dependency Mapping</span>
-                <select value={form.dependencyId} onChange={(e) => updateField('dependencyId', e.target.value)} className="input">
-                  <option value="">No dependency</option>
-                  {form.projectId ? dependencyOptions.map((item) => (
-                    <option key={item._id} value={item._id}>Depends on {item.title} ({item.status})</option>
-                  )) : <option value="">Select a project first</option>}
-                </select>
-                {showDependencyNote ? <p className="mt-1 text-xs text-amber-700">This task is blocked until the dependency reaches Completed.</p> : null}
-              </label>
-            </div>
+          <section className="rounded-theme border border-slate-200 p-4">
+            <label className="block">
+              <span className="mb-1 block text-sm font-medium text-slate-700">Status</span>
+              <select value={form.status} disabled={readOnly && !canMove} onChange={(e) => updateField('status', e.target.value)} className="input">
+                {STATUSES.map((status) => (
+                  <option key={status} value={status} disabled={NEEDS_DEPENDENCY_DONE.includes(status) && dependencyLocked && status !== task?.status}>{status}</option>
+                ))}
+              </select>
+              {dependencyLocked ? <p className="mt-1 text-xs text-amber-700">Waiting on "{selectedDependency.title}". In Progress, In Review and Completed unlock when it is Completed.</p> : null}
+            </label>
           </section>
 
-          <section className="rounded-2xl border border-slate-200 p-4">
-            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">File Attachments</h3>
-            <div
-              onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
-              onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-              onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
-              onDrop={handleDrop}
-              className={`rounded-2xl border-2 border-dashed p-4 text-center transition sm:p-5 ${dragActive ? 'border-primary bg-blue-50' : 'border-slate-200 bg-slate-50'}`}
-            >
-              <Paperclip size={20} className="mx-auto text-slate-400" />
-              <p className="mt-2 text-sm font-medium text-slate-700">Add design screenshots, bug logs, or reference docs</p>
-              <input aria-label="Attach files" type="file" multiple onChange={(e) => handleFiles(e.target.files)} className="mt-3 block w-full text-sm text-slate-500" />
-            </div>
+          <section className="rounded-theme border border-slate-200 p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Attachments</h3>
+            {attachments.length ? (
+              <ul className="mb-3 divide-y divide-slate-100 rounded-theme border border-slate-200">
+                {attachments.map((att) => (
+                  <li key={att.filename} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                    <span className="min-w-0 truncate text-slate-700">{att.originalName || att.filename}</span>
+                    <span className="flex shrink-0 items-center gap-2">
+                      <button type="button" disabled={busyFile === att.filename} onClick={() => downloadAttachment(att)} className="inline-flex items-center gap-1 font-semibold text-primary hover:underline disabled:opacity-50"><Download size={13} />Download</button>
+                      {!readOnly ? <button type="button" disabled={busyFile === att.filename} onClick={() => removeAttachment(att)} className="inline-flex h-7 w-7 items-center justify-center rounded-full text-red-600 hover:bg-red-50 disabled:opacity-50" aria-label={`Remove ${att.originalName}`}><Trash2 size={13} /></button> : null}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="mb-3 text-sm text-slate-500">No attachments yet.</p>}
+            {!readOnly ? (
+              <div
+                onDragEnter={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
+                onDragLeave={(e) => { e.preventDefault(); setDragActive(false); }}
+                onDrop={handleDrop}
+                className={`rounded-theme border-2 border-dashed p-4 text-center transition ${dragActive ? 'border-primary bg-blue-50' : 'border-slate-200 bg-slate-50'}`}
+              >
+                <Paperclip size={20} className="mx-auto text-slate-400" />
+                <p className="mt-2 text-sm font-medium text-slate-700">Screenshots, logs or documents · up to 10 MB each</p>
+                <input aria-label="Attach files" type="file" multiple accept={ATTACHMENT_TYPES.map((e) => `.${e}`).join(',')} onChange={(e) => { handleFiles(e.target.files); e.target.value = ''; }} className="mt-3 block w-full text-sm text-slate-500" />
+              </div>
+            ) : null}
             {files.length ? (
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
-                {files.map((file, index) => <li key={`${file.name}-${index}`} className="break-all">• {file.name}</li>)}
+              <ul className="mt-3 space-y-1 text-sm text-slate-600">
+                {files.map((file, index) => (
+                  <li key={`${file.name}-${index}`} className="flex items-center justify-between gap-2">
+                    <span className="break-all">{file.name}</span>
+                    <button type="button" onClick={() => setFiles((cur) => cur.filter((_, i) => i !== index))} className="text-xs font-semibold text-slate-500 hover:text-red-600">Remove</button>
+                  </li>
+                ))}
               </ul>
             ) : null}
           </section>
 
           {mode === 'edit' ? (
-            <section className="rounded-2xl border border-slate-200 p-4">
-              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Activity Timeline</h3>
+            <section className="rounded-theme border border-slate-200 p-4">
+              <h3 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-500">Activity</h3>
               {activities.length ? (
                 <div className="space-y-3">
                   {activities.map((activity) => (
-                    <div key={activity._id} className="rounded-xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                    <div key={activity._id} className="rounded-theme bg-slate-50 px-3 py-2 text-sm text-slate-700">
                       <p className="font-medium text-slate-900">{activity.message}</p>
-                      <p className="text-xs text-slate-500">{activity.actor?.name || 'System'} • {formatDate(activity.createdAt)}</p>
+                      <p className="text-xs text-slate-500">{formatDateTime(activity.createdAt)}</p>
                     </div>
                   ))}
                 </div>
@@ -287,24 +388,33 @@ function TaskSurface({ mode, task, projects, users, tasks, activities, saving, l
         </div>
       </div>
 
-      <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-end sm:px-5">
-        <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-        <Button type="submit" disabled={saving} className="px-4 py-2.5">{saving ? 'Saving...' : mode === 'create' ? 'Create Task' : 'Update Task'}</Button>
+      <div className="flex flex-col-reverse gap-2 border-t border-slate-200 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+        <div>
+          {mode === 'edit' && task?.canDelete ? (
+            <Button type="button" variant="outline" onClick={onDelete} className="gap-2 text-red-600"><Trash2 size={15} />Delete task</Button>
+          ) : null}
+        </div>
+        <div className="flex flex-col-reverse gap-2 sm:flex-row">
+          <Button type="button" variant="outline" onClick={onClose}>{readOnly && !canMove ? 'Close' : 'Cancel'}</Button>
+          {!readOnly || canMove ? (
+            <Button type="submit" disabled={saving || (readOnly && form.status === task?.status)}>
+              {saving ? 'Saving...' : mode === 'create' ? 'Create Task' : readOnly ? 'Update Status' : 'Save Changes'}
+            </Button>
+          ) : null}
+        </div>
       </div>
     </form>
   );
 
-  // Create: bottom sheet on phones, centered modal on larger screens
   if (mode === 'create') {
     return (
       <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:px-4 sm:py-4">
         <button type="button" className="absolute inset-0 cursor-default" aria-label="Close task modal" onClick={onClose} />
-        <div className="relative z-10 flex w-full max-w-3xl overflow-hidden rounded-t-2xl bg-white shadow-2xl sm:rounded-2xl">{content}</div>
+        <div className="relative z-10 flex w-full max-w-3xl overflow-hidden rounded-t-theme bg-white shadow-2xl sm:rounded-theme">{content}</div>
       </div>
     );
   }
 
-  // Edit: side drawer (full width on phones)
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/45">
       <button type="button" className="absolute inset-0 cursor-default" aria-label="Close task drawer" onClick={onClose} />
@@ -338,9 +448,13 @@ function LoadingSkeleton() {
 /* ---------- Page ---------- */
 
 export default function TaskManagementPage() {
+  const { user } = useAuth();
+  const perms = user?.permissions || [];
+  // The server lets "Update" access create tasks too.
+  const canCreate = user?.role === 'super_admin' || perms.includes('tasks:create') || perms.includes('tasks:update');
   const [tasks, setTasks] = useState([]);
   const [projects, setProjects] = useState([]);
-  const [users, setUsers] = useState([]);
+  const [surfaceError, setSurfaceError] = useState('');
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(false);
@@ -360,22 +474,19 @@ export default function TaskManagementPage() {
 
   tasksRef.current = tasks;
 
-  // Projects and users are only for the dropdowns. They load AFTER the tasks are shown,
+  // Projects are only for the dropdowns. They load AFTER the tasks are shown,
   // so they do not compete with the tasks request on slow mobile networks.
   async function loadLookups() {
     if (lookupsStarted.current) return;
     lookupsStarted.current = true;
     setLookupsLoading(true);
     try {
-      const [projectRes, userRes] = await Promise.all([
-        api.get('/catalog', { params: { limit: 200 } }),
-        api.get('/v1/users', { params: { limit: 200 } })
-      ]);
+      // Only your projects; assignees are loaded per project inside the form.
+      const projectRes = await api.get('/catalog', { params: { limit: 200 } });
       setProjects((projectRes.data.items || []).filter((item) => ['Pipeline', 'Running'].includes(item.projectStatus)));
-      setUsers((userRes.data.items || []).filter((item) => item.isActive));
     } catch {
       lookupsStarted.current = false; // allow a retry
-      setError('Unable to load projects or users.');
+      setError('Unable to load projects.');
     } finally {
       setLookupsLoading(false);
     }
@@ -432,18 +543,61 @@ export default function TaskManagementPage() {
     if (!loading) loadLookups();
   }, [loading]);
 
-  async function openEdit(task) {
-    loadLookups();
-    setSurfaceState({ mode: 'edit', task });
+  async function loadActivities(taskId) {
     try {
-      const { data } = await api.get(`/v1/tasks/${task._id}/activities`);
+      const { data } = await api.get(`/v1/tasks/${taskId}/activities`);
       setActivities(data.items || []);
     } catch {
       setActivities([]);
     }
   }
 
+  async function openEdit(task) {
+    loadLookups();
+    setSurfaceError('');
+    setSurfaceState({ mode: 'edit', task });
+    loadActivities(task._id);
+  }
+
+  // After an attachment is removed: show the fresh task and its history.
+  function replaceTask(next) {
+    setSurfaceState((current) => ({ ...current, task: next }));
+    setTasks((list) => list.map((item) => (item._id === next._id ? next : item)));
+    loadActivities(next._id);
+  }
+
+  async function changeStatusOnly(status) {
+    setSurfaceSaving(true);
+    setSurfaceError('');
+    try {
+      await api.patch(`/v1/tasks/${surfaceState.task._id}/status`, { status });
+      closeSurface();
+      loadTasks({ page: 1 });
+    } catch (err) {
+      setSurfaceError(err.response?.data?.message || 'Unable to change the status.');
+    } finally {
+      setSurfaceSaving(false);
+    }
+  }
+
+  async function deleteTask() {
+    const task = surfaceState.task;
+    if (!task || !window.confirm(`Delete "${task.title}" and its attachments permanently?`)) return;
+    setSurfaceSaving(true);
+    setSurfaceError('');
+    try {
+      await api.delete(`/v1/tasks/${task._id}`);
+      closeSurface();
+      loadTasks({ page: 1 });
+    } catch (err) {
+      setSurfaceError(err.response?.data?.message || 'Unable to delete the task.');
+    } finally {
+      setSurfaceSaving(false);
+    }
+  }
+
   function openCreate() {
+    setSurfaceError('');
     loadLookups();
     setSurfaceState({ mode: 'create', task: null });
     setActivities([]);
@@ -456,7 +610,7 @@ export default function TaskManagementPage() {
 
   async function saveTask(payload, mode) {
     setSurfaceSaving(true);
-    setError('');
+    setSurfaceError('');
     try {
       const config = { headers: { 'Content-Type': 'multipart/form-data' } };
       if (mode === 'create') {
@@ -468,28 +622,39 @@ export default function TaskManagementPage() {
       // One reload keeps the list correct (a task may move to another status tab)
       loadTasks({ page: 1 });
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to save task.');
+      setSurfaceError(err.response?.data?.message || 'Unable to save task.');
     } finally {
       setSurfaceSaving(false);
     }
   }
 
+  // People who appear on the loaded tasks (no Users access needed).
+  const assigneeFilterOptions = useMemo(() => {
+    const map = new Map();
+    tasks.forEach((t) => { if (t.assignee?._id) map.set(String(t.assignee._id), t.assignee); });
+    return [...map.values()].sort((x, y) => String(x.name).localeCompare(String(y.name)));
+  }, [tasks]);
+
   return (
     <div className="space-y-5 sm:space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl">Task Management</h1>
-          <p className="mt-1 text-sm text-slate-600">Track work by project, assignee, priority, and lifecycle state.</p>
-        </div>
-        <div className="flex w-full gap-2 sm:w-auto">
-          <Button onClick={() => loadTasks({ page: 1 })} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none">
-            <RefreshCw size={16} /> Refresh
-          </Button>
-          <Button onClick={openCreate} className="inline-flex flex-1 items-center justify-center gap-2 px-4 py-2 sm:flex-none">
-            <Plus size={16} /> Add New
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        label="Work"
+        title="Task Management"
+        description="Track work by project, assignee, priority, and lifecycle state."
+        className=""
+        actions={
+          <>
+            <Button variant="outline" onClick={() => loadTasks({ page: 1 })} className="gap-2">
+              <RefreshCw size={15} /> Refresh
+            </Button>
+            {canCreate ? (
+              <Button onClick={openCreate} className="gap-2">
+                <Plus size={15} /> Add New
+              </Button>
+            ) : null}
+          </>
+        }
+      />
 
       <Card className="space-y-4">
         {/* Every dropdown has a label. sr-only means only screen readers see the text. */}
@@ -505,7 +670,8 @@ export default function TaskManagementPage() {
             <label htmlFor="filter-assignee" className="sr-only">Filter by assignee</label>
             <select id="filter-assignee" className="input" value={filters.assigneeId} onChange={(e) => setFilters((current) => ({ ...current, assigneeId: e.target.value }))}>
               <option value="">All Assignees</option>
-              {users.map((user) => <option key={user._id} value={user._id}>{user.name}</option>)}
+              <option value="me">Assigned to me</option>
+              {assigneeFilterOptions.map((person) => <option key={person._id} value={person._id}>{person.name}</option>)}
             </select>
           </div>
           <div className="sm:col-span-2 lg:col-span-1">
@@ -574,7 +740,7 @@ export default function TaskManagementPage() {
                     <span className={`text-sm font-medium ${overdue ? 'text-red-600' : 'text-slate-700'}`}>
                       Due {formatDate(task.dueDate)} {overdue ? '(Overdue)' : ''}
                     </span>
-                    <button type="button" onClick={() => openEdit(task)} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-primary hover:bg-slate-50">Edit</button>
+                    <button type="button" onClick={() => openEdit(task)} className="min-h-[40px] rounded-theme px-3 text-sm font-semibold text-primary hover:bg-slate-50">{task.canEdit === false ? 'View' : 'Edit'}</button>
                   </div>
                 </li>
               );
@@ -625,7 +791,7 @@ export default function TaskManagementPage() {
                         </span>
                       </td>
                       <td className="px-4 py-4 text-right">
-                        <button type="button" onClick={() => openEdit(task)} className="font-semibold text-primary transition hover:underline">Edit</button>
+                        <button type="button" onClick={() => openEdit(task)} className="font-semibold text-primary transition hover:underline">{task.canEdit === false ? 'View' : 'Edit'}</button>
                       </td>
                     </tr>
                   );
@@ -654,15 +820,17 @@ export default function TaskManagementPage() {
           mode={surfaceState.mode}
           task={surfaceState.task}
           projects={projects}
-          users={users}
-          tasks={tasks}
           activities={activities}
           saving={surfaceSaving}
           lookupsLoading={lookupsLoading}
+          error={surfaceError}
           onClose={closeSurface}
           onSave={saveTask}
+          onStatusOnly={changeStatusOnly}
+          onDelete={deleteTask}
+          onTaskChange={replaceTask}
         />
       ) : null}
     </div>
   );
-}
+}

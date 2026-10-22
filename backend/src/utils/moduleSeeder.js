@@ -22,7 +22,10 @@ export const defaultModulesList = [
   { name: 'support', displayName: 'Support Desk', route: '/support', icon: 'Headphones', displayOrder: 17 },
   { name: 'inventory', displayName: 'Inventory', route: '/inventory', icon: 'FolderOpen', displayOrder: 18 },
   { name: 'whatsapp', displayName: 'WhatsApp Inbox', route: '/whatsapp-inbox', icon: 'MessageSquare', displayOrder: 19 },
-  { name: 'whatsapp_integration', displayName: 'WhatsApp Integration', route: '/Integrations', icon: 'QrCode', displayOrder: 20 }
+  { name: 'whatsapp_integration', displayName: 'WhatsApp Integration', route: '/Integrations', icon: 'QrCode', displayOrder: 20 },
+  { name: 'payroll', displayName: 'Payroll & Salary', route: '/users', icon: 'IndianRupee', displayOrder: 21 },
+  // Lets a Super Admin hand role management to someone else (they can never raise their own access).
+  { name: 'roles', displayName: 'Roles & Permissions', route: '/roles', icon: 'ShieldCheck', displayOrder: 22 }
 ];
 
 export async function seedModulesAndPermissions() {

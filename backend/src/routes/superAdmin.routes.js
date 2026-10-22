@@ -4,6 +4,7 @@ import { requireSuperAdmin } from '../middleware/superAdmin.middleware.js';
 import {
   createPlan,
   createTenant,
+  endImpersonation,
   getAnalytics,
   impersonateTenant,
   listPlans,
@@ -24,6 +25,7 @@ router.post('/tenants', createTenant);
 router.patch('/tenants/:id/status', updateTenantStatus);
 router.patch('/tenants/:id/subscription', updateTenantSubscription);
 router.post('/tenants/:id/impersonate', impersonateTenant);
+router.post('/impersonations/:id/end', endImpersonation);
 
 router.get('/plans', listPlans);
 router.post('/plans', createPlan);

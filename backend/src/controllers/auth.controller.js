@@ -6,6 +6,7 @@ import { MasterUser } from '../models/master/MasterUser.js';
 import { Tenant } from '../models/master/Tenant.js';
 import { tenantStorage } from '../utils/tenantStorage.js';
 import { getTenantDbConnection } from '../utils/connectionManager.js';
+import { createUser } from './user.controller.js';
 
 function signToken(user, tenantId = null, dbName = null) {
   return jwt.sign(
@@ -29,10 +30,10 @@ function sanitizeUser(user) {
   return obj;
 }
 
-export const register = asyncHandler(async (req, res) => {
-  const user = await User.create(req.body);
-  res.status(201).json({ user: sanitizeUser(user), token: signToken(user) });
-});
+// Kept for old API clients. It used to save the raw request body (any role, including Super Admin)
+// and hand back a login token without a company, which opened the SaaS platform panel.
+// It now follows exactly the same rules as "Add user" on the Users page and returns no token.
+export const register = createUser;
 
 export const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -95,7 +96,8 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   res.json({
-    user: sanitizeUser(user),
+    // tenantId lets the app tell a company admin apart from the platform owner straight after sign-in.
+    user: { ...sanitizeUser(user), tenantId },
     token: signToken(user, tenantId, dbName)
   });
 });
@@ -133,6 +135,9 @@ export const updateProfile = asyncHandler(async (req, res) => {
   if (req.body.age !== undefined) user.age = req.body.age ? Number(req.body.age) : null;
 
   if (typeof req.body.password === 'string' && req.body.password.trim()) {
+    // A platform admin using "Login as company" must not take over the client's own password.
+    if (req.user.impersonatorId) throw new ApiError(403, 'Passwords cannot be changed during a support session.');
+    if (req.body.password.trim().length < 8) throw new ApiError(400, 'Password must be at least 8 characters.');
     user.password = req.body.password.trim();
     user.permissionVersion = (user.permissionVersion || 0) + 1;
   }

@@ -1,0 +1,502 @@
+/*
+ * Admin panel design system, matched to the public landing page (components/landing/public-landing.css):
+ * Inter for text, Space Grotesk for headings, the green-on-warm-white palette, 5px corners and
+ * filled green buttons. Light mode is the landing page itself; dark mode is built from the landing
+ * page's dark green section. Every rule is scoped under `.ax-admin`, the root of AdminLayout.
+ *
+ * Mode is set by `data-mode="light|dark"` on that root (see ThemeModeContext).
+ */
+
+/* Same font files and family names the landing page uses (public/landing/fonts). */
+@font-face { font-family: 'CRM Brand Inter'; src: url('/landing/fonts/Inter-latin.woff2') format('woff2'); font-style: normal; font-weight: 300 900; font-display: swap; }
+@font-face { font-family: 'CRM Brand Space'; src: url('/landing/fonts/SpaceGrotesk-latin.woff2') format('woff2'); font-style: normal; font-weight: 400 700; font-display: swap; }
+
+/* ------------------------------------------------------------------ */
+/* Tokens                                                              */
+/* ------------------------------------------------------------------ */
+
+.ax-admin {
+  --ax-radius: 5px;
+  --ax-radius-sm: 3px;
+  --ax-font: 'CRM Brand Inter', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
+  --ax-display: 'CRM Brand Space', 'Space Grotesk', var(--ax-font);
+  --ax-fast: 180ms;
+
+  font-family: var(--ax-font);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Light: the landing page palette */
+.ax-admin[data-mode='light'] {
+  color-scheme: light;
+  --ax-bg: #f3f6f2;
+  --ax-bg-2: #fafbf9;
+  --ax-surface: #ffffff;
+  --ax-surface-2: #f5f8f4;
+  --ax-text: #152d2a;
+  --ax-text-2: #3e504a;
+  --ax-muted: #596761;
+  --ax-line: #dde5df;
+  --ax-line-2: #c9d5cc;
+  --ax-accent: #176a57;
+  --ax-accent-dim: #eef3ee;
+  --ax-btn: #176a57;
+  --ax-btn-hover: #115441;
+  --ax-on-btn: #ffffff;
+  --ax-btn-line: #bdcbc3;
+  --ax-gold: #a8771d;
+  --ax-up: #1d7a4c;
+  --ax-down: #b7493e;
+  --ax-danger: #b7493e;
+  --ax-danger-bg: #fff7f5;
+  --ax-danger-line: #efd2cc;
+  --ax-overlay: rgb(21 45 42 / 0.45);
+  --ax-shadow: 0 24px 65px -30px rgb(36 62 43 / 0.35);
+}
+
+/* Dark: built from the landing page's dark green section (#183c32) */
+.ax-admin[data-mode='dark'] {
+  color-scheme: dark;
+  --ax-bg: #0e1915;
+  --ax-bg-2: #12201b;
+  --ax-surface: #162722;
+  --ax-surface-2: #1c312a;
+  --ax-text: #f5faf5;
+  --ax-text-2: #c0d0c5;
+  --ax-muted: #8ea197;
+  --ax-line: #243a33;
+  --ax-line-2: #355246;
+  --ax-accent: #9ed3bc;
+  --ax-accent-dim: rgb(158 211 188 / 0.12);
+  --ax-btn: #1f7d66;
+  --ax-btn-hover: #23917a;
+  --ax-on-btn: #ffffff;
+  --ax-btn-line: #658678;
+  --ax-gold: #e6c27a;
+  --ax-up: #8fd8a8;
+  --ax-down: #f0a097;
+  --ax-danger: #f0a097;
+  --ax-danger-bg: #2a1714;
+  --ax-danger-line: #5a2a24;
+  --ax-overlay: rgb(0 0 0 / 0.55);
+  --ax-shadow: 0 16px 40px rgb(0 0 0 / 0.45);
+}
+
+/* Page background follows the mode. */
+.ax-admin.ax-themed {
+  background: var(--ax-bg);
+  color: var(--ax-text);
+}
+
+.ax-admin :is(h1, h2, h3) {
+  font-family: var(--ax-display);
+  letter-spacing: -0.03em;
+}
+
+.ax-admin ::selection {
+  background: var(--ax-accent-dim);
+}
+
+.ax-admin :focus-visible {
+  outline: 2px solid var(--ax-accent);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Shell: header and sidebar always follow the mode                    */
+/* ------------------------------------------------------------------ */
+
+.ax-admin .ax-chrome {
+  background: var(--ax-bg-2);
+  color: var(--ax-text);
+  border-color: var(--ax-line);
+}
+
+/* Sidebar menu: thin scrollbar in the theme colours instead of the browser's grey bar */
+.ax-admin .ax-nav {
+  scrollbar-width: thin;
+  scrollbar-color: var(--ax-line-2) transparent;
+}
+
+.ax-admin .ax-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.ax-admin .ax-nav::-webkit-scrollbar-thumb {
+  border-radius: 3px;
+  background: var(--ax-line-2);
+}
+
+.ax-admin .ax-nav::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ax-admin .ax-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: var(--ax-radius);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ax-text-2);
+  transition: background-color var(--ax-fast) ease, color var(--ax-fast) ease;
+}
+
+.ax-admin .ax-nav-link:hover {
+  background: var(--ax-surface);
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-nav-link.active {
+  background: var(--ax-accent-dim);
+  color: var(--ax-text);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--ax-accent);
+}
+
+.ax-admin .ax-nav-link.active svg {
+  color: var(--ax-accent);
+}
+
+.ax-admin .ax-nav-link--icon {
+  justify-content: center;
+  padding: 0;
+}
+
+.ax-admin .ax-nav-link--danger {
+  width: 100%;
+  color: var(--ax-danger);
+}
+
+.ax-admin .ax-nav-link--danger:hover {
+  background: var(--ax-danger-bg);
+  color: var(--ax-danger);
+}
+
+/* ------------------------------------------------------------------ */
+/* Components                                                          */
+/* ------------------------------------------------------------------ */
+
+.ax-admin .ax-panel {
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line);
+  border-radius: var(--ax-radius);
+}
+
+.ax-admin .ax-panel--hover {
+  transition: background-color var(--ax-fast) ease, border-color var(--ax-fast) ease;
+}
+
+.ax-admin .ax-panel--hover:hover {
+  background: var(--ax-surface-2);
+  border-color: var(--ax-line-2);
+}
+
+.ax-admin .ax-iconbtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--ax-line-2);
+  border-radius: var(--ax-radius);
+  background: transparent;
+  color: var(--ax-text-2);
+  transition: background-color var(--ax-fast) ease, color var(--ax-fast) ease;
+}
+
+.ax-admin .ax-iconbtn:hover {
+  background: var(--ax-surface);
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-iconbtn--sm {
+  width: 32px;
+  height: 32px;
+}
+
+.ax-admin .ax-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--ax-radius);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color var(--ax-fast) ease, border-color var(--ax-fast) ease, opacity var(--ax-fast) ease;
+}
+
+.ax-admin .ax-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ax-admin .ax-btn--primary {
+  background: var(--ax-btn);
+  border-color: var(--ax-btn);
+  color: var(--ax-on-btn);
+}
+
+.ax-admin .ax-btn--primary:hover:not(:disabled) {
+  background: var(--ax-btn-hover);
+  border-color: var(--ax-btn-hover);
+}
+
+.ax-admin .ax-btn--ghost {
+  border-color: var(--ax-btn-line);
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-btn--ghost:hover {
+  background: var(--ax-accent-dim);
+  border-color: var(--ax-accent);
+}
+
+.ax-admin .ax-input {
+  display: block;
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--ax-line-2);
+  border-radius: var(--ax-radius);
+  background: var(--ax-surface);
+  color: var(--ax-text);
+  font-size: 13px;
+  outline: none;
+  transition: border-color var(--ax-fast) ease, background-color var(--ax-fast) ease;
+}
+
+.ax-admin .ax-input::placeholder {
+  color: var(--ax-muted);
+}
+
+.ax-admin .ax-input:focus {
+  border-color: var(--ax-accent);
+  background: var(--ax-surface-2);
+}
+
+.ax-admin .ax-input--search {
+  height: 40px;
+  padding-left: 40px;
+}
+
+.ax-admin .ax-menu {
+  background: var(--ax-surface);
+  border: 1px solid var(--ax-line-2);
+  border-radius: var(--ax-radius);
+  box-shadow: var(--ax-shadow);
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: var(--ax-radius);
+  font-size: 13px;
+  text-align: left;
+  color: var(--ax-text-2);
+  transition: background-color var(--ax-fast) ease, color var(--ax-fast) ease;
+}
+
+.ax-admin .ax-menu-item:hover {
+  background: var(--ax-surface-2);
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-menu-item--danger {
+  color: var(--ax-danger);
+}
+
+.ax-admin .ax-menu-item--danger:hover {
+  background: var(--ax-danger-bg);
+  color: var(--ax-danger);
+}
+
+.ax-admin .ax-avatar {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 1px solid var(--ax-line);
+  border-radius: var(--ax-radius-sm);
+  background: var(--ax-accent-dim);
+  color: var(--ax-accent);
+  font-weight: 600;
+  object-fit: cover;
+}
+
+.ax-admin .ax-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding: 2px 6px;
+  border: 1px solid var(--ax-line);
+  border-radius: var(--ax-radius-sm);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ax-muted);
+}
+
+.ax-admin .ax-alert {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--ax-danger-line);
+  border-radius: var(--ax-radius);
+  background: var(--ax-danger-bg);
+  color: var(--ax-danger);
+  font-size: 14px;
+}
+
+.ax-admin .ax-skel {
+  background: var(--ax-surface-2);
+}
+
+.ax-admin .ax-overlay {
+  background: var(--ax-overlay);
+}
+
+/* ------------------------------------------------------------------ */
+/* Type                                                                */
+/* ------------------------------------------------------------------ */
+
+/* Same as the landing page's .crm-eyebrow */
+.ax-admin .ax-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ax-accent);
+}
+
+/* Small dot before a page label, like the landing page's product note */
+.ax-admin .ax-label-rule {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ax-accent);
+}
+
+/* Numbers that should line up in columns */
+.ax-admin .ax-mono {
+  font-variant-numeric: tabular-nums;
+}
+
+.ax-admin .ax-h1 {
+  margin: 0;
+  font-family: var(--ax-display);
+  font-size: clamp(1.875rem, 1.4rem + 1.3vw, 2.5rem);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: -0.045em;
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-title {
+  font-family: var(--ax-display);
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: var(--ax-text);
+}
+
+.ax-admin .ax-sub {
+  font-size: 13px;
+  color: var(--ax-muted);
+}
+
+.ax-admin .ax-text-2 {
+  color: var(--ax-text-2);
+}
+
+.ax-admin .ax-muted {
+  color: var(--ax-muted);
+}
+
+.ax-admin .ax-divider {
+  border-color: var(--ax-line);
+}
+
+/* ------------------------------------------------------------------ */
+/* Loader (components/Loader.jsx)                                      */
+/* ------------------------------------------------------------------ */
+
+.ax-admin .ax-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  width: 100%;
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--ax-muted);
+}
+
+.ax-admin .ax-loader--fill {
+  min-height: 60vh;
+}
+
+.ax-admin .ax-loader--sm {
+  flex-direction: row;
+  gap: 10px;
+  padding: 12px;
+}
+
+.ax-admin .ax-spinner {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  border: 2px solid var(--ax-line-2);
+  border-top-color: var(--ax-accent);
+  border-radius: 50%;
+  animation: ax-spin 0.75s linear infinite;
+}
+
+.ax-admin .ax-loader--sm .ax-spinner {
+  width: 14px;
+  height: 14px;
+  border-width: 1.5px;
+}
+
+.ax-admin .ax-loader-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+@keyframes ax-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-admin .ax-spinner {
+    animation-duration: 2.4s;
+  }
+}

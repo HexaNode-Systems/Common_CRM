@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { 
+import { Check, 
   Building, 
   Users, 
   ShieldAlert, 
@@ -18,11 +18,59 @@ import { api } from '../api/client.js';
 import { useAuth } from '../context/AuthContext.jsx';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import Loader from '../components/Loader.jsx';
 
-function PlanEditModal({ plan, saving, onClose, onSave }) {
+const GB = 1024 * 1024 * 1024;
+const DAY_MS = 24 * 60 * 60 * 1000;
+const CYCLE_LABEL = { monthly: '/ month', yearly: '/ year', lifetime: 'one-time' };
+
+function toInputDate(date) {
+  const d = new Date(date);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function addMonths(from, months) {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + Number(months));
+  return d;
+}
+
+function formatGb(bytes) {
+  const gb = (Number(bytes) || 0) / GB;
+  return Number.isInteger(gb) ? String(gb) : gb.toFixed(1);
+}
+
+function formatMoney(value) {
+  return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
+}
+
+/** 'expired' | 'soon' | 'ok' | 'none' for a company's plan expiry. */
+function expiryState(tenant) {
+  if (!tenant.planExpiresAt) return 'none';
+  const left = new Date(tenant.planExpiresAt).getTime() - Date.now();
+  if (left < 0) return 'expired';
+  if (left < 7 * DAY_MS) return 'soon';
+  return 'ok';
+}
+
+function ModalError({ message }) {
+  if (!message) return null;
+  return <div className="rounded-theme border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">{message}</div>;
+}
+
+const PLAN_FEATURES = [
+  ['reports', 'Analytics & Work Reports'],
+  ['vault', 'Secure Credentials Vault'],
+  ['whatsapp', 'WhatsApp Web Integration'],
+  ['whiteLabel', 'White-Label & Custom Branding'],
+];
+
+function PlanEditModal({ plan, saving, error, onClose, onSave }) {
   const [form, setForm] = useState({
     name: '',
     price: 0,
+    billingCycle: 'monthly',
+    isActive: true,
     description: '',
     maxUsers: 0,
     maxStorageGb: 0,
@@ -45,9 +93,11 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
       setForm({
         name: plan.name || '',
         price: plan.price || 0,
+        billingCycle: plan.billingCycle || 'monthly',
+        isActive: plan.isActive !== false,
         description: plan.description || '',
         maxUsers: plan.limits?.maxUsers || 0,
-        maxStorageGb: plan.limits?.maxStorage ? Math.floor(plan.limits.maxStorage / (1024 * 1024 * 1024)) : 1,
+        maxStorageGb: plan.limits?.maxStorage ? Number(formatGb(plan.limits.maxStorage)) : 1,
         maxEmployees: plan.limits?.maxEmployees || 0,
         maxCustomers: plan.limits?.maxCustomers || 0,
         maxLeads: plan.limits?.maxLeads || 0,
@@ -66,11 +116,13 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    const maxStorage = form.maxStorageGb * 1024 * 1024 * 1024;
+    const maxStorage = Math.round(Number(form.maxStorageGb) * GB);
     onSave({
-      name: form.name,
+      name: form.name.trim(),
       price: Number(form.price),
-      description: form.description,
+      billingCycle: form.billingCycle,
+      isActive: form.isActive,
+      description: form.description.trim(),
       limits: {
         maxUsers: Number(form.maxUsers),
         maxStorage,
@@ -113,34 +165,60 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
         </div>
 
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <ModalError message={error} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">Plan Name</label>
               <input 
                 type="text" 
                 required 
+                maxLength={60}
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 value={form.name} 
                 onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} 
               />
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">Monthly Price ($)</label>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Price ($)</label>
               <input 
                 type="number" 
                 required 
                 min="0"
+                step="0.01"
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 value={form.price} 
                 onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))} 
               />
             </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">Billed</label>
+              <select
+                className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 bg-white outline-none focus:border-blue-500"
+                value={form.billingCycle}
+                onChange={(e) => setForm((prev) => ({ ...prev, billingCycle: e.target.value }))}
+              >
+                <option value="monthly">Monthly</option>
+                <option value="yearly">Yearly</option>
+                <option value="lifetime">One-time (lifetime)</option>
+              </select>
+            </div>
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              className="h-4 w-4 accent-primary"
+              checked={form.isActive}
+              onChange={(e) => setForm((prev) => ({ ...prev, isActive: e.target.checked }))}
+            />
+            Offer this plan to new companies (companies already on it keep it either way)
+          </label>
 
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Plan Description</label>
             <input 
               type="text" 
+              maxLength={300}
               className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
               value={form.description} 
               onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))} 
@@ -165,7 +243,8 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
               <input 
                 type="number" 
                 required 
-                min="1"
+                min="0.5"
+                step="0.5"
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 value={form.maxStorageGb} 
                 onChange={(e) => setForm((prev) => ({ ...prev, maxStorageGb: e.target.value }))} 
@@ -252,23 +331,19 @@ function PlanEditModal({ plan, saving, onClose, onSave }) {
   );
 }
 
-function SubscriptionEditModal({ tenant, saving, onClose, onSave }) {
+function SubscriptionEditModal({ tenant, plans, saving, error, onClose, onSave }) {
+  // Renewals start from the current expiry if it is still ahead, so paid days are not lost.
+  const currentExpiry = tenant.planExpiresAt ? new Date(tenant.planExpiresAt) : null;
+  const renewFrom = currentExpiry && currentExpiry > new Date() ? currentExpiry : new Date();
   const [duration, setDuration] = useState(tenant.subscriptionDuration || 1);
-  const [expiryDate, setExpiryDate] = useState(() => {
-    if (tenant.planExpiresAt) {
-      return new Date(tenant.planExpiresAt).toISOString().split('T')[0];
-    }
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    return d.toISOString().split('T')[0];
-  });
+  const [planId, setPlanId] = useState(String(tenant.plan?._id || tenant.plan || ''));
+  const [expiryDate, setExpiryDate] = useState(() => toInputDate(currentExpiry && currentExpiry > new Date() ? currentExpiry : addMonths(new Date(), 1)));
+  const choosablePlans = plans.filter((p) => p.isActive !== false || String(p._id) === planId);
 
   const handleDurationChange = (e) => {
     const months = Number(e.target.value);
     setDuration(months);
-    const d = new Date();
-    d.setMonth(d.getMonth() + months);
-    setExpiryDate(d.toISOString().split('T')[0]);
+    setExpiryDate(toInputDate(addMonths(renewFrom, months)));
   };
 
   const handleDateChange = (e) => {
@@ -279,7 +354,8 @@ function SubscriptionEditModal({ tenant, saving, onClose, onSave }) {
     e.preventDefault();
     onSave({
       subscriptionDuration: duration,
-      planExpiresAt: expiryDate
+      planExpiresAt: expiryDate,
+      ...(planId ? { planId } : {})
     });
   };
 
@@ -303,6 +379,21 @@ function SubscriptionEditModal({ tenant, saving, onClose, onSave }) {
         </div>
 
         <div className="space-y-4 px-6 py-5">
+          <ModalError message={error} />
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Plan</label>
+            <select
+              className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 bg-white outline-none focus:border-blue-500"
+              value={planId}
+              onChange={(e) => setPlanId(e.target.value)}
+            >
+              {choosablePlans.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} (${formatMoney(p.price)} {CYCLE_LABEL[p.billingCycle] || ''}){p.isActive === false ? ' – no longer offered' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="block text-sm font-semibold text-slate-700 mb-1">Subscription Duration</label>
             <select
@@ -318,14 +409,20 @@ function SubscriptionEditModal({ tenant, saving, onClose, onSave }) {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-1">Recalculated Expiry Date</label>
+            <label className="block text-sm font-semibold text-slate-700 mb-1">Expiry Date</label>
             <input 
               type="date"
               required
+              min={toInputDate(new Date())}
               className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500"
               value={expiryDate}
               onChange={handleDateChange}
             />
+            <p className="mt-1 text-xs text-slate-500">
+              {currentExpiry
+                ? `Currently ${currentExpiry < new Date() ? 'expired on' : 'paid until'} ${currentExpiry.toLocaleDateString()}. Choosing a duration adds it ${currentExpiry > new Date() ? 'on top of that date' : 'from today'}.`
+                : 'No expiry set yet. Choosing a duration counts from today.'}
+            </p>
           </div>
         </div>
 
@@ -382,9 +479,11 @@ export default function SuperAdminDashboard() {
   const [selectedDuration, setSelectedDuration] = useState(1);
   const [editingSubscription, setEditingSubscription] = useState(null);
   const [savingSubscription, setSavingSubscription] = useState(false);
+  const [modalError, setModalError] = useState('');
 
   async function handleSaveSubscription(subForm) {
     setSavingSubscription(true);
+    setModalError('');
     setError('');
     setSuccess('');
     try {
@@ -392,8 +491,10 @@ export default function SuperAdminDashboard() {
       setTenants((current) => current.map((t) => (t._id === data._id ? { ...t, ...data } : t)));
       setSuccess(`Subscription for '${data.name}' updated successfully!`);
       setEditingSubscription(null);
+      const analyticsRes = await api.get('/v1/super-admin/analytics');
+      setAnalytics(analyticsRes.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update subscription.');
+      setModalError(err.response?.data?.message || 'Failed to update subscription.');
     } finally {
       setSavingSubscription(false);
     }
@@ -401,6 +502,7 @@ export default function SuperAdminDashboard() {
 
   async function handleSavePlan(planForm) {
     setSavingPlan(true);
+    setModalError('');
     setError('');
     setSuccess('');
     try {
@@ -412,7 +514,7 @@ export default function SuperAdminDashboard() {
       const analyticsRes = await api.get('/v1/super-admin/analytics');
       setAnalytics(analyticsRes.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update plan configurations.');
+      setModalError(err.response?.data?.message || 'Failed to update plan configurations.');
     } finally {
       setSavingPlan(false);
     }
@@ -438,7 +540,12 @@ export default function SuperAdminDashboard() {
       setAnalytics(analyticsRes.data);
       setTenants(tenantsRes.data.items || []);
       setTotalPages(tenantsRes.data.pagination?.pages || 1);
-      setPlans(plansRes.data.items || []);
+      const planItems = plansRes.data.items || [];
+      setPlans(planItems);
+      // Default the "new company" plan to one that is actually offered.
+      setNewCompany((prev) => (planItems.some((p) => p.slug === prev.planSlug && p.isActive !== false)
+        ? prev
+        : { ...prev, planSlug: planItems.find((p) => p.isActive !== false)?.slug || prev.planSlug }));
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load platform administration details.');
     } finally {
@@ -452,13 +559,17 @@ export default function SuperAdminDashboard() {
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadData();
+    if (page !== 1) setPage(1);
+    else loadData();
   };
 
   // Toggle company status (suspend / activate)
   async function toggleTenantStatus(tenant) {
     const nextStatus = tenant.status === 'active' ? 'suspended' : 'active';
+    const question = nextStatus === 'suspended'
+      ? `Suspend ${tenant.name}? Everyone at this company is signed out immediately and cannot sign in until you activate it again.`
+      : `Activate ${tenant.name}? Its users will be able to sign in again.`;
+    if (!window.confirm(question)) return;
     setActionLoadingId(tenant._id);
     setError('');
     setSuccess('');
@@ -484,14 +595,19 @@ export default function SuperAdminDashboard() {
     setError('');
     setSuccess('');
     try {
-      await api.post('/v1/super-admin/tenants', newCompany);
+      await api.post('/v1/super-admin/tenants', {
+        ...newCompany,
+        name: newCompany.name.trim(),
+        subdomain: newCompany.subdomain.trim().toLowerCase(),
+        email: newCompany.email.trim().toLowerCase()
+      });
       setSuccess(`SaaS Tenant ${newCompany.name} created and database provisioned successfully!`);
       setNewCompany({
         name: '',
         subdomain: '',
         email: '',
         password: '',
-        planSlug: 'starter',
+        planSlug: newCompany.planSlug,
         durationMonths: 1
       });
       setActiveTab('companies');
@@ -515,7 +631,7 @@ export default function SuperAdminDashboard() {
       const { data } = await api.post(`/v1/super-admin/tenants/${tenant._id}/impersonate`, { reason: reason.trim() });
       
       // Perform token swap in auth context
-      impersonate(data.token, data.user);
+      impersonate(data.token, data.user, data.impersonation?.id);
       
       // Redirect to tenant dashboard
       window.location.href = '/dashboard';
@@ -606,8 +722,13 @@ export default function SuperAdminDashboard() {
             <DollarSign className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-slate-500">Est. MRR Revenue</p>
-            <h3 className="text-2xl font-bold text-slate-800">${analytics?.revenuePlaceholder ?? '—'} <span className="text-xs text-slate-400 font-normal">/ month</span></h3>
+            <p className="text-sm font-semibold text-slate-500">Monthly Recurring Revenue</p>
+            <h3 className="text-2xl font-bold text-slate-800">
+              {analytics ? `$${formatMoney(analytics.mrr ?? analytics.revenuePlaceholder)}` : '—'} <span className="text-xs text-slate-400 font-normal">/ month</span>
+            </h3>
+            <p className="text-[11px] text-slate-400" title="Active companies with an unexpired plan. Yearly plans count as price ÷ 12; lifetime plans are not recurring.">
+              From active, unexpired plans{analytics?.expiredTenants ? ` · ${analytics.expiredTenants} expired` : ''}{analytics?.expiringSoon ? ` · ${analytics.expiringSoon} expiring in 7 days` : ''}
+            </p>
           </div>
         </Card>
       </div>
@@ -705,8 +826,8 @@ export default function SuperAdminDashboard() {
                 <tbody className="divide-y divide-slate-100 text-slate-700">
                   {loading ? (
                     <tr>
-                      <td colSpan="6" className="px-5 py-10 text-center text-slate-400">
-                        <RefreshCw className="animate-spin inline mr-2" size={16} /> Loading companies...
+                      <td colSpan="6">
+                        <Loader label="Loading companies" />
                       </td>
                     </tr>
                   ) : tenants.length === 0 ? (
@@ -749,8 +870,8 @@ export default function SuperAdminDashboard() {
                             <p className="text-xs text-slate-500 mt-0.5 font-medium">
                               Duration: {t.subscriptionDuration || 1} {(t.subscriptionDuration || 1) === 1 ? 'Month' : 'Months'}
                             </p>
-                            <p className="text-xs text-slate-400 mt-0.5">
-                              Expires: {t.planExpiresAt ? new Date(t.planExpiresAt).toLocaleDateString() : 'Lifetime'}
+                            <p className={`text-xs mt-0.5 ${expiryState(t) === 'expired' ? 'font-semibold text-rose-600' : expiryState(t) === 'soon' ? 'font-semibold text-amber-600' : 'text-slate-400'}`}>
+                              {expiryState(t) === 'expired' ? 'Expired' : 'Expires'}: {t.planExpiresAt ? new Date(t.planExpiresAt).toLocaleDateString() : 'No expiry'}
                             </p>
                           </div>
                         </td>
@@ -762,12 +883,17 @@ export default function SuperAdminDashboard() {
                           }`}>
                             {t.status}
                           </span>
+                          {t.status === 'active' && expiryState(t) === 'expired' ? (
+                            <span className="ml-1 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-semibold text-amber-700" title="The plan has expired. The company can still sign in until you suspend it.">
+                              plan expired
+                            </span>
+                          ) : null}
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="inline-flex items-center gap-2">
                             <button
                               type="button"
-                              onClick={() => setEditingSubscription(t)}
+                              onClick={() => { setModalError(''); setEditingSubscription(t); }}
                               disabled={actionLoadingId === t._id}
                               className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-bold transition flex items-center gap-1"
                               title="Manage Subscription"
@@ -777,9 +903,9 @@ export default function SuperAdminDashboard() {
                             <button
                               type="button"
                               onClick={() => handleImpersonate(t)}
-                              disabled={actionLoadingId === t._id}
-                              className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition flex items-center gap-1"
-                              title="Login as Tenant"
+                              disabled={actionLoadingId === t._id || t.status !== 'active'}
+                              className="px-3 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition flex items-center gap-1 disabled:cursor-not-allowed disabled:opacity-50"
+                              title={t.status === 'active' ? 'Login as Tenant' : 'Activate the company first'}
                             >
                               <Lock size={12} /> Login as Company
                             </button>
@@ -863,6 +989,9 @@ export default function SuperAdminDashboard() {
                   required
                   className="flex-1 border-0 bg-transparent px-3.5 py-2.5 text-sm outline-none"
                   placeholder="e.g. acme"
+                  pattern="[A-Za-z0-9-]+"
+                  title="Letters, digits and hyphens only"
+                  maxLength={40}
                   value={newCompany.subdomain}
                   onChange={(e) => setNewCompany(prev => ({ ...prev, subdomain: e.target.value }))}
                 />
@@ -891,6 +1020,7 @@ export default function SuperAdminDashboard() {
                   required
                   className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
                   placeholder="At least 8 characters"
+                  minLength={8}
                   value={newCompany.password}
                   onChange={(e) => setNewCompany(prev => ({ ...prev, password: e.target.value }))}
                 />
@@ -903,11 +1033,13 @@ export default function SuperAdminDashboard() {
                 <select
                   className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none bg-white focus:border-blue-500"
                   value={newCompany.planSlug}
+                  required
                   onChange={(e) => setNewCompany(prev => ({ ...prev, planSlug: e.target.value }))}
                 >
-                  <option value="starter">Starter Plan ($49/mo)</option>
-                  <option value="professional">Professional Plan ($99/mo)</option>
-                  <option value="enterprise">Enterprise Plan ($249/mo)</option>
+                  {plans.filter((p) => p.isActive !== false).length === 0 ? <option value="">No plans available</option> : null}
+                  {plans.filter((p) => p.isActive !== false).map((p) => (
+                    <option key={p._id} value={p.slug}>{p.name} (${formatMoney(p.price)} {CYCLE_LABEL[p.billingCycle] || ''})</option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -930,7 +1062,7 @@ export default function SuperAdminDashboard() {
               <p className="font-bold text-slate-800 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5 mb-2">Provisioning Summary</p>
               <div className="flex justify-between">
                 <span>Selected Plan:</span>
-                <span className="font-semibold text-slate-900 capitalize">{newCompany.planSlug} Plan</span>
+                <span className="font-semibold text-slate-900">{plans.find((p) => p.slug === newCompany.planSlug)?.name || newCompany.planSlug} Plan</span>
               </div>
               <div className="flex justify-between">
                 <span>Billing Duration:</span>
@@ -984,20 +1116,25 @@ export default function SuperAdminDashboard() {
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {plans.map((plan) => {
-              const displayPrice = plan.price * selectedDuration;
+              // Yearly prices are spread per month for this view; lifetime is a one-off.
+              const monthly = plan.billingCycle === 'yearly' ? plan.price / 12 : plan.price;
+              const displayPrice = plan.billingCycle === 'lifetime' ? plan.price : Math.round(monthly * selectedDuration * 100) / 100;
               return (
                 <Card key={plan._id} className="p-6 bg-white border border-slate-150 relative overflow-hidden flex flex-col justify-between shadow-sm">
                   <div>
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-xl font-bold text-slate-900">{plan.name}</h3>
+                      <h3 className="text-xl font-bold text-slate-900">
+                        {plan.name}
+                        {plan.isActive === false ? <span className="ml-2 align-middle text-[11px] font-semibold text-slate-400">(not offered)</span> : null}
+                      </h3>
                       <span className="text-xs font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full uppercase border border-blue-200">
                         {selectedDuration === 1 ? 'Monthly' : `${selectedDuration} Months`}
                       </span>
                     </div>
                     <div className="text-3xl font-extrabold text-slate-900 mb-2">
-                      ${displayPrice}
+                      ${formatMoney(displayPrice)}
                       <span className="text-xs text-slate-400 font-normal">
-                        {selectedDuration === 1 ? ' / month' : ` total for ${selectedDuration} mos`}
+                        {plan.billingCycle === 'lifetime' ? ' one-time' : selectedDuration === 1 ? ' / month' : ` total for ${selectedDuration} mos`}
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mb-6">{plan.description}</p>
@@ -1010,7 +1147,7 @@ export default function SuperAdminDashboard() {
                       </li>
                       <li className="flex items-center justify-between">
                         <span>Storage limit:</span>
-                        <span className="font-bold text-slate-800">{Math.floor(plan.limits?.maxStorage / (1024*1024*1024))} GB</span>
+                        <span className="font-bold text-slate-800">{formatGb(plan.limits?.maxStorage)} GB</span>
                       </li>
                       <li className="flex items-center justify-between">
                         <span>Max Leads:</span>
@@ -1024,28 +1161,18 @@ export default function SuperAdminDashboard() {
 
                     <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3 font-semibold">Enabled Features:</h4>
                     <ul className="space-y-2 text-xs text-slate-500 mb-6">
-                      <li className="flex items-center gap-2">
-                        <span className={plan.features?.reports ? "text-emerald-500" : "text-slate-300"}>✓</span>
-                        <span>Analytics & Work Reports</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={plan.features?.vault ? "text-emerald-500" : "text-slate-300"}>✓</span>
-                        <span>Secure Credentials Vault</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={plan.features?.whatsapp ? "text-emerald-500" : "text-slate-300"}>✓</span>
-                        <span>WhatsApp Web Integration</span>
-                      </li>
-                      <li className="flex items-center gap-2">
-                        <span className={plan.features?.whiteLabel ? "text-emerald-500" : "text-slate-300"}>✓</span>
-                        <span>White-Label & Custom Branding</span>
-                      </li>
+                      {PLAN_FEATURES.map(([key, label]) => (
+                        <li key={key} className="flex items-center gap-2">
+                          <Check size={13} aria-hidden="true" className={plan.features?.[key] ? 'text-emerald-500' : 'text-slate-300'} />
+                          <span>{label}</span>
+                        </li>
+                      ))}
                     </ul>
                   </div>
 
                   <div className="pt-4 border-t border-slate-100">
                     <Button 
-                      onClick={() => setEditingPlan(plan)}
+                      onClick={() => { setModalError(''); setEditingPlan(plan); }}
                       variant="outline" 
                       className="w-full inline-flex items-center justify-center gap-2"
                     >
@@ -1062,6 +1189,7 @@ export default function SuperAdminDashboard() {
         <PlanEditModal 
           plan={editingPlan} 
           saving={savingPlan} 
+          error={modalError}
           onClose={() => setEditingPlan(null)} 
           onSave={handleSavePlan} 
         />
@@ -1069,7 +1197,9 @@ export default function SuperAdminDashboard() {
       {editingSubscription && (
         <SubscriptionEditModal 
           tenant={editingSubscription}
+          plans={plans}
           saving={savingSubscription}
+          error={modalError}
           onClose={() => setEditingSubscription(null)}
           onSave={handleSaveSubscription}
         />

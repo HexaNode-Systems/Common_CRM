@@ -6,9 +6,10 @@ import Button from '../components/Button.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import {
   Send, Paperclip, AlertCircle, CheckCircle2, Clock, Loader2, RefreshCw, X, FileText,
-  Video, Image as ImageIcon, Upload, FileSpreadsheet, Sparkles, Play, Trash2, History,
+  Video, Image as ImageIcon, Upload, FileSpreadsheet, Play, Trash2, History,
   Link2, Sliders, Users, MessageSquare, Eye,
 } from 'lucide-react';
+import Loader from '../components/Loader.jsx';
 
 const PAGE_SIZE = 100; // PERF: never render thousands of rows at once
 
@@ -498,7 +499,7 @@ export default function WhatsAppCampaignPage() {
         {/* ===== Step 2 ===== */}
         <section aria-labelledby={id('step2')} className="lg:col-span-7 flex flex-col space-y-4 rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 shadow-sm">
           <h2 id={id('step2')} className="text-xs font-bold uppercase tracking-wider text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-1.5">
-            <Sparkles size={16} aria-hidden="true" /> Step 2: Campaign details and CTA button
+            <FileText size={16} aria-hidden="true" /> Step 2: Campaign details and CTA button
           </h2>
 
           <form onSubmit={handleShootCampaign} className="space-y-4">
@@ -638,9 +639,7 @@ export default function WhatsAppCampaignPage() {
         </div>
 
         {loadingCampaigns && campaignsHistory.length === 0 ? (
-          <div role="status" className="py-6 text-center text-sm text-slate-600 flex items-center justify-center gap-2">
-            <Loader2 className="motion-safe:animate-spin" size={16} aria-hidden="true" /> Loading campaign history…
-          </div>
+          <Loader label="Loading campaign history" />
         ) : campaignsHistory.length === 0 ? (
           <p className="rounded-xl border border-dashed border-slate-300 py-8 text-center text-sm text-slate-600">No campaigns launched yet. Create your first campaign above!</p>
         ) : (
@@ -771,9 +770,7 @@ export default function WhatsAppCampaignPage() {
               </tbody>
             </table>
             {loadingReport && (
-              <p role="status" className="p-4 text-center text-sm text-slate-600 flex items-center justify-center gap-2">
-                <Loader2 className="motion-safe:animate-spin" size={16} aria-hidden="true" /> Loading contact details…
-              </p>
+              <Loader label="Loading contact details" size="sm" />
             )}
             {(selectedCampaignReport.contacts || []).length > reportShown && (
               <div className="p-3 text-center border-t border-slate-100">

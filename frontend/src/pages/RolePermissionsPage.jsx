@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Plus, RefreshCw, X, Trash2 } from 'lucide-react';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { hasPermission } from '../utils/permissions.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import Loader from '../components/Loader.jsx';
 
 function formatDate(value) {
   if (!value) return '-';
@@ -17,23 +20,25 @@ function StatusBadge({ active }) {
   );
 }
 
-function StatusToggle({ role, disabled, onToggle }) {
+function StatusToggle({ role, disabled, onToggle, lockedReason }) {
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || Boolean(lockedReason)}
       onClick={() => onToggle(role)}
-      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition ${role.isActive ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-slate-300'} ${disabled ? 'cursor-wait opacity-70' : 'hover:brightness-95'}`}
-      aria-label={`Set ${role.name} ${role.isActive ? 'inactive' : 'active'}`}
-      title={`Set ${role.name} ${role.isActive ? 'inactive' : 'active'}`}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition ${role.isActive ? 'border-emerald-500 bg-emerald-500' : 'border-slate-300 bg-slate-300'} ${lockedReason ? 'cursor-not-allowed opacity-50' : disabled ? 'cursor-wait opacity-70' : 'hover:brightness-95'}`}
+      aria-label={lockedReason || `Set ${role.name} ${role.isActive ? 'inactive' : 'active'}`}
+      title={lockedReason || `Set ${role.name} ${role.isActive ? 'inactive' : 'active'}`}
     >
       <span className={`h-5 w-5 rounded-full bg-white shadow transition ${role.isActive ? 'translate-x-5' : 'translate-x-0.5'}`} />
     </button>
   );
 }
 
-function PermissionDrawer({ role, saving, onClose, onSave }) {
+function PermissionDrawer({ role, saving, saveError, canManage, isOwnRole, onClose, onSave }) {
   const [permissions, setPermissions] = useState([]);
+  const [original, setOriginal] = useState([]);
+  const [editable, setEditable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -44,6 +49,8 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
     api.get(`/v1/roles/${role._id}/permissions`)
       .then((res) => {
         setPermissions(res.data.permissions || []);
+        setOriginal(res.data.permissions || []);
+        setEditable(res.data.editable !== false);
       })
       .catch((err) => {
         setError(err.response?.data?.message || 'Failed to load permissions.');
@@ -53,7 +60,21 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
       });
   }, [role]);
 
+  const changedCount = useMemo(() => {
+    const before = new Map(original.map((p) => [String(p.moduleId), p.permission]));
+    return permissions.filter((p) => before.get(String(p.moduleId)) !== p.permission).length;
+  }, [permissions, original]);
+
   if (!role) return null;
+
+  const readOnly = !canManage || !editable || role.slug === 'super_admin' || isOwnRole;
+  const readOnlyReason = role.slug === 'super_admin'
+    ? 'Super Admin always has Full Access to everything.'
+    : isOwnRole
+      ? 'This is your own role. Ask a Super Admin to change it.'
+      : !canManage
+        ? 'You can view permissions but not change them.'
+        : '';
 
   function setAccess(moduleId, permissionValue) {
     setPermissions((current) =>
@@ -85,9 +106,16 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
         </div>
 
         <div className="flex-1 overflow-y-auto p-5">
-          {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+          {error || saveError ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error || saveError}</p> : null}
+          {readOnlyReason ? <p className="mb-4 rounded-theme bg-slate-50 px-3 py-2 text-sm text-slate-600">{readOnlyReason}</p> : null}
+          {!readOnly ? (
+            <p className="mb-4 text-xs text-slate-500">
+              People with this role are signed out after you save, so they get the new access on their next sign-in.
+              Options above your own access level are disabled.
+            </p>
+          ) : null}
           {loading ? (
-            <div className="py-8 text-center text-slate-500 font-medium">Loading permissions...</div>
+            <Loader label="Loading permissions" />
           ) : (
             <div className="overflow-x-auto rounded-theme border border-slate-200">
               <table className="min-w-[680px] w-full divide-y divide-slate-200 text-sm">
@@ -110,7 +138,7 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
                             name={`permission-${p.moduleId}`}
                             value={option.value}
                             checked={p.permission === option.value}
-                            disabled={role.slug === 'super_admin'}
+                            disabled={readOnly || (option.value > (p.maxGrant ?? 3) && option.value !== p.permission)}
                             onChange={() => setAccess(p.moduleId, option.value)}
                             className="h-4 w-4 accent-primary"
                             aria-label={`${p.displayName} ${option.label}`}
@@ -127,9 +155,11 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
 
         <div className="flex items-center justify-end gap-2 border-t border-slate-200 px-5 py-4">
           <button type="button" onClick={onClose} className="rounded-theme border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">Cancel</button>
-          <Button disabled={saving || loading || role.slug === 'super_admin'} onClick={() => onSave(role._id, permissions)} className="px-4 py-2">
-            {saving ? 'Saving...' : 'Save Permissions'}
-          </Button>
+          {!readOnly ? (
+            <Button disabled={saving || loading || changedCount === 0} onClick={() => onSave(role._id, permissions)} className="px-4 py-2">
+              {saving ? 'Saving...' : changedCount ? `Save ${changedCount} change${changedCount === 1 ? '' : 's'}` : 'No changes'}
+            </Button>
+          ) : null}
         </div>
       </aside>
     </div>
@@ -137,7 +167,11 @@ function PermissionDrawer({ role, saving, onClose, onSave }) {
 }
 
 export default function RolePermissionsPage() {
+  const { user } = useAuth();
+  const canManage = hasPermission(user, 'roles', 'update');
   const [roles, setRoles] = useState([]);
+  const [drawerError, setDrawerError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(true);
   const [statusSavingId, setStatusSavingId] = useState(null);
   const [editingRole, setEditingRole] = useState(null);
@@ -177,9 +211,7 @@ export default function RolePermissionsPage() {
       setRoles((current) => current.map((item) => (item._id === data._id ? data : item)));
     } catch (err) {
       setRoles(previousRoles);
-      const message = err.response?.data?.message || 'Unable to update role status.';
-      setError(message);
-      window.alert(message);
+      setError(err.response?.data?.message || 'Unable to update role status.');
     } finally {
       setStatusSavingId(null);
     }
@@ -191,14 +223,14 @@ export default function RolePermissionsPage() {
 
     setCreatingRole(true);
     setError('');
+    setNotice('');
     try {
       const { data } = await api.post('/v1/roles', { name: name.trim() });
-      setRoles((current) => [data, ...current]);
+      setRoles((current) => [data, ...current.filter((item) => item._id !== data._id)]);
+      setDrawerError('');
       setEditingRole(data);
     } catch (err) {
-      const message = err.response?.data?.message || 'Unable to create role.';
-      setError(message);
-      window.alert(message);
+      setError(err.response?.data?.message || 'Unable to create role.');
     } finally {
       setCreatingRole(false);
     }
@@ -206,15 +238,18 @@ export default function RolePermissionsPage() {
 
   async function savePermissions(roleId, permissions) {
     setDrawerSaving(true);
-    setError('');
+    setDrawerError('');
+    setNotice('');
     try {
-      await api.put(`/v1/roles/${roleId}/permissions`, {
-        permissions: permissions
+      const { data } = await api.put(`/v1/roles/${roleId}/permissions`, {
+        permissions: permissions.map((p) => ({ moduleId: p.moduleId, permission: p.permission }))
       });
       setEditingRole(null);
+      if (data?.changed) setNotice(`Saved ${data.changed} change${data.changed === 1 ? '' : 's'}. People with this role will sign in again to get them.`);
       load();
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to save permissions.');
+      // Shown inside the drawer, where the person is looking.
+      setDrawerError(err.response?.data?.message || 'Unable to save permissions.');
     } finally {
       setDrawerSaving(false);
     }
@@ -222,7 +257,7 @@ export default function RolePermissionsPage() {
 
   async function deleteRole(role) {
     if (role.slug === 'super_admin' || role.isSystem) {
-      window.alert('System roles (including Super Admin) cannot be deleted.');
+      setError('System roles (including Super Admin) cannot be deleted.');
       return;
     }
 
@@ -237,9 +272,7 @@ export default function RolePermissionsPage() {
       await api.delete(`/v1/roles/${role._id}`);
       setRoles((current) => current.filter((item) => item._id !== role._id));
     } catch (err) {
-      const message = err.response?.data?.message || 'Unable to delete role.';
-      setError(message);
-      window.alert(message);
+      setError(err.response?.data?.message || 'Unable to delete role.');
     } finally {
       setDeletingRoleId(null);
     }
@@ -257,14 +290,17 @@ export default function RolePermissionsPage() {
             <RefreshCw size={16} />
             Refresh
           </Button>
-          <Button onClick={createRole} disabled={creatingRole} className="inline-flex items-center gap-2 px-3 py-2">
-            <Plus size={16} />
-            {creatingRole ? 'Adding...' : 'Add New'}
-          </Button>
+          {canManage ? (
+            <Button onClick={createRole} disabled={creatingRole} className="inline-flex items-center gap-2 px-3 py-2">
+              <Plus size={16} />
+              {creatingRole ? 'Adding...' : 'Add New'}
+            </Button>
+          ) : null}
         </div>
       </div>
 
-      {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+      {error ? <p className="mb-4 rounded-theme bg-red-50 px-3 py-2 text-sm text-red-700" role="alert">{error}</p> : null}
+      {notice ? <p className="mb-4 rounded-theme bg-emerald-50 px-3 py-2 text-sm text-emerald-700">{notice}</p> : null}
 
       <Card>
         <div className="w-full overflow-x-auto">
@@ -279,24 +315,36 @@ export default function RolePermissionsPage() {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr><td className="px-3 py-4" colSpan="4">Loading...</td></tr>
+                <tr><td colSpan="4"><Loader label="Loading roles" /></td></tr>
               ) : roles.length ? (
-                roles.map((role) => (
+                roles.map((role) => {
+                  const own = user?.role !== 'super_admin' && user?.role === role.slug;
+                  const lockedReason = !canManage
+                    ? 'You can view roles but not change them'
+                    : role.isSystem || role.slug === 'super_admin'
+                      ? 'System roles are always active'
+                      : own
+                        ? 'You cannot switch off your own role'
+                        : '';
+                  return (
                   <tr key={role._id} className="transition hover:bg-slate-50">
-                    <td className="px-3 py-3 font-medium text-slate-900">{role.name}</td>
+                    <td className="px-3 py-3 font-medium text-slate-900">
+                      {role.name}
+                      {own ? <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Your role</span> : null}
+                    </td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-3">
                         <StatusBadge active={role.isActive} />
-                        <StatusToggle role={role} disabled={statusSavingId === role._id} onToggle={toggleStatus} />
+                        <StatusToggle role={role} disabled={statusSavingId === role._id} lockedReason={lockedReason} onToggle={toggleStatus} />
                       </div>
                     </td>
                     <td className="px-3 py-3 text-slate-600">{formatDate(role.createdAt)}</td>
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-4">
-                        <button type="button" onClick={() => setEditingRole(role)} className="font-semibold text-primary transition hover:underline">
-                          Edit
+                        <button type="button" onClick={() => { setDrawerError(''); setEditingRole(role); }} className="font-semibold text-primary transition hover:underline">
+                          {canManage && !own && role.slug !== 'super_admin' ? 'Edit' : 'View'}
                         </button>
-                        {!(role.slug === 'super_admin' || role.isSystem) && (
+                        {canManage && !own && !(role.slug === 'super_admin' || role.isSystem) && (
                           <button
                             type="button"
                             disabled={deletingRoleId === role._id}
@@ -310,7 +358,8 @@ export default function RolePermissionsPage() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               ) : (
                 <tr><td className="px-3 py-4" colSpan="4">No roles found.</td></tr>
               )}
@@ -322,6 +371,9 @@ export default function RolePermissionsPage() {
       <PermissionDrawer
         role={editingRole}
         saving={drawerSaving}
+        saveError={drawerError}
+        canManage={canManage}
+        isOwnRole={Boolean(editingRole) && user?.role !== 'super_admin' && user?.role === editingRole?.slug}
         onClose={() => setEditingRole(null)}
         onSave={savePermissions}
       />

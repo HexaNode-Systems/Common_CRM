@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import { WhatsAppChat } from '../models/WhatsAppChat.js';
 import { WhatsAppMessage } from '../models/WhatsAppMessage.js';
 import { Lead } from '../models/Lead.js';
-import { emitToAll } from './socket.service.js';
+import { emitToAll, emitToUser } from './socket.service.js';
 import { tenantStorage } from '../utils/tenantStorage.js';
 import { getTenantDbConnection } from '../utils/connectionManager.js';
 
@@ -18,6 +18,35 @@ const qrCodes = new Map(); // key: userId, value: QR string
 const userTenantContexts = new Map(); // key: userId, value: { tenantId, dbName }
 const recentMessageIds = new Set(); // deduplication lock for incoming messages
 
+// One absolute folder for WhatsApp sessions, so the server finds the same sessions no matter
+// which directory it was started from. Set WWEBJS_AUTH_DIR on the server to put it on a
+// persistent disk (sessions stored on a temporary disk are lost on every restart or deploy).
+const AUTH_DIR = path.resolve(process.env.WWEBJS_AUTH_DIR || '.wwebjs_auth');
+const sessionDirFor = (uid) => path.join(AUTH_DIR, `session-${uid}`);
+
+// QR codes and connection status go only to the user who owns the session.
+// A QR code is enough to take over a WhatsApp account, so it must never be broadcast.
+function emitStatus(uid, payload) {
+  emitToUser(uid, 'whatsapp:status', { userId: uid, ...payload });
+}
+
+// Which tenant database a WhatsApp session belongs to (null = single-tenant / default database).
+function sessionTenantDb(uid) {
+  const cached = userTenantContexts.get(uid);
+  if (cached) return cached.dbName || null;
+  try {
+    const infoPath = path.join(sessionDirFor(uid), 'tenant_info.json');
+    if (fsSync.existsSync(infoPath)) {
+      const parsed = JSON.parse(fsSync.readFileSync(infoPath, 'utf-8'));
+      if (parsed?.dbName) {
+        userTenantContexts.set(uid, parsed);
+        return parsed.dbName;
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
 // Helper to run database operations inside user's tenant context if applicable
 export async function runWithUserTenantContext(userId, callback) {
   const uid = userId ? userId.toString() : '';
@@ -26,7 +55,7 @@ export async function runWithUserTenantContext(userId, callback) {
   // If not in memory, try reading persisted tenant_info.json from session
   if (!context && uid) {
     try {
-      const infoPath = path.join('.wwebjs_auth', `session-${uid}`, 'tenant_info.json');
+      const infoPath = path.join(sessionDirFor(uid), 'tenant_info.json');
       if (fsSync.existsSync(infoPath)) {
         const raw = await fs.readFile(infoPath, 'utf-8');
         const parsed = JSON.parse(raw);
@@ -103,7 +132,7 @@ export function getWhatsAppStatus(userId) {
     }
 
     // Auto-restore from disk if session folder exists
-    const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+    const sessionPath = sessionDirFor(uid);
     if (fsSync.existsSync(sessionPath) && !clients.has(uid)) {
       void initializeWhatsApp(uid);
       return {
@@ -137,7 +166,7 @@ export function getWhatsAppStatus(userId) {
 // Auto-restore all saved sessions from disk on server startup
 export async function restoreAllWhatsAppSessions() {
   try {
-    const authDir = './.wwebjs_auth';
+    const authDir = AUTH_DIR;
     if (!fsSync.existsSync(authDir)) return;
     const entries = await fs.readdir(authDir, { withFileTypes: true });
     for (const entry of entries) {
@@ -156,6 +185,17 @@ export async function restoreAllWhatsAppSessions() {
 
 // Detect Chrome executable dynamically on system
 function getChromeExecutablePath() {
+  // 1. Explicit path from the server environment (recommended in production)
+  const fromEnv = process.env.PUPPETEER_EXECUTABLE_PATH || process.env.CHROME_PATH;
+  if (fromEnv && fsSync.existsSync(fromEnv)) return fromEnv;
+
+  // 2. Common Linux install locations (VPS, Docker, Render, Railway)
+  const linuxPaths = ['/usr/bin/google-chrome-stable', '/usr/bin/google-chrome', '/usr/bin/chromium', '/usr/bin/chromium-browser'];
+  for (const candidate of linuxPaths) {
+    if (fsSync.existsSync(candidate)) return candidate;
+  }
+
+  // 3. Windows (local development)
   const defaultPath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
   const x86Path = 'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe';
   const localAppData = process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Google', 'Chrome', 'Application', 'chrome.exe') : null;
@@ -403,7 +443,7 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
   if (tenantInfo && tenantInfo.dbName) {
     userTenantContexts.set(uid, tenantInfo);
     try {
-      const sessionDir = path.join('.wwebjs_auth', `session-${uid}`);
+      const sessionDir = sessionDirFor(uid);
       await fs.mkdir(sessionDir, { recursive: true });
       await fs.writeFile(path.join(sessionDir, 'tenant_info.json'), JSON.stringify(tenantInfo, null, 2));
     } catch (_) {}
@@ -427,7 +467,7 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
 
   statuses.set(uid, 'INITIALIZING');
   qrCodes.set(uid, '');
-  emitToAll('whatsapp:status', { userId: uid, status: 'INITIALIZING', qrCode: '' });
+  emitStatus(uid, { status: 'INITIALIZING', qrCode: '' });
 
   try {
     const puppeteerExecPath = getChromeExecutablePath();
@@ -435,7 +475,7 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
     const clientInstance = new Client({
       authStrategy: new LocalAuth({
         clientId: uid,
-        dataPath: './.wwebjs_auth'
+        dataPath: AUTH_DIR
       }),
       puppeteer: {
         headless: true,
@@ -456,32 +496,41 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
     });
 
     clients.set(uid, clientInstance);
+    console.log(`[WhatsApp ${uid}] Starting browser (${puppeteerExecPath || 'bundled Chromium'}), sessions in ${AUTH_DIR}`);
+
+    clientInstance.on('change_state', (state) => {
+      console.log(`[WhatsApp ${uid}] State changed: ${state}`);
+    });
 
     clientInstance.on('qr', async (qr) => {
+      console.log(`[WhatsApp ${uid}] QR code generated`);
       statuses.set(uid, 'QR_RECEIVED');
       try {
         const qrCodeUrl = await qrcode.toDataURL(qr);
         qrCodes.set(uid, qrCodeUrl);
-        emitToAll('whatsapp:status', { userId: uid, status: 'QR_RECEIVED', qrCode: qrCodeUrl });
+        emitStatus(uid, { status: 'QR_RECEIVED', qrCode: qrCodeUrl });
       } catch (err) {
         console.error('QR code generation error:', err);
       }
     });
 
     clientInstance.on('loading_screen', (percent, message) => {
+      console.log(`[WhatsApp ${uid}] Loading ${percent}% ${message || ''}`);
       statuses.set(uid, 'LOADING');
-      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '', loadingPercent: percent, loadingMessage: message });
+      emitStatus(uid, { status: 'LOADING', qrCode: '', loadingPercent: percent, loadingMessage: message });
     });
 
     clientInstance.on('authenticated', () => {
+      console.log(`[WhatsApp ${uid}] QR scanned, phone authenticated; loading chats`);
       statuses.set(uid, 'LOADING');
-      emitToAll('whatsapp:status', { userId: uid, status: 'LOADING', qrCode: '' });
+      emitStatus(uid, { status: 'LOADING', qrCode: '' });
     });
 
     clientInstance.on('ready', async () => {
+      console.log(`[WhatsApp ${uid}] Connected and ready`);
       statuses.set(uid, 'CONNECTED');
       qrCodes.set(uid, '');
-      emitToAll('whatsapp:status', { userId: uid, status: 'CONNECTED', qrCode: '' });
+      emitStatus(uid, { status: 'CONNECTED', qrCode: '' });
       void syncAllChats(userId, clientInstance);
     });
 
@@ -490,11 +539,11 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
       statuses.set(uid, 'DISCONNECTED');
       qrCodes.set(uid, '');
       clients.delete(uid);
-      emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+      emitStatus(uid, { status: 'DISCONNECTED', qrCode: '' });
       
       // Clean up session cache on auth failure
       try {
-        const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+        const sessionPath = sessionDirFor(uid);
         await fs.rm(sessionPath, { recursive: true, force: true });
       } catch (e) {
         // Quiet
@@ -506,10 +555,10 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
       statuses.set(uid, 'DISCONNECTED');
       qrCodes.set(uid, '');
       clients.delete(uid);
-      emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+      emitStatus(uid, { status: 'DISCONNECTED', qrCode: '' });
 
       try {
-        const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+        const sessionPath = sessionDirFor(uid);
         await fs.rm(sessionPath, { recursive: true, force: true });
       } catch (e) {
         // Quiet
@@ -560,7 +609,7 @@ export async function initializeWhatsApp(userId, tenantInfo = null) {
     console.error('WhatsApp initialization error for user:', uid, error);
     statuses.set(uid, 'DISCONNECTED');
     clients.delete(uid);
-    emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+    emitStatus(uid, { status: 'DISCONNECTED', qrCode: '' });
   }
 }
 
@@ -579,11 +628,11 @@ export async function disconnectWhatsApp(userId) {
   statuses.set(uid, 'DISCONNECTED');
   qrCodes.set(uid, '');
   userTenantContexts.delete(uid);
-  emitToAll('whatsapp:status', { userId: uid, status: 'DISCONNECTED', qrCode: '' });
+  emitStatus(uid, { status: 'DISCONNECTED', qrCode: '' });
 
   // Clear session folder for fresh connection
   try {
-    const sessionPath = path.join('.wwebjs_auth', `session-${uid}`);
+    const sessionPath = sessionDirFor(uid);
     await fs.rm(sessionPath, { recursive: true, force: true });
   } catch (e) {
     // Quiet
@@ -634,11 +683,14 @@ export async function sendWhatsAppMessage(...args) {
   let clientInstance = targetUid ? clients.get(targetUid) : null;
   let currentStatus = targetUid ? (statuses.get(targetUid) || 'DISCONNECTED') : 'DISCONNECTED';
 
-  // If targetUid was not provided (e.g. system notification from task/lead controller), fallback to any connected client
+  // No sender given (system notification from the task/lead/user controllers): use a connected
+  // session that belongs to the SAME company as the current request. Never borrow another
+  // company's WhatsApp number.
   if (!targetUid || currentStatus !== 'CONNECTED' || !clientInstance) {
     if (!targetUid) {
+      const currentDb = tenantStorage.getStore()?.dbName || null;
       for (const [key, client] of clients.entries()) {
-        if (statuses.get(key) === 'CONNECTED' && client) {
+        if (statuses.get(key) === 'CONNECTED' && client && sessionTenantDb(key) === currentDb) {
           clientInstance = client;
           currentStatus = 'CONNECTED';
           targetUid = key;

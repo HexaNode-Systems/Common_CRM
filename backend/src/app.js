@@ -39,6 +39,9 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true }));
+// Project documents are private (see GET /api/catalog/:id/documents/:filename); never serve them publicly.
+// Project documents and task attachments are private: they are downloaded through the API.
+app.use(['/storage/projects', '/storage/tasks'], (req, res) => res.status(404).json({ message: 'Not found' }));
 app.use('/storage', express.static('storage'));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 

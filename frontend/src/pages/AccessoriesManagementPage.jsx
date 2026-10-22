@@ -13,8 +13,11 @@ import {
   FileText 
 } from 'lucide-react';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
+import { hasPermission } from '../utils/permissions.js';
 import Button from '../components/Button.jsx';
 import Card from '../components/Card.jsx';
+import Loader from '../components/Loader.jsx';
 
 const emptyForm = {
   name: '',
@@ -26,7 +29,43 @@ const emptyForm = {
   notes: ''
 };
 
-function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
+const HISTORY_LABELS = {
+  created: 'Added to stock',
+  assigned: 'Assigned to',
+  reassigned: 'Handed over to',
+  returned: 'Returned by',
+  status: 'Marked'
+};
+
+function todayInput() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function AssignmentHistory({ history = [] }) {
+  if (!history.length) return null;
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-slate-700">Assignment history</h3>
+      <ol className="max-h-48 space-y-2 overflow-y-auto rounded-theme border border-slate-100 bg-slate-50/60 p-3 text-xs text-slate-600">
+        {[...history].reverse().map((h, index) => (
+          <li key={`${h.at}-${index}`} className="flex flex-wrap items-baseline justify-between gap-2">
+            <span>
+              <span className="font-semibold text-slate-800">{HISTORY_LABELS[h.action] || h.action}</span>
+              {h.action === 'status' ? ` ${h.status}` : ''}
+              {h.employeeName ? ` ${h.action === 'status' ? '(held by ' : ''}${h.employeeName}${h.action === 'status' ? ')' : ''}` : ''}
+              {h.note && h.action !== 'status' ? ` · ${h.note}` : ''}
+              {h.byName ? <span className="text-slate-400"> · by {h.byName}</span> : null}
+            </span>
+            <time className="text-slate-400">{h.at ? new Date(h.at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</time>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function AccessoryModal({ mode, accessory, users, saving, error, readOnly = false, onClose, onSave }) {
   const [form, setForm] = useState(emptyForm);
 
   useEffect(() => {
@@ -50,6 +89,12 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
     onSave(form);
   }
 
+  // Keep the current holder selectable even if they are no longer in the active staff list.
+  const holder = accessory?.employee && typeof accessory.employee === 'object' ? accessory.employee : null;
+  const options = holder && !users.some((u) => u._id === holder._id)
+    ? [{ _id: holder._id, name: `${holder.name}${holder.isActive === false ? ' (deactivated)' : ''}`, email: holder.email }, ...users]
+    : users;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/55 px-4 py-4 backdrop-blur-sm">
       <button 
@@ -70,7 +115,7 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">
-                {mode === 'create' ? 'Add Accessory / Asset' : 'Edit Accessory Details'}
+                {mode === 'create' ? 'Add Accessory / Asset' : readOnly ? 'Accessory Details' : 'Edit Accessory Details'}
               </h2>
               <p className="text-xs text-slate-500">Record serial numbers, SIM cards, models, and assign them to employees.</p>
             </div>
@@ -86,6 +131,10 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
 
         {/* Modal Body */}
         <div className="flex-1 space-y-4 overflow-y-auto px-6 py-5">
+          {error ? (
+            <div className="rounded-theme border border-rose-100 bg-rose-50 px-3 py-2 text-sm text-rose-700" role="alert">{error}</div>
+          ) : null}
+          <fieldset disabled={readOnly} className="m-0 min-w-0 space-y-4 border-0 p-0">
           {/* Asset Name */}
           <div>
             <label htmlFor="accessory-name" className="block text-sm font-semibold text-slate-700 mb-1">
@@ -96,7 +145,8 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
               type="text" 
               className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
               placeholder="e.g. MacBook Pro, Jio SIM Card, Dell Keyboard"
-              required 
+              required
+              maxLength={120}
               value={form.name} 
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))} 
             />
@@ -113,6 +163,7 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
                 type="text" 
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 placeholder="e.g. A2442, Latitude 5420"
+                maxLength={120}
                 value={form.modelNumber} 
                 onChange={(e) => setForm((prev) => ({ ...prev, modelNumber: e.target.value }))} 
               />
@@ -126,6 +177,7 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
                 type="text" 
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 placeholder="e.g. 8991123456789, SN-472018"
+                maxLength={120}
                 value={form.serialNumber} 
                 onChange={(e) => setForm((prev) => ({ ...prev, serialNumber: e.target.value }))} 
               />
@@ -149,12 +201,12 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
                   // If we assign to a user, auto switch status to 'assigned'
                   status: empId ? 'assigned' : (prev.status === 'assigned' ? 'available' : prev.status),
                   // Auto fill current date if empty and assigning
-                  assignmentDate: (empId && !prev.assignmentDate) ? new Date().toISOString().split('T')[0] : prev.assignmentDate
+                  assignmentDate: (empId && !prev.assignmentDate) ? todayInput() : (empId ? prev.assignmentDate : '')
                 }));
               }}
             >
               <option value="">-- Available in Stock (Unassigned) --</option>
-              {users.map((u) => (
+              {options.map((u) => (
                 <option key={u._id} value={u._id}>
                   {u.name} ({u.email})
                 </option>
@@ -173,6 +225,7 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
                 type="date" 
                 className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20" 
                 value={form.assignmentDate}
+                max={todayInput()}
                 disabled={!form.employee}
                 onChange={(e) => setForm((prev) => ({ ...prev, assignmentDate: e.target.value }))} 
               />
@@ -190,7 +243,7 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
                   setForm((prev) => ({ 
                     ...prev, 
                     status,
-                    // If marked available/damaged/lost, unassign the user
+                    // Available / damaged / lost: nobody holds it any more (the history keeps who had it).
                     employee: status !== 'assigned' ? '' : prev.employee,
                     assignmentDate: status !== 'assigned' ? '' : prev.assignmentDate
                   }));
@@ -213,10 +266,19 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
               id="accessory-notes"
               className="input w-full rounded-theme border border-slate-200 px-3.5 py-2.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20 min-h-[90px]" 
               placeholder="e.g. Scratched bottom left, includes charger, phone number associated is +91-XXXXX..."
+              maxLength={2000}
               value={form.notes} 
               onChange={(e) => setForm((prev) => ({ ...prev, notes: e.target.value }))} 
             />
           </div>
+
+          </fieldset>
+
+          {form.status === 'assigned' && !form.employee ? (
+            <p className="text-xs font-medium text-amber-700">Choose who this asset is assigned to, or change the status.</p>
+          ) : null}
+
+          {mode === 'edit' ? <AssignmentHistory history={accessory?.history} /> : null}
         </div>
 
         {/* Modal Footer */}
@@ -228,13 +290,13 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
           >
             Cancel
           </button>
-          <Button 
+          {readOnly ? null : <Button 
             type="submit" 
-            disabled={saving} 
+            disabled={saving || (form.status === 'assigned' && !form.employee)} 
             className="px-5 py-2 inline-flex items-center justify-center"
           >
             {saving ? 'Saving...' : mode === 'create' ? 'Create Asset' : 'Save Changes'}
-          </Button>
+          </Button>}
         </div>
       </form>
     </div>
@@ -242,7 +304,13 @@ function AccessoryModal({ mode, accessory, users, saving, onClose, onSave }) {
 }
 
 export default function AccessoriesManagementPage() {
+  const { user } = useAuth();
+  const canCreate = hasPermission(user, 'accessories', 'create');
+  const canUpdate = hasPermission(user, 'accessories', 'update');
+  const canDelete = hasPermission(user, 'accessories', 'delete');
   const [items, setItems] = useState([]);
+  const [modalError, setModalError] = useState('');
+  const [employeeFilter, setEmployeeFilter] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -267,8 +335,9 @@ export default function AccessoriesManagementPage() {
       const params = {
         page,
         limit: 15,
-        search: searchQuery || undefined,
-        status: statusFilter || undefined
+        search: searchQuery.trim() || undefined,
+        status: statusFilter || undefined,
+        employee: employeeFilter || undefined
       };
       
       const { data } = await api.get('/v1/accessories', { params });
@@ -282,25 +351,25 @@ export default function AccessoriesManagementPage() {
     }
   }
 
-  // Load active users list for assignment dropdown
+  // Active staff for the "Assign to" list (does not need access to the Users page).
   async function loadUsers() {
     try {
-      const { data } = await api.get('/users', { params: { limit: 150 } });
+      const { data } = await api.get('/v1/accessories/assignees');
       setUsers(data.items || []);
     } catch (err) {
-      console.error('Error loading users for assignments dropdown:', err);
+      setError(err.response?.data?.message || 'Could not load the staff list for assignments.');
     }
   }
 
   useEffect(() => {
     loadAccessories();
-  }, [page, statusFilter]);
+  }, [page, statusFilter, employeeFilter]);
 
   // Debounced search trigger (simulated via load effect or search button)
   const handleSearchSubmit = (e) => {
     e.preventDefault();
-    setPage(1);
-    loadAccessories();
+    if (page !== 1) setPage(1);
+    else loadAccessories();
   };
 
   useEffect(() => {
@@ -309,34 +378,54 @@ export default function AccessoriesManagementPage() {
 
   function openCreate() {
     setEditingItem(null);
+    setModalError('');
     setModalMode('create');
   }
 
-  function openEdit(item) {
+  async function openEdit(item) {
     setEditingItem(item);
+    setModalError('');
     setModalMode('edit');
+    // The list does not always carry the full history; fetch the latest copy.
+    try {
+      const { data } = await api.get(`/v1/accessories/${item._id}`);
+      setEditingItem((current) => (current && current._id === data._id ? data : current));
+    } catch {
+      /* keep the list copy */
+    }
   }
 
   function closeModal() {
     setModalMode(null);
     setEditingItem(null);
+    setModalError('');
   }
 
   async function handleSave(form) {
     setSaving(true);
-    setError('');
+    setModalError('');
     try {
+      const payload = {
+        ...form,
+        name: form.name.trim(),
+        modelNumber: form.modelNumber.trim(),
+        serialNumber: form.serialNumber.trim(),
+        notes: form.notes.trim()
+      };
       if (modalMode === 'create') {
-        const { data } = await api.post('/v1/accessories', form);
-        setItems((current) => [data, ...current]);
-        setTotalItems((prev) => prev + 1);
-      } else {
-        const { data } = await api.put(`/v1/accessories/${editingItem._id}`, form);
-        setItems((current) => current.map((item) => (item._id === data._id ? data : item)));
+        await api.post('/v1/accessories', payload);
+        closeModal();
+        // Reload so the new asset appears where the current filters and page say it should.
+        if (page !== 1) setPage(1);
+        else loadAccessories();
+        return;
       }
+      const { data } = await api.put(`/v1/accessories/${editingItem._id}`, payload);
+      setItems((current) => current.map((item) => (item._id === data._id ? data : item)));
       closeModal();
     } catch (err) {
-      setError(err.response?.data?.message || 'Unable to save accessory record.');
+      // Shown inside the dialog, where the person is looking.
+      setModalError(err.response?.data?.message || 'Unable to save accessory record.');
     } finally {
       setSaving(false);
     }
@@ -407,20 +496,23 @@ export default function AccessoriesManagementPage() {
         <div className="flex gap-2">
           <Button 
             onClick={() => {
-              setPage(1);
-              loadAccessories();
+              loadUsers();
+              if (page !== 1) setPage(1);
+              else loadAccessories();
             }} 
             variant="outline"
             className="inline-flex items-center gap-2"
           >
             <RefreshCw size={16} /> Refresh
           </Button>
-          <Button 
-            onClick={openCreate} 
-            className="inline-flex items-center gap-2 px-4 py-2 shadow-md hover:shadow-lg transition-all"
-          >
-            <Plus size={16} /> Add Asset / SIM
-          </Button>
+          {canCreate ? (
+            <Button 
+              onClick={openCreate} 
+              className="inline-flex items-center gap-2 px-4 py-2 shadow-md hover:shadow-lg transition-all"
+            >
+              <Plus size={16} /> Add Asset / SIM
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -463,6 +555,24 @@ export default function AccessoriesManagementPage() {
             </select>
           </div>
 
+          {/* Employee Filter */}
+          <div className="w-full md:w-56">
+            <select
+              aria-label="Filter by employee"
+              className="w-full rounded-theme border border-slate-200 px-3 py-2.5 text-sm bg-white outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/20"
+              value={employeeFilter}
+              onChange={(e) => {
+                setEmployeeFilter(e.target.value);
+                setPage(1);
+              }}
+            >
+              <option value="">All employees</option>
+              {users.map((u) => (
+                <option key={u._id} value={u._id}>{u.name}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Search Button */}
           <button 
             type="submit" 
@@ -490,11 +600,8 @@ export default function AccessoriesManagementPage() {
             <tbody className="divide-y divide-slate-100 text-slate-700">
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-5 py-12 text-center text-slate-400">
-                    <div className="flex flex-col items-center gap-2">
-                      <RefreshCw size={24} className="animate-spin text-slate-300" />
-                      <span>Loading accessories data...</span>
-                    </div>
+                  <td colSpan="6">
+                    <Loader label="Loading assets" />
                   </td>
                 </tr>
               ) : items.length === 0 ? (
@@ -502,7 +609,11 @@ export default function AccessoriesManagementPage() {
                   <td colSpan="6" className="px-5 py-12 text-center text-slate-500 font-medium">
                     <div className="flex flex-col items-center gap-3">
                       <Smartphone size={36} className="text-slate-300" />
-                      <span>No accessories or assets found. Click 'Add Asset / SIM' to create one.</span>
+                      <span>
+                        {searchQuery.trim() || statusFilter || employeeFilter
+                          ? 'No assets match these filters.'
+                          : canCreate ? "No accessories or assets found. Click 'Add Asset / SIM' to create one." : 'No accessories or assets recorded yet.'}
+                      </span>
                     </div>
                   </td>
                 </tr>
@@ -543,10 +654,17 @@ export default function AccessoriesManagementPage() {
                             {item.employee.name?.slice(0, 2).toUpperCase()}
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-800 leading-tight">{item.employee.name}</p>
+                            <p className="font-semibold text-slate-800 leading-tight">
+                              {item.employee.name}
+                              {item.employee.isActive === false ? <span className="ml-1 text-[11px] font-medium text-amber-700">(deactivated)</span> : null}
+                            </p>
                             <p className="text-xs text-slate-400 mt-0.5">{item.employee.email}</p>
                           </div>
                         </div>
+                      ) : item.status === 'assigned' ? (
+                        <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-1 rounded" title="The person this was assigned to no longer exists. Edit the asset to reassign or return it.">
+                          Holder removed
+                        </span>
                       ) : (
                         <span className="text-xs font-medium text-slate-400 bg-slate-100 px-2 py-1 rounded">
                           Not Assigned
@@ -576,18 +694,22 @@ export default function AccessoriesManagementPage() {
                           type="button" 
                           onClick={() => openEdit(item)} 
                           className="p-1.5 hover:bg-slate-100 rounded-theme text-blue-600 hover:text-blue-700 transition"
-                          title="Edit"
+                          title={canUpdate ? 'Edit' : 'View details'}
+                          aria-label={canUpdate ? `Edit ${item.name}` : `View ${item.name}`}
                         >
-                          <Edit size={16} />
+                          {canUpdate ? <Edit size={16} /> : <FileText size={16} />}
                         </button>
-                        <button 
-                          type="button" 
-                          onClick={() => handleDelete(item._id)} 
-                          className="p-1.5 hover:bg-slate-100 rounded-theme text-rose-600 hover:text-rose-700 transition"
-                          title="Delete"
-                        >
-                          <Trash2 size={16} />
-                        </button>
+                        {canDelete ? (
+                          <button 
+                            type="button" 
+                            onClick={() => handleDelete(item._id)} 
+                            className="p-1.5 hover:bg-slate-100 rounded-theme text-rose-600 hover:text-rose-700 transition"
+                            title="Delete"
+                            aria-label={`Delete ${item.name}`}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        ) : null}
                       </div>
                     </td>
                   </tr>
@@ -632,6 +754,8 @@ export default function AccessoriesManagementPage() {
           accessory={editingItem} 
           users={users} 
           saving={saving} 
+          error={modalError}
+          readOnly={!canUpdate && modalMode === 'edit'}
           onClose={closeModal} 
           onSave={handleSave} 
         />

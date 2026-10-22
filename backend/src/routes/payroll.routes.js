@@ -6,8 +6,9 @@ const router = Router();
 
 router.use(protect);
 
-router.get('/', authorize('users:read'), getPayrollList);
-router.post('/', authorize('users:update'), savePayrollRecord);
-router.patch('/:id/pay', authorize('users:update'), freezePayrollRecord);
+// Salary data has its own permission ("Payroll & Salary" in Roles & Permissions), separate from Users.
+router.get('/', authorize('payroll:read'), getPayrollList);
+router.post('/', authorize('payroll:update'), savePayrollRecord);
+router.patch('/:id/pay', authorize('payroll:update'), freezePayrollRecord);
 
 export default router;

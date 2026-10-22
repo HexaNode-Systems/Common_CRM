@@ -204,7 +204,7 @@ export default function App({ helmetContext } = {}) {
               <Route path="/catalog/:id" element={<ProtectedRoute permission="catalog:read"><ProjectDetailsPage /></ProtectedRoute>} />
               <Route path="/orders" element={<ProtectedRoute permission="orders:read"><ResourcePage title="Orders / Leads" endpoint="/orders" /></ProtectedRoute>} />
               <Route path="/leads" element={<ProtectedRoute permission="leads:read"><LeadsManagementPage /></ProtectedRoute>} />
-              <Route path="/leads/distribution" element={<ProtectedRoute permission="leads:update"><LeadDistributionPage /></ProtectedRoute>} />
+              <Route path="/leads/distribution" element={<ProtectedRoute permission="leads:delete"><LeadDistributionPage /></ProtectedRoute>} />
               <Route path="/tasks" element={<ProtectedRoute permission="tasks:read"><TaskManagementPage /></ProtectedRoute>} />
               <Route path="/payments" element={<ProtectedRoute permission="payments:read"><TaskManagementPage /></ProtectedRoute>} />
               <Route path="/vault" element={<ProtectedRoute permission="vault:read"><VaultManagementPage /></ProtectedRoute>} />
@@ -224,7 +224,7 @@ export default function App({ helmetContext } = {}) {
               <Route path="/whatsapp-inbox" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppInboxPage /></ProtectedRoute>} />
               <Route path="/whatsapp-campaign" element={<ProtectedRoute permission="whatsapp:read"><WhatsAppCampaignPage /></ProtectedRoute>} />
               <Route path="/accessories" element={<ProtectedRoute permission="accessories:read"><AccessoriesManagementPage /></ProtectedRoute>} />
-              <Route path="/super-admin" element={<ProtectedRoute><SuperAdminDashboard /></ProtectedRoute>} />
+              <Route path="/super-admin" element={<ProtectedRoute platform><SuperAdminDashboard /></ProtectedRoute>} />
               <Route path="/forbidden" element={<ForbiddenPage />} />
 
               {/* Compatibility aliases if accessed under /dashboard/* */}
